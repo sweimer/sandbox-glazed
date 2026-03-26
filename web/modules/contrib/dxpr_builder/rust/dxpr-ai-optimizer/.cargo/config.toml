@@ -1,0 +1,5 @@
+# Cargo configuration for WASM builds
+
+[target.wasm32-unknown-unknown]
+# Configure getrandom to use the wasm_js backend
+rustflags = ["--cfg", "getrandom_backend=\"wasm_js\""]

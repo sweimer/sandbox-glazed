@@ -1,0 +1,5 @@
+name: Decoupled - React Poc 10
+type: module
+description: 'Decoupled React application module for Decoupled - React Poc 10.'
+core_version_requirement: ^10 || ^11
+package: Decoupled Apps

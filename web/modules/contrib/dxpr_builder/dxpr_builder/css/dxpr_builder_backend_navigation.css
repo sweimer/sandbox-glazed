@@ -1,0 +1,7 @@
+.toolbar-button--icon--dxpr-builder-studio::before {
+  --icon: url('../images-backend/dxpr-logo-dark.svg');
+  -webkit-mask-image: url("../images-backend/dxpr-logo-dark.svg") !important;
+          mask-image: url("../images-backend/dxpr-logo-dark.svg") !important;
+  -webkit-mask-size: 120%;
+          mask-size: 120%;
+}

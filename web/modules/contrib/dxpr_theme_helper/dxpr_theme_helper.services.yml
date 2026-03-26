@@ -1,0 +1,25 @@
+services:
+  theme.negotiator.dxpr_theme_settings:
+    class: Drupal\dxpr_theme_helper\Theme\DxprThemeSettingsThemeNegotiator
+    tags:
+      - { name: theme_negotiator, priority: 1000 }
+    arguments:
+      - '@entity_field.manager'
+      - '@event_dispatcher'
+      - '@database'
+      - '@config.factory'
+      - '@language_manager'
+
+  dxpr_theme_helper.ai_palette_generator:
+    class: Drupal\dxpr_theme_helper\AiPaletteGenerator
+    arguments:
+      - '@?ai.provider'
+      - '@?ai.prompt_json_decode'
+      - '@extension.list.theme'
+
+  dxpr_theme_helper.ai_font_generator:
+    class: Drupal\dxpr_theme_helper\AiFontGenerator
+    arguments:
+      - '@?ai.provider'
+      - '@?ai.prompt_json_decode'
+      - '@extension.list.theme'

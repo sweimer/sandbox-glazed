@@ -1,0 +1,12 @@
+hudx_stracat:
+  version: 1.x
+  js:
+    dist/assets/hudx_stracat.js:
+      header: true
+      attributes:
+        type: module
+  css:
+    theme:
+      dist/assets/hudx_stracat.css: {}
+  dependencies:
+    - core/drupal

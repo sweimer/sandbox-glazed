@@ -1,0 +1,358 @@
+# DXPR Builder Libraries
+
+core:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/css/dxpr_builder.css: {}
+
+editor.core:
+  version: VERSION
+  css:
+    theme:
+      css/drupal-integration.css: {}
+      dxpr_builder/vendor/unmanaged/et-line-font/et-line-font.css: {}
+      dxpr_builder/vendor/unmanaged/pe-icon-7-stroke/css/pe-icon-7-stroke.css: {}
+      dxpr_builder/vendor/managed/dxb_slider/dxb-slider.min.css: {}
+  js:
+    js/global-setup.js: { weight: -10 }
+    js/image-utils.js: { weight: -9 }
+    js/image-metadata.js: { weight: -8 }
+    js/entity-browser.js: { weight: -7 }
+    js/file-upload.js: { weight: -3 }
+    js/image-select.js: { weight: -2 }
+    js/video-select.js: { weight: -1 }
+    dxpr_builder/vendor/managed/base64-js/base64js.min.js: { minified: true }
+    dxpr_builder/vendor/managed/bootstrap-notify/bootstrap-notify.min.js: { minified: true }
+    dxpr_builder/vendor/managed/sortablejs/Sortable.min.js: { minified: true }
+    dxpr_builder/vendor/managed/draggabilly/dist/draggabilly.pkgd.min.js: { minified: true }
+    dxpr_builder/vendor/managed/@floating-ui/core/dist/floating-ui.core.umd.min.js: { minified: true }
+    dxpr_builder/vendor/managed/@floating-ui/dom/dist/floating-ui.dom.umd.min.js: { minified: true }
+    dxpr_builder/vendor/managed/dxb_slider/dxb-slider.min.js: { minified: true }
+  dependencies:
+    - core/jquery
+    - core/drupalSettings
+    - core/internal.jquery_ui
+    - core/once
+    - dxpr_builder/string_compression
+    - dxpr_builder/elements.glyphicons_halflings
+    - dxpr_builder/editor.core.styles
+
+string_compression:
+  version: VERSION
+  js:
+    dxpr_builder/vendor/managed/lz-string/libs/lz-string.min.js: { minified: true }
+
+editor.dev:
+  version: VERSION
+  js:
+    dxpr_builder/dxpr_builder_dev.js: { }
+  dependencies:
+    - core/drupal
+    - core/once
+
+editor.frontend:
+  version: VERSION
+  js:
+    dxpr_builder/dxpr_frontend.min.js: { minified: true }
+  dependencies:
+    - core/jquery
+    - core/drupalSettings
+    - core/once
+
+editor.frontend_dev:
+  version: VERSION
+  js:
+    dxpr_builder/dxpr_frontend.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupalSettings
+    - core/once
+
+bootstrap_3:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/unmanaged/bootstrap/css/bootstrap.min.css: { minified: true, weight: -10 }
+  js:
+    dxpr_builder/vendor/unmanaged/bootstrap/js/bootstrap.min.js: { minified: true, weight: -10 }
+
+bootstrap_4:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/managed/bootstrap/dist/css/bootstrap.min.css: { minified: true, weight: -10 }
+  js:
+    dxpr_builder/vendor/managed/bootstrap/dist/js/bootstrap.bundle.min.js: { minified: true, weight: -10 }
+
+bootstrap_5:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/managed/bootstrap-5/dist/css/bootstrap.min.css: { minified: true, weight: -10 }
+  js:
+    dxpr_builder/vendor/managed/bootstrap-5/dist/js/bootstrap.bundle.min.js: { minified: true, weight: -10 }
+
+entity_browser_selection:
+  js:
+    js/entity_browser.media_selection.js: {}
+
+# Modal Elements Libraries
+
+elements.animate:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/managed/animate.css/animate.min.css: { minified: true }
+
+elements.owlcarousel:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/unmanaged/owl.carousel/owl-carousel/owl.carousel.css: { minified: false }
+      dxpr_builder/vendor/unmanaged/owl.carousel/owl-carousel/owl.transitions.css: { minified: false }
+      dxpr_builder/css/st-owl-carousel.css: {}
+  js:
+    dxpr_builder/vendor/unmanaged/owl.carousel/owl-carousel/owl.carousel.js: {}
+
+elements.icon_helpers:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/css/icon-helpers.css: {}
+
+elements.glyphicons_halflings:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/unmanaged/glyphicons-halflings/css/halflings-set.css: {}
+
+elements.et_line_font:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/unmanaged/et-line-font/et-line-font.css: {}
+
+elements.font_awesome_6_free:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/managed/@fortawesome/fontawesome-free/css/all.min.css: { minified: true }
+
+elements.font_awesome_v4_shims:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/managed/@fortawesome/fontawesome-free/css/v4-shims.min.css: { minified: true }
+
+elements.pe_icon_7_stroke:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/unmanaged/pe-icon-7-stroke/css/pe-icon-7-stroke.css: {}
+
+elements.bootstrap_icons:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/managed/bootstrap-icons/font/bootstrap-icons.min.css: { minified: true }
+
+elements.circliful:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/unmanaged/jquery.circliful/css/jquery.circliful.css: { minified: false }
+  js:
+    dxpr_builder/vendor/unmanaged/jquery.circliful/js/jquery.circliful.min.js: { minified: true }
+  dependencies:
+    - core/jquery
+
+elements.counteverest:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/vendor/managed/@dxpr/counteverest/dist/counteverest.min.css: { minified: true }
+  js:
+    dxpr_builder/vendor/managed/@dxpr/counteverest/dist/counteverest.min.js: { minified: true }
+    js/counteverest-migrate.js: {}
+
+elements.countto:
+  version: VERSION
+  js:
+    dxpr_builder/vendor/unmanaged/dxb-count-to/dxb-count-to.min.js: { minified: true }
+
+elements.social_icons:
+  version: VERSION
+  css:
+    theme:
+      dxpr_builder/css/social.css: {}
+
+
+# Sidebar Elements Libraries
+
+elements.test:
+  version: VERSION
+  css:
+    theme:
+      dxpr_elements/Test Elements//test-1.css: { minified: true }
+  js:
+    dxpr_elements/Test Elements/test-1.js: { minified: true }
+
+elements.cta:
+  version: VERSION
+  css:
+    theme:
+      css/elements/cta.css: { minified: true }
+
+elements.dropshadow:
+  version: VERSION
+  css:
+    theme:
+      css/elements/dropshadow.css: { minified: true }
+
+elements.iconbox:
+  version: VERSION
+  css:
+    theme:
+      css/elements/iconbox.css: { minified: true }
+
+elements.iconwell:
+  version: VERSION
+  css:
+    theme:
+      css/elements/iconwell.css: { minified: true }
+
+elements.imagebox:
+  version: VERSION
+  css:
+    theme:
+      css/elements/imagebox.css: { minified: true }
+
+elements.pricelisting:
+  version: VERSION
+  css:
+    theme:
+      css/elements/pricelisting.css: { minified: true }
+
+elements.pricingtable:
+  version: VERSION
+  css:
+    theme:
+      css/elements/pricingtable.css: { minified: true }
+
+elements.quoteslider:
+  version: VERSION
+  css:
+    theme:
+      css/elements/quoteslider.css: { minified: true }
+
+elements.teambox:
+  version: VERSION
+  css:
+    theme:
+      css/elements/teambox.css: { minified: true }
+
+elements.timeline:
+  version: VERSION
+  css:
+    theme:
+      css/elements/timeline.css: { minified: true }
+
+configuration.profileform:
+  css:
+    theme:
+      css/profile-form.css: {}
+  js:
+    js/profile-form.js: {}
+
+twig.js:
+  version: VERSION
+  js:
+    dxpr_builder/vendor/managed/twig/twig.min.js: { weight: -10 }
+
+editor.validation:
+  version: VERSION
+  js:
+    js/editor_validation.js: { }
+  dependencies:
+    - core/drupalSettings
+    - core/drupal.message
+
+user-licenses:
+  css:
+    component:
+      css/user-licenses.css: {}
+
+ai-providers:
+  version: VERSION
+  css:
+    theme:
+      css/ai-providers.css: {}
+  js:
+    js/ai-providers.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+    - core/drupal.tabledrag
+
+tone-of-voice:
+  version: 1.x
+  css:
+    theme:
+      css/tone-of-voice.css: {}
+  dependencies:
+    - core/drupal
+
+commands:
+  version: 1.x
+  css:
+    theme:
+      css/commands.css: {}
+  dependencies:
+    - core/drupal
+
+# Global admin interface libraries - always local, never CDN
+editor.global:
+  version: VERSION
+  remote: https://dxpr.com
+  license:
+    name: proprietary
+    url: https://dxpr.com/legal/terms
+    gpl-compatible: false
+  css:
+    theme:
+      dxpr_builder/css/dxpr_builder_backend_global.css: {}
+
+editor.navigation:
+  version: VERSION
+  remote: https://dxpr.com
+  license:
+    name: proprietary
+    url: https://dxpr.com/legal/terms
+    gpl-compatible: false
+  css:
+    theme:
+      dxpr_builder/css/dxpr_builder_backend_navigation.css: {}
+
+editor.toolbar:
+  version: VERSION
+  remote: https://dxpr.com
+  license:
+    name: proprietary
+    url: https://dxpr.com/legal/terms
+    gpl-compatible: false
+  css:
+    theme:
+      dxpr_builder/css/dxpr_builder_backend_toolbar.css: {}
+
+editor.gin_toolbar:
+  version: VERSION
+  remote: https://dxpr.com
+  license:
+    name: proprietary
+    url: https://dxpr.com/legal/terms
+    gpl-compatible: false
+  css:
+    theme:
+      dxpr_builder/css/dxpr_builder_backend_gin_toolbar.css: {}

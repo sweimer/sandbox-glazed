@@ -1,0 +1,920 @@
+<?php
+
+/**
+ * @file
+ * Contains functions for Easy-to-Use Drag and Drop Page Builder.
+ */
+
+use Drupal\Component\Utility\DeprecationHelper;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Url;
+use Drupal\bootstrap\Bootstrap;
+use Drupal\dxpr_builder\Service\DxprBuilderLicenseServiceInterface;
+use Drupal\user\UserInterface;
+use Drupal\views\Entity\View;
+use Symfony\Component\Mime\Header\UnstructuredHeader;
+
+/**
+ * Implements hook_theme().
+ *
+ * @phpstan-return array<string, array<string, mixed>>
+ */
+function dxpr_builder_theme(): array {
+  return [
+    'dxpr-license-info' => [
+      'template' => 'dxpr-license-info',
+      'variables' => [
+        'used_count' => NULL,
+        'total_count' => NULL,
+        'limit' => NULL,
+        'block_label' => NULL,
+        'total_label' => NULL,
+        'used_label' => NULL,
+        'more_info_link' => NULL,
+      ],
+    ],
+    // These templates needed for displaying "Media Library" in "iframe".
+    // Theme suggestion by path "/dxpr_builder/media-library" is used.
+    'page__dxpr_builder__media_library' => [
+      'template' => 'page--dxpr-builder--media-library',
+      'render element' => 'page',
+      'preprocess functions' => ['template_preprocess_page'],
+    ],
+    'html__dxpr_builder__media_library' => [
+      'template' => 'html--dxpr-builder--media-library',
+      'render element' => 'html',
+      'preprocess functions' => ['template_preprocess_html'],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_entity_type_alter().
+ *
+ * Override the Node class provided by core with a custom
+ * impelementation for DXPR Buidler, that allows for overriding
+ * of specific entity functionality.
+ *
+ * @phpstan-param array<mixed> $entity_types
+ */
+function dxpr_builder_entity_type_alter(array &$entity_types): void {
+  if (!empty($entity_types['node'])) {
+    $node = &$entity_types['node'];
+    $node->setClass('Drupal\dxpr_builder\Entity\Node');
+  }
+
+  if (!empty($entity_types['block_content'])) {
+    $block_content = &$entity_types['block_content'];
+    $block_content->setClass('Drupal\dxpr_builder\Entity\BlockContent');
+  }
+}
+
+/**
+ * Implements hook_update_status_alter().
+ *
+ * Provides link to dxpr.com on Available Updates admin page.
+ *
+ * @phpstan-param array<string, array<string, mixed>> $projects
+ */
+function dxpr_builder_update_status_alter(array &$projects): void {
+  if (isset($projects['dxpr_builder']) && isset($projects['dxpr_builder']['title'])) {
+    $projects['dxpr_builder']['title'] .= ' ' . t('on dxpr.com. Click for more info.');
+  }
+}
+
+/**
+ * Implements hook_page_bottom().
+ *
+ * @phpstan-param array<string, mixed> $page_bottom
+ */
+function dxpr_builder_page_bottom(array &$page_bottom): void {
+  if (\Drupal::service('path.matcher')->isFrontPage()) {
+    $state = \Drupal::state();
+    $parts = [
+      'sfy39587stp30',
+      $state->get('dxpr_builder.users_tier_users_count', '0 0'),
+      $state->get('dxpr_builder.saves_count', 0),
+    ];
+
+    $page_bottom['dxpr_builder'] = [
+      '#prefix' => '<div class="hidden">',
+      '#suffix' => '</div>',
+      '#markup' => implode(' ', $parts),
+    ];
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ *
+ * @phpstan-param array<string, mixed> $variables
+ */
+function dxpr_builder_preprocess_page(array &$variables): void {
+  $current_language = \Drupal::languageManager()->getCurrentLanguage()
+    ->getName();
+
+  $default_lang_code = \Drupal::languageManager()
+    ->getDefaultLanguage()
+    ->getId();
+
+  $variables['#attached']['drupalSettings']['currentLanguage'] = $current_language;
+  $variables['#attached']['drupalSettings']['defaultLangCode'] = $default_lang_code;
+}
+
+/**
+ * Implements hook_js_alter().
+ *
+ * When a request is from DXPR Builder we know we already have
+ * certain assets loaded. Preventing reload of jQuery also helps
+ * prevent race conditions leading to undefined function etc.
+ *
+ * @phpstan-param array<string, mixed> $javascript
+ */
+function dxpr_builder_js_alter(array &$javascript): void {
+  $route = \Drupal::routeMatch()->getRouteName();
+  if ($route == 'dxpr_builder.ajax_callback') {
+    unset($javascript['core/assets/vendor/jquery/jquery.min.js']);
+    unset($javascript['core/assets/vendor/jquery.ui/ui/jquery-1-7-min.js']);
+  }
+  // Loop over the array and set $editorLoaded flag if a match is found.
+  $editorLoaded = FALSE;
+  foreach ($javascript as $key => $value) {
+    if (strpos($key, 'dxpr_builder.js') !== FALSE || strpos($key, 'dxpr_builder.min.js') !== FALSE) {
+      $editorLoaded = TRUE;
+      break;
+    }
+  }
+
+  // Loop over the array and remove any keys that contain 'dxpr_frontend'.
+  foreach ($javascript as $key => $value) {
+    if ($editorLoaded && strpos($key, 'dxpr_frontend') !== FALSE) {
+      unset($javascript[$key]);
+      break;
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete().
+ *
+ * Clears the cache when a custom block is deleted, so that deleted blocks
+ * do not show up in the front end builder.
+ */
+function dxpr_builder_block_content_delete(EntityInterface $blockContent): void {
+  \Drupal::service('plugin.manager.block')->clearCachedDefinitions();
+  \Drupal::cache()->delete('dxpr_builder:cms_elements_blocks');
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ *
+ * Clears the cache when a custom block is created, so that newly
+ * added blocks show up in the front end builder.
+ */
+function dxpr_builder_block_content_insert(EntityInterface $blockContent): void {
+  \Drupal::service('plugin.manager.block')->clearCachedDefinitions();
+  \Drupal::cache()->delete('dxpr_builder:cms_elements_blocks');
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for view entities.
+ *
+ * Clears the DXPR Builder views cache when a view is created, so that
+ * newly added views show up in the front end builder.
+ */
+function dxpr_builder_view_insert(EntityInterface $view): void {
+  \Drupal::cache()->delete('dxpr_builder:cms_elements_views');
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for view entities.
+ *
+ * Clears the DXPR Builder views cache when a view is updated, so that
+ * changes are reflected in the front end builder.
+ */
+function dxpr_builder_view_update(EntityInterface $view): void {
+  \Drupal::cache()->delete('dxpr_builder:cms_elements_views');
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete() for view entities.
+ *
+ * Clears the DXPR Builder views cache when a view is deleted, so that
+ * deleted views do not show up in the front end builder.
+ */
+function dxpr_builder_view_delete(EntityInterface $view): void {
+  \Drupal::cache()->delete('dxpr_builder:cms_elements_views');
+}
+
+/**
+ * Implements hook_module_preinstall().
+ *
+ * Reserved for future use to handle cache clearing when modules are installed.
+ */
+function dxpr_builder_module_preinstall(string $module): void {
+  // Intentionally empty - cache clearing handled by Drupal core.
+}
+
+/**
+ * Implements hook_module_preuninstall().
+ *
+ * Clears the caches when a module is uninstalled to ensure that
+ * any removed elements do not show up in the front end builder.
+ */
+function dxpr_builder_module_preuninstall(string $module): void {
+  \Drupal::service('plugin.manager.block')->clearCachedDefinitions();
+  \Drupal::cache()->delete('dxpr_builder:cms_elements_blocks');
+  \Drupal::cache()->delete('dxpr_builder:cms_elements_views');
+}
+
+/**
+ * Implements hook_library_info_alter().
+ *
+ * We side-load our own selection.js script to close the Media Modal and trigger
+ * the "entities-selected" event on the correct image parameter input field.
+ *
+ * Remove modal libraries from bootstrap basetheme
+ *
+ * @phpstan-param array<string, mixed> $libraries
+ *
+ * @see https://www.drupal.org/project/bootstrap/issues/3014248
+ */
+function dxpr_builder_library_info_alter(array &$libraries, string $extension): void {
+  if ($extension == 'entity_browser') {
+    $libraries['iframe_selection']['dependencies'][] = 'dxpr_builder/entity_browser_selection';
+    $libraries['modal_selection']['dependencies'][] = 'dxpr_builder/entity_browser_selection';
+  }
+
+  // Fix bootstrap dialog break when jQuery UI Bridge enabled.
+  // Issue: https://www.drupal.org/project/bootstrap/issues/3219852
+  if (class_exists('\Drupal\bootstrap\Bootstrap')) {
+    $theme = Bootstrap::getTheme();
+
+    // Apply modal fixes to bootstrap based themes with
+    // modal enabled using jquery_ui_bridge.
+    if ($theme->isBootstrap() && $theme->getSetting('modal_enabled') && $theme->getSetting('modal_jquery_ui_bridge')) {
+      if ($extension == 'core' && !empty($libraries['drupal.dialog'])) {
+        // See the link above for the origin of this code.
+        if (!empty($libraries['drupal.dialog']['js'])) {
+          foreach ($libraries['drupal.dialog']['js'] as $key => $asset) {
+            if (preg_match('`^assets/vendor/jquery\.ui`', $key)) {
+              unset($libraries['drupal.dialog']['js'][$key]);
+            }
+          }
+        }
+        if (isset($libraries['drupal.dialog']['css'])) {
+          unset($libraries['drupal.dialog']['css']);
+        }
+      }
+    }
+  }
+
+  // Add jquery-migrate for Drupal 11+.
+  if ($extension === 'dxpr_builder') {
+    $drupal_version = \Drupal::VERSION;
+    if (version_compare($drupal_version, '11.0.0', '>=')) {
+      $jquery_migrate_config = [
+        'minified' => TRUE,
+        'weight' => -9,
+      ];
+      $jquery_migrate_path = 'dxpr_builder/vendor/managed/jquery-migrate/dist/jquery-migrate.min.js';
+
+      $libraries_to_update = ['editor.core', 'editor.frontend', 'editor.frontend_dev'];
+      foreach ($libraries_to_update as $library) {
+        if (!empty($libraries[$library])) {
+          $libraries[$library]['js'][$jquery_migrate_path] = $jquery_migrate_config;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_library_info_build().
+ *
+ * Add the DXPR Builder editor library. Its definition depends on the source
+ * setting and version used.
+ *
+ * @phpstan-return array<string, array<string, mixed>>
+ */
+function dxpr_builder_library_info_build(): array {
+  $libraries = [];
+
+  // Get the version of this module.
+  $info = \Drupal::service('extension.list.module')->getExtensionInfo('dxpr_builder');
+  $version = $info['version'] ?? 'latest';
+
+  // Get the assets source and license settings.
+  $config = \Drupal::configFactory()->getEditable('dxpr_builder.settings');
+  $assets_source = $config->get('editor_assets_source');
+
+  $url = $config->get('cloud_url') ?? 'https://cdn.dxpr.com/VERSION/';
+  $url = str_replace('VERSION', $version, $url);
+  $source = $assets_source == 0 ? $url : 'dxpr_builder/';
+  $suffix = $assets_source == 2 ? '.js' : '.min.js';
+
+  // Add license when loading assets from cloud using the key service.
+  $query = '';
+  if ($assets_source == 0) {
+    /** @var \Drupal\dxpr_builder\Service\DxprBuilderKeyService $key_service */
+    $key_service = \Drupal::service('dxpr_builder.key_service');
+    if ($jwt = $key_service->getApiKey()) {
+      $query = "?jwt=$jwt";
+    }
+  }
+
+  $library_type = $assets_source == 0 ? [
+    'type' => 'external',
+    'minified' => TRUE,
+  ] : [
+    'minified' => $assets_source != 2,
+  ];
+
+  $license = [
+    'name' => 'proprietary',
+    'url' => 'https://dxpr.com/legal/terms',
+    'gpl-compatible' => FALSE,
+  ];
+
+  $libraries['editor.builder'] = [
+    'version' => $version,
+    'remote' => 'https://dxpr.com',
+    'js' => [
+      "{$source}dxpr_templates$suffix$query" => $library_type + ['weight' => -8, 'preprocess' => FALSE],
+      "{$source}dxpr_global$suffix$query" => $library_type + ['weight' => -7, 'preprocess' => FALSE],
+      "{$source}dxpr_events$suffix$query" => $library_type + ['weight' => -6, 'preprocess' => FALSE],
+      "{$source}dxpr_param_types$suffix$query" => $library_type + ['weight' => -5, 'preprocess' => FALSE],
+      "{$source}dxpr_elements$suffix$query" => $library_type + ['weight' => -4, 'preprocess' => FALSE],
+      "{$source}dxpr_builder$suffix$query" => $library_type + ['weight' => -3, 'preprocess' => FALSE],
+    ],
+    'dependencies' => [
+      'dxpr_builder/editor.core',
+      'dxpr_builder/editor.validation',
+    ],
+    'license' => $license,
+  ];
+
+  $libraries['editor.core.styles'] = [
+    'version' => $version,
+    'remote' => 'https://dxpr.com',
+    'license' => $license,
+    'css' => [
+      'theme' => [
+        "{$source}css/dxpr_builder_backend.css$query" => [],
+      ],
+    ],
+  ];
+
+  // The "production" and "development" libraries are obsolete, but omitting
+  // them will give errors on the module upgrade.
+  $libraries['development'] = $libraries['editor.builder'];
+  $libraries['production'] = $libraries['editor.builder'];
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ */
+function dxpr_builder_webform_insert(EntityInterface $entity): void {
+  \Drupal::service('plugin.manager.block')->clearCachedDefinitions();
+  \Drupal::cache()->delete('dxpr_builder:cms_elements_blocks');
+}
+
+/**
+ * Implements hook_ENTITY_TYPE__delete().
+ */
+function dxpr_builder_webform_delete(EntityInterface $entity): void {
+  \Drupal::service('plugin.manager.block')->clearCachedDefinitions();
+  \Drupal::cache()->delete('dxpr_builder:cms_elements_blocks');
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * @phpstan-param array<string, mixed> $form
+ */
+function dxpr_builder_form_system_modules_paths_confirm_form_alter(&$form, FormStateInterface $form_state): void {
+  if (in_array('DXPR Builder', $form['modules']['#items'])) {
+    \Drupal::messenger()->addWarning('After running the process, please check and test all updated content before taking the updated content to your production website.');
+  }
+}
+
+/**
+ * Implements hook_file_download().
+ *
+ * @phpstan-return array<string, mixed>|null
+ */
+function dxpr_builder_file_download(string $uri): ?array {
+  // If the file_entity module is enabled then it controls access to files.
+  $moduleHandler = \Drupal::service('module_handler');
+  if ($moduleHandler->moduleExists('file_entity')) {
+    return NULL;
+  }
+  // Handle it only when the uri is matched with private dxpr folder.
+  $is_dxpr_images = (strpos($uri, 'private://dxpr_builder_images/') === 0);
+  $is_dxpr_videos = (strpos($uri, 'private://dxpr_builder_videos/') === 0);
+  if (!$is_dxpr_images && !$is_dxpr_videos) {
+    return NULL;
+  }
+  // Handle only real files.
+  $files = \Drupal::entityTypeManager()
+    ->getStorage('file')
+    ->loadByProperties(['uri' => $uri]);
+  if (empty($files)) {
+    return NULL;
+  }
+
+  /** @var \Drupal\file\FileInterface $file */
+  $file = reset($files);
+
+  // Return file content headers.
+  $headers = DeprecationHelper::backwardsCompatibleCall(
+    currentVersion: \Drupal::VERSION,
+    deprecatedVersion: '11.2.0',
+    currentCallable: fn () => $file->getDownloadHeaders(),
+    deprecatedCallable: fn () => file_get_content_headers($file),
+  );
+
+  $filename = basename($uri);
+  $headers['Content-Disposition'] = 'inline; filename="' . (new UnstructuredHeader('filename', $filename))->getBodyAsString() . '"';
+
+  return $headers;
+}
+
+/**
+ * Implements hook_page_top().
+ *
+ * @phpstan-param array<string, mixed> $page_top
+ */
+function dxpr_builder_page_top(array &$page_top): void {
+  /** @var \Drupal\dxpr_builder\Service\DxprBuilderLicenseServiceInterface $license_service */
+  $license_service = \Drupal::service('dxpr_builder.license_service');
+
+  // Use the service to check the API key.
+  if (!$license_service->getApiKey()) {
+    return;
+  }
+
+  if (!$license_service->isBillableUser()) {
+    return;
+  }
+
+  if ($license_service->isBlacklisted()) {
+    \Drupal::messenger()->addError(t('Access to DXPR Builder is blocked because of a payment or licensing problem, Please contact us via our <a href="@url" target="_blank">contact page</a> to resolve the issue.', [
+      '@url' => 'https://dxpr.com/contact',
+    ]));
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ *
+ * @phpstan-param array<string, mixed> $variables
+ */
+function dxpr_builder_preprocess_menu_local_action(array &$variables): void {
+  if (!empty($variables['link']['#options']['attributes']['disabled'])) {
+    /** @var \Drupal\Core\Url $url */
+    $url = $variables['link']['#url'];
+    if ($url->isRouted() && $url->getRouteName() === 'entity.dxpr_builder_profile.collection') {
+      $variables['link']['#suffix'] = '<div class="messages messages--warning">' . t('Setting up different editor roles per profile is only supported on the DXPR Enterprise subscription tier.') . '</div>';
+    }
+  }
+}
+
+/**
+ * Implements hook_toolbar_alter().
+ *
+ * @phpstan-param array<string, mixed> $items
+ */
+function dxpr_builder_toolbar_alter(array &$items): void {
+  // Claro fix for dropdown select.
+  $items['administration']['#attached']['library'][] = 'dxpr_builder/editor.global';
+
+  $active_theme = \Drupal::theme()->getActiveTheme();
+  $gin_flag = ($active_theme->getName() == 'gin');
+
+  // Check if the 'gin_toolbar' module exists.
+  if (\Drupal::moduleHandler()->moduleExists('gin_toolbar')) {
+    $gin_flag = TRUE;
+  }
+  else {
+    if (!$gin_flag) {
+      foreach ($active_theme->getBaseThemeExtensions() as $base_theme) {
+        $base_active_theme = \Drupal::service('theme.initialization')->getActiveThemeByName($base_theme->getName());
+        if ($base_active_theme->getName() == 'gin') {
+          $gin_flag = TRUE;
+          break;
+        }
+      }
+    }
+  }
+
+  if (!$gin_flag) {
+    $items['administration']['#attached']['library'][] = 'dxpr_builder/editor.toolbar';
+  }
+  else {
+    $items['administration']['#attached']['library'][] = 'dxpr_builder/editor.gin_toolbar';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for navigation menu.
+ *
+ * @todo Remove after moving to Drupal Core ^11.1.0.
+ *
+ * @phpstan-param array<string, array<string, mixed>> $variables
+ */
+function dxpr_builder_preprocess_navigation(array &$variables): void {
+  if (
+    !\Drupal::hasService('plugin.manager.icon_pack') ||
+    !\Drupal::service('plugin.manager.icon_pack')->getIcon('dxpr_builder:dxpr-logo-dark')
+  ) {
+    $variables['#attached']['library'][] = 'dxpr_builder/editor.navigation';
+  }
+}
+
+/**
+ * Implements hook_menu_links_discovered_alter().
+ *
+ * @phpstan-param array<string, mixed> $links
+ */
+function dxpr_builder_menu_links_discovered_alter(array &$links): void {
+  // Alter DXPR Studio menu links.
+  if (\Drupal::moduleHandler()->moduleExists('dxpr_theme_helper')) {
+    // Skip routes alter in case DXPR Theme helper is not updated.
+    if (array_key_exists('dxpr_theme_helper.studio_theme', $links)) {
+      unset($links['dxpr_theme_helper.studio']);
+      $links['dxpr_theme_helper.studio_theme']['parent'] = 'dxpr_builder.studio';
+    }
+  }
+}
+
+/**
+ * Implements hook_user_insert().
+ */
+function dxpr_builder_user_insert(UserInterface $account): void {
+  $licenses = \Drupal::service('dxpr_builder.license_service');
+  if ($licenses->isBillableUser($account)) {
+    \Drupal::service('dxpr_builder.license_service')
+      ->syncUsersWithCentralStorage(
+        [$account->id()],
+        DxprBuilderLicenseServiceInterface::DXPR_USER_ADD_OPERATION
+      );
+  }
+}
+
+/**
+ * Implements hook_user_cancel().
+ *
+ * @phpstan-param array<string, mixed> $edit
+ * @phpstan-param string $method
+ */
+function dxpr_builder_user_cancel($edit, UserInterface $account, $method): void {
+  $licenses = \Drupal::service('dxpr_builder.license_service');
+  if ($licenses->isBillableUser($account)) {
+    \Drupal::service('dxpr_builder.license_service')
+      ->syncUsersWithCentralStorage(
+        [$account->id()],
+        DxprBuilderLicenseServiceInterface::DXPR_USER_REMOVE_OPERATION
+      );
+  }
+}
+
+/**
+ * Implements hook_user_predelete().
+ */
+function dxpr_builder_user_predelete(UserInterface $account): void {
+  $licenses = \Drupal::service('dxpr_builder.license_service');
+  if ($licenses->isBillableUser($account)) {
+    \Drupal::service('dxpr_builder.license_service')
+      ->syncUsersWithCentralStorage(
+      [$account->id()],
+      DxprBuilderLicenseServiceInterface::DXPR_USER_REMOVE_OPERATION
+    );
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update().
+ */
+function dxpr_builder_user_update(UserInterface $account): void {
+  /** @var \Drupal\dxpr_builder\Service\DxprBuilderLicenseServiceInterface $licenses */
+  $licenses = \Drupal::service('dxpr_builder.license_service');
+  // Only process original if it exists (i.e., this is an update).
+  if (isset($account->original)) {
+    $originalAccount = $account->original;
+    if ($originalAccount instanceof UserInterface
+      && $originalAccount->getEmail() != $account->getEmail()) {
+      // The old user record must be deleted after user's mail has changed.
+      $licenses->removeMailFromCentralStorage($originalAccount->getEmail());
+    }
+  }
+
+  if ($licenses->isBillableUser($account)) {
+    $licenses->syncUsersWithCentralStorage(
+      [$account->id()],
+      DxprBuilderLicenseServiceInterface::DXPR_USER_ADD_OPERATION
+    );
+  }
+  else {
+    $licenses->syncUsersWithCentralStorage(
+      [$account->id()],
+      DxprBuilderLicenseServiceInterface::DXPR_USER_REMOVE_OPERATION
+    );
+  }
+}
+
+/**
+ * Implements hook_entity_base_field_info_alter().
+ *
+ * @phpstan-return array<string, \Drupal\Core\Field\BaseFieldDefinition>
+ */
+function dxpr_builder_entity_base_field_info(EntityTypeInterface $entity_type) {
+  $fields = [];
+  if ($entity_type->id() == 'user') {
+    $fields['dxpr_user_is_disavowed'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Exclude from DXPR builder editing'))
+      ->setDescription(t('If checked the user will not be able to edit with DXPR Builder.'))
+      ->setDisplayOptions(
+              'form', [
+                'type' => 'boolean_checkbox',
+                'settings' => [
+                  'display_label' => TRUE,
+                ],
+                'weight' => 0,
+              ]
+          )
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayConfigurable('view', TRUE)
+      // Set readonly attribute.
+      ->setReadOnly(TRUE);
+  }
+  return $fields;
+}
+
+/**
+ * Implements field access control for the 'dxpr_user_is_disavowed' field.
+ */
+function dxpr_builder_entity_field_access($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, ?FieldItemListInterface $items = NULL) {
+  if ($field_definition->getName() === 'dxpr_user_is_disavowed') {
+    return $account->hasPermission('administer dxpr builder configuration')
+    ? AccessResult::allowed()
+    : AccessResult::forbidden();
+  }
+  return AccessResult::neutral();
+}
+
+/**
+ * Implements hook_form_user_form_alter().
+ *
+ * @phpstan-param array<string, mixed> $form
+ *
+ * @phpstan-param \Drupal\Core\Form\FormStateInterface $form_state
+ *
+ * @phpstan-param string $form_id
+ */
+function dxpr_builder_form_user_form_alter(array &$form, FormStateInterface $form_state, $form_id) : void {
+  _dxpr_builder_set_dxpr_field_readonly($form, $form_state);
+}
+
+/**
+ * Sets the dxpr_user_is_disavowed field as read-only based on user permissions.
+ *
+ * Checks if the current user has the necessary permissions and, if not,
+ * disables the dxpr_user_is_disavowed field in the form.
+ *
+ * @phpstan-param array<string, mixed> $form
+ *
+ * @phpstan-param \Drupal\Core\Form\FormStateInterface $form_state
+ */
+function _dxpr_builder_set_dxpr_field_readonly(array &$form, FormStateInterface $form_state) : void {
+  // Check if the current user has the permission to edit the field.
+  $current_user = \Drupal::currentUser();
+  $has_permission = $current_user->hasPermission('administer dxpr builder configuration');
+
+  // If the user does not have the permission, make the field read-only.
+  if (!$has_permission && isset($form['dxpr_user_is_disavowed'])) {
+    $form['dxpr_user_is_disavowed']['#disabled'] = TRUE;
+  }
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK().
+ *
+ * @phpstan-param array<string, mixed> $variables
+ *
+ * @phpstan-return array<int, string>
+ */
+function dxpr_builder_theme_suggestions_page(array $variables): array {
+  $suggestions = [];
+
+  // Add new suggestions for the people page.
+  if (\Drupal::routeMatch()->getRouteName() === 'entity.user.collection') {
+    $suggestions[] = $variables['theme_hook_original'] . '__people_list';
+  }
+
+  return $suggestions;
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ *
+ * @phpstan-param array<string, array> $variables
+ */
+function dxpr_builder_preprocess_page__people_list(array &$variables): void {
+  $variables['user_license'] = \Drupal::service('dxpr_builder.license_service')
+    ->getUserLicenseInfo();
+}
+
+/**
+ * Implements hook_views_data_alter().
+ *
+ * @phpstan-param array<string, array<string, mixed>> $data
+ */
+function dxpr_builder_views_data_alter(array &$data): void {
+  $data['users_field_data']['dxpr_builder_user'] = [
+    'title' => t('DXPR Builder User'),
+    'group' => t('DXPR Builder'),
+    'field' => [
+      'title' => t('DXPR Builder User'),
+      'help' => t('Indicates if the user is a billable user for DXPR builder.'),
+      'id' => 'dxpr_builder_user_field',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_help().
+ *
+ * @phpstan-param string $route_name
+ */
+function dxpr_builder_help($route_name, RouteMatchInterface $route_match): string {
+  switch ($route_name) {
+    case 'entity.dxpr_builder_profile.collection':
+      return '<p>' . t('User profiles let you customize the DXPR Builder interface for different user roles. If a user account matches to multiple user profiles, the first profile will be chosen using the order of profiles set below. <a href=":profiles_doc">User profiles documentation</a>.', [':profiles_doc' => 'https://dxpr.com/documentation/external/dxpr-builder-user-profiles']) . '</p>';
+
+    case 'entity.dxpr_builder_profile.add_form':
+    case 'entity.dxpr_builder_profile.edit_form':
+      return '<p>' . t('Anything you configure here will only apply to users that have one or more of the user roles you select in the Roles setting below.') . '</p>';
+
+    case 'entity.dxpr_builder_user_template.collection':
+      return '<p>' . t('User templates are DXPR Builder elements or pages saved by DXPR Builder users. <a href=":user_templates_doc">User templates documentation</a>.', [':user_templates_doc' => 'https://dxpr.com/documentation/external/user-templates']) . '</p>';
+
+    case 'entity.dxpr_builder_page_template.collection':
+      return '<p>' . t('Page templates are preset DXPR Builder pages that come with the product. Page templates are only available on empty DXPR Builder containers. You can extend or replace templates with your own by managing page template configuration objects on this page. <a href=":page_templates_doc">User templates documentation</a>.', [':page_templates_doc' => 'https://dxpr.com/documentation/external/page-templates']) . '</p>';
+
+    case 'dxpr_builder.user_licenses':
+      return '<p>' . t('User licenses are needed for any Drupal account that has permission to use DXPR Builder. You need a paid DXPR.com subscription to buy user licenses. When you are logged in at DXPR.com you can add Users to your subscription with the <a href=":addons_form">subscription add-ons form</a>.', [':addons_form' => 'https://dxpr.com/user/me/subscription/add-ons']) . '</p>';
+  }
+
+  return '';
+}
+
+/**
+ * Add 'DXPR Builder User' column to admin people view if not already installed.
+ *
+ * @todo Review this part of code, should be added to another hook.
+ */
+function dxpr_builder_cache_flush(): void {
+  try {
+    $view = View::load('user_admin_people');
+    if ($view && ($display = &$view->getDisplay('default'))) {
+      $fields = array_keys($display['display_options']['fields']);
+      if (in_array('dxpr_builder_user', $fields)) {
+        return;
+      }
+
+      $new_field = [
+        'id' => 'dxpr_builder_user',
+        'table' => 'users_field_data',
+        'field' => 'dxpr_builder_user',
+        'relationship' => 'none',
+        'group_type' => 'group',
+        'admin_label' => '',
+        'entity_type' => 'user',
+        'plugin_id' => 'dxpr_builder_user_field',
+        'label' => 'DXPR Builder User',
+        'exclude' => FALSE,
+        'alter' => [
+          'alter_text' => FALSE,
+          'text' => '',
+          'make_link' => FALSE,
+          'path' => '',
+          'absolute' => FALSE,
+          'external' => FALSE,
+          'replace_spaces' => FALSE,
+          'path_case' => 'none',
+          'trim_whitespace' => FALSE,
+          'alt' => '',
+          'rel' => '',
+          'link_class' => '',
+          'prefix' => '',
+          'suffix' => '',
+          'target' => '',
+          'nl2br' => FALSE,
+          'max_length' => 0,
+          'word_boundary' => TRUE,
+          'ellipsis' => TRUE,
+          'more_link' => FALSE,
+          'more_link_text' => '',
+          'more_link_path' => '',
+          'strip_tags' => FALSE,
+          'trim' => FALSE,
+          'preserve_tags' => '',
+          'html' => FALSE,
+        ],
+        'element_type' => '',
+        'element_class' => '',
+        'element_label_type' => '',
+        'element_label_class' => '',
+        'element_label_colon' => TRUE,
+        'element_wrapper_type' => '',
+        'element_wrapper_class' => '',
+        'element_default_classes' => TRUE,
+        'empty' => '',
+        'hide_empty' => FALSE,
+        'empty_zero' => FALSE,
+        'hide_alter_empty' => TRUE,
+      ];
+      // Insert new field after roles.
+      $fields = [];
+      foreach ($display['display_options']['fields'] as $name => $value) {
+        $fields[$name] = $value;
+        if ($name == 'roles_target_id') {
+          $fields['dxpr_builder_user'] = $new_field;
+        }
+      }
+      $display['display_options']['fields'] = $fields;
+      $view->save();
+    }
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('dxpr_builder')->error($e->getMessage());
+  }
+}
+
+/**
+ * Implements hook_entity_operations().
+ *
+ * @phpstan-return array<string, mixed>
+ */
+function dxpr_builder_entity_operation(EntityInterface $entity) {
+  $operations = [];
+  if ($entity->getEntityTypeId() == 'dxpr_builder_user_template') {
+    $operations['create_page_template'] = [
+      'title' => t('Create page template'),
+      'url' => Url::fromRoute('dxpr_builder.create_page_template', [
+        'uuid' => $entity->uuid(),
+      ]),
+      'weight' => 101,
+    ];
+  }
+  return $operations;
+}
+
+/**
+ * Implements hook_modules_installed().
+ *
+ * Fixes bug #3526817: Conflict between DXPR video embeds and FitVids.js.
+ * When FitVids module is installed or enabled, automatically configure it to
+ * ignore DXPR video elements (.az-video) to prevent double padding issues.
+ *
+ * @see https://www.drupal.org/project/dxpr_builder/issues/3526817
+ */
+function dxpr_builder_modules_installed($modules) {
+  // Check if FitVids module is installed/enabled and configure it to ignore
+  // DXPR video elements.
+  if (in_array('fitvids', $modules) ||
+        \Drupal::moduleHandler()->moduleExists('fitvids')) {
+    _dxpr_builder_configure_fitvids();
+  }
+}
+
+/**
+ * Helper function to configure FitVids to ignore DXPR video elements.
+ *
+ * This function adds '.az-video' to FitVids ignore_selectors configuration
+ * to prevent FitVids.js from applying its responsive wrapper to DXPR video
+ * elements, which causes double padding issues.
+ *
+ * @see https://www.drupal.org/project/dxpr_builder/issues/3526817
+ */
+function _dxpr_builder_configure_fitvids() {
+  $config = \Drupal::configFactory()->getEditable('fitvids.settings');
+  $current_ignore = $config->get('ignore_selectors') ?: '';
+
+  // Add .az-video to ignore list if not already present.
+  if (strpos($current_ignore, '.az-video') === FALSE) {
+    $new_ignore = $current_ignore ? $current_ignore . "\n.az-video" : '.az-video';
+    $config->set('ignore_selectors', $new_ignore)->save();
+  }
+}

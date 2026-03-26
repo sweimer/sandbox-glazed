@@ -1,0 +1,219 @@
+dxpr_builder.user_template.*:
+  type: config_entity
+  label: DXPR Builder User Template
+  mapping:
+    id:
+      type: string
+      label: 'ID'
+    label:
+      type: label
+      label: 'Label'
+    template:
+      type: string
+      label: Template
+    uid:
+      type: integer
+      label: UID
+    global:
+      type: boolean
+      label: Global
+    image:
+      type: string
+      label: Image
+    uuid:
+      type: string
+      label: UUID
+
+# Add schema for DXPR Builder settings configuration
+dxpr_builder.settings:
+  type: config_object
+  label: 'DXPR Builder settings'
+  mapping:
+    bootstrap:
+      type: string
+      label: 'Bootstrap version to load'
+    cke_stylesset:
+      type: string
+      label: 'Text editor formatting styles'
+    editor_assets_source:
+      type: integer
+      label: 'Source for editor assets'
+    format_filters:
+      type: boolean
+      label: 'Process text format filters'
+    media_browser:
+      type: string
+      label: 'Media browser'
+    offset_selector:
+      type: string
+      label: 'Smooth-scroll offset selector'
+    json_web_token:
+      type: string
+      label: 'JWT token'
+    api_key_storage:
+      type: string
+      label: 'API key storage method'
+    key_provider:
+      type: string
+      label: 'Key provider'
+    ai_enabled:
+      type: boolean
+      label: 'AI enabled'
+    ai_page_enabled:
+      type: boolean
+      label: 'AI page creation enabled'
+    ai_image_enabled:
+      type: boolean
+      label: 'AI image generation enabled'
+    ai_user_model_selection:
+      type: boolean
+      label: 'Allow users to choose model'
+    ai_model:
+      type: string
+      label: 'Default AI model'
+    ai_provider_selection_mode:
+      type: string
+      label: 'AI provider selection mode'
+    tone_of_voice_vocabulary:
+      type: string
+      label: 'Tone of voice vocabulary'
+    enable_taxonomy_tones:
+      type: boolean
+      label: 'Enable taxonomy tones'
+    commands_vocabulary:
+      type: string
+      label: 'Commands vocabulary'
+    enable_taxonomy_commands:
+      type: boolean
+      label: 'Enable taxonomy commands'
+    ai_output_allowed_domains:
+      type: text
+      label: 'AI output allowed domains'
+    ai_providers:
+      type: sequence
+      label: 'AI providers configuration'
+      sequence:
+        type: mapping
+        label: 'Provider'
+        mapping:
+          enabled:
+            type: boolean
+            label: 'Enabled'
+          weight:
+            type: integer
+            label: 'Weight'
+          region:
+            type: string
+            label: 'Region'
+
+dxpr_builder.page_template.*:
+  type: config_entity
+  label: DXPR Builder Page Template
+  mapping:
+    id:
+      type: string
+      label: 'ID'
+    label:
+      type: label
+      label: 'Label'
+    category:
+      type: text
+      label: Category
+    template:
+      type: string
+      label: Template
+    weight:
+      type: integer
+      label: Weight
+    image:
+      type: string
+      label: 'Base-64 encoded image contents'
+    uuid:
+      type: string
+      label: UUID
+
+dxpr_builder.dxpr_builder_profile.*:
+  type: config_entity
+  label: DXPR Builder Profile
+  mapping:
+    id:
+      type: string
+      label: ID
+    label:
+      type: label
+      label: Label
+    uuid:
+      type: string
+      label: UUID
+    sidebar:
+      type: boolean
+      label: Sidebar
+    dxpr_editor:
+      type: boolean
+      label: DXPR Editor State
+    weight:
+      type: integer
+      label: Weight
+    roles:
+      type: sequence
+      label: Roles
+      sequence:
+        type: string
+        label: Role
+    elements:
+      type: sequence
+      label: Elements
+      sequence:
+        type: string
+        label: Element
+    blocks:
+      type: sequence
+      label: Blocks
+      sequence:
+        type: string
+        label: Blocks
+    views:
+      type: sequence
+      label: Views
+      sequence:
+        type: string
+        label: View
+    page_templates:
+      type: sequence
+      label: Page templates
+      sequence:
+        type: string
+        label: Page template
+    user_templates:
+      type: sequence
+      label: Global user templates
+      sequence:
+        type: string
+        label: Global user template
+    inline_buttons:
+      type: sequence
+      label: Inline buttons
+      sequence:
+        type: string
+        label: Button
+    modal_buttons:
+      type: sequence
+      label: Modal buttons
+      sequence:
+        type: string
+        label: Button
+    all_elements:
+      type: boolean
+      label: 'Check/Uncheck all elements state'
+    all_blocks:
+      type: boolean
+      label: 'Check/Uncheck all blocks state'
+    all_views:
+      type: boolean
+      label: 'Check/Uncheck all views state'
+    all_page_templates:
+      type: boolean
+      label: 'Check/Uncheck all page templates state'
+    all_user_templates:
+      type: boolean
+      label: 'Check/Uncheck all user templates state'

@@ -1,0 +1,7 @@
+global-styling:
+  css:
+    theme:
+      css/dxpr_theme_subtheme.css: { minified: false, weight: 6 }
+  js:
+    https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js: { type: external }
+    js/morphsvg.min.js: { }

@@ -1,0 +1,73 @@
+div.ac-select-image ul.preview {
+  list-style-type: none;
+  margin: 0.25rem 0;
+  overflow: hidden;
+  padding-left: 0;
+}
+div.ac-select-image ul.preview li {
+  background: #F5F5F5;
+  cursor: col-resize;
+  float: left;
+  line-height: 4.375rem;
+  margin: 0 0.3125rem 0.3125rem 0;
+  min-height: 4.6875rem !important;
+  min-width: 4.6875rem;
+  padding: 0.25rem;
+  position: relative;
+  text-align: center;
+}
+div.ac-select-image ul.preview li .image-preview {
+  display: inline-block;
+  height: 4.6875rem;
+  max-height: 4.6875rem;
+  position: relative;
+  vertical-align: middle;
+  width: 4.6875rem;
+}
+div.ac-select-image ul.preview li .glyphicon-remove {
+  display: block;
+  height: 1rem;
+  opacity: 0.5;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 1rem;
+}
+div.ac-select-image ul.preview li .glyphicon-remove:hover {
+  opacity: 1;
+  text-decoration: none;
+}
+div.ac-select-image button {
+  display: block;
+}
+div.ac-select-image input.image_upload {
+  height: 0;
+  margin: 0;
+  min-height: 0;
+  padding: 0;
+  visibility: hidden;
+}
+div.ac-select-image .image-style-input-label {
+  clear: both;
+}
+div.ac-select-image .image-style-input {
+  display: none;
+}
+
+div.ac-select-video input.video_upload {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  visibility: hidden;
+}
+
+#az-media-modal {
+  z-index: 5050;
+}
+#az-media-modal .modal-dialog {
+  width: 90%;
+}
+#az-media-modal iframe {
+  height: calc(100vh - 13.75rem);
+  width: 100%;
+}

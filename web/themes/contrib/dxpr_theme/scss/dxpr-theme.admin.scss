@@ -1,0 +1,5 @@
+// Admin fixes for Drupal core toolbar
+
+body.toolbar-fixed .toolbar-oriented .toolbar-bar {
+  z-index: 450 !important;
+}

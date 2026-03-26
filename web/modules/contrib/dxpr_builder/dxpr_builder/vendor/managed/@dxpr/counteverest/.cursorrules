@@ -1,0 +1,7 @@
+To test changes run command `npm run build;kill -9 $
+(lsof -ti:9000);npm start` and navigate to `http://localhost:9000/demos/demo-auto-init.html`
+When committing changes:
+* run `npm run build`
+* group changes as atomic commits
+* use conventional commit messages
+* fix any issues coming from pre-commit hooks, never circumvent them by using `git commit --no-verify`. Absolutely never.

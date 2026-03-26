@@ -1,0 +1,31 @@
+#header nav {
+  background-color: transparent;
+  background-image: linear-gradient(
+    rgba(3, 1, 140, 0.8), /* Dark Blue */
+    rgba(135, 206, 250, 0.4) /* Light Sky Blue */
+  );
+}
+#header nav a {
+  color: white;
+}
+
+#main {
+  max-width: 100%;
+  padding: 0;
+}
+#main-wrapper {
+  margin-top: -20px;
+}
+.dxpr.az-ctnr {
+  max-width: 100%;
+  padding: 0;
+}
+.az-section .az-ctnr {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 10px;
+}
+.az-section.tiptop {
+  margin-top: -180px;
+  padding-top: 160px !important;
+}

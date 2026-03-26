@@ -1,0 +1,12 @@
+hudx_react___3pd_depot:
+  version: 1.x
+  js:
+    dist/assets/hudx_react___3pd_depot.js:
+      header: true
+      attributes:
+        type: module
+  css:
+    theme:
+      dist/assets/hudx_react___3pd_depot.css: {}
+  dependencies:
+    - core/drupal

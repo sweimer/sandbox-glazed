@@ -1,0 +1,30 @@
+name: sandbox-glazed
+recipe: drupal10
+
+proxy:
+  appserver:
+    - sandbox-glazed.lndo.site
+
+config:
+  php: '8.3'
+  via: apache
+  webroot: web
+
+services:
+  appserver:
+    type: php:8.3
+
+  database:
+    type: mariadb:10.6
+    creds:
+      user: drupal
+      password: drupal
+      database: drupal
+
+tooling:
+  composer:
+    service: appserver
+  drush:
+    service: appserver
+    cmd: vendor/bin/drush
+    working_dir: /app

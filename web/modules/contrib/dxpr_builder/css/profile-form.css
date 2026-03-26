@@ -1,0 +1,29 @@
+.dxpr-builder-profile-form .cke_button_icon {
+  float: none;
+  vertical-align: text-bottom;
+}
+.dxpr-builder-profile-form .form-wrapper {
+  width: 100%;
+}
+.dxpr-builder-profile-form .form-wrapper .js-form-type-checkbox {
+  float: left;
+  margin-bottom: 0.4em;
+  margin-top: 0;
+  padding: 0.3%;
+  width: 31%;
+}
+.dxpr-builder-profile-form .form-wrapper .form-item-all-blocks,
+.dxpr-builder-profile-form .form-wrapper .form-item-all-views {
+  float: unset;
+}
+.dxpr-builder-profile-form .form-wrapper::after {
+  clear: both;
+  content: "";
+  display: table;
+}
+.dxpr-builder-profile-form .form-wrapper .check-uncheck-all-wrapper {
+  clear: both;
+}
+.dxpr-builder-profile-form .form-item-sidebar {
+  width: 100%;
+}

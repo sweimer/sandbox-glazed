@@ -1,0 +1,39 @@
+.user-licenses {
+  border: 0.0625rem solid #dedfe4;
+  border-radius: 0.3125rem;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+  margin: 0.625rem 0;
+  max-width: 26.875rem;
+  padding: 1.25rem 1.875rem;
+}
+.user-licenses__title {
+  font-weight: bold;
+}
+.user-licenses__title--more-link {
+  color: #4586EC;
+  font-size: 0.875rem;
+  font-weight: normal;
+  padding-left: 0.3125rem;
+  text-decoration: none;
+}
+.user-licenses__stats {
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  margin-top: 0.9375rem;
+}
+.user-licenses__stats--users {
+  border-right: 0.0625rem solid black;
+  padding: 0.9375rem 1.875rem 0.9375rem 0;
+}
+.user-licenses__stats--users-number {
+  font-weight: bold;
+}
+.user-licenses__stats--seats {
+  font-weight: bold;
+  padding: 0.9375rem 0 0.9375rem 1.875rem;
+}

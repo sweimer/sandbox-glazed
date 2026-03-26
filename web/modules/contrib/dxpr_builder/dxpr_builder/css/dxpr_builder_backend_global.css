@@ -1,0 +1,8 @@
+#block-claro-content .dropbutton:has(.create-page-template) {
+  min-width: 11.875rem;
+}
+
+.cke-icon {
+  display: inline-block;
+  width: 1.0625rem;
+}

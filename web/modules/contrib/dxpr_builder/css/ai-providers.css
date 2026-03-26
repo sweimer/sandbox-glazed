@@ -1,0 +1,31 @@
+/**
+ * AI Provider styles for DXPR Builder.
+ */
+.provider-name-wrapper {
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  gap: 0.625rem;
+}
+
+.primary-provider-badge {
+  background: #444;
+  border-radius: 0.3125rem;
+  color: #fff;
+  display: none;
+  padding: 0.3125rem 0.625rem;
+}
+
+.region-enabled-message + tr.draggable .primary-provider-badge {
+  display: inline-block;
+}
+
+.provider-logo-img {
+  display: inline-block;
+  max-height: 1.25rem;
+  max-width: 18.75rem;
+  vertical-align: middle;
+}

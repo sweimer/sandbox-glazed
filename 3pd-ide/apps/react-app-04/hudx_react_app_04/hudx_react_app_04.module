@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function hudx_react_app_04_theme($existing, $type, $theme, $path) {
+  return [
+    'hudx_react_app_04_block' => [
+      'variables' => [],
+      'template' => 'hudx-react-app-04-block',
+      'path' => \Drupal::service('extension.list.module')->getPath('hudx_react_app_04') . '/templates',
+    ],
+  ];
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Theme 10 - Count Everest Plugin</title>
+
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Roboto:400" />
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Unica+One" />
+
+    <link rel="stylesheet" href="../dist/counteverest.min.css" />
+
+    <style type="text/css">
+      html {
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      body {
+        display: table;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+          sans-serif;
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: #fff;
+      }
+
+      .ce-countdown-wrap--theme-10 {
+        display: table-cell;
+        margin: 0;
+        padding: 0;
+        vertical-align: middle;
+      }
+
+      .ce-countdown {
+        margin: 0 auto;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ce-countdown-wrap--theme-10">
+      <div
+        class="ce-countdown ce-countdown--theme-10"
+        data-ce-units="days,hours,minutes,seconds"
+      ></div>
+    </div>
+
+    <script src="../dist/counteverest.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const countdownElement = document.querySelector('.ce-countdown');
+        if (countdownElement) {
+          new CountEverest(countdownElement, {
+            year: 2028,
+            month: 1,
+            day: 1,
+          });
+        }
+      });
+    </script>
+  </body>
+</html>

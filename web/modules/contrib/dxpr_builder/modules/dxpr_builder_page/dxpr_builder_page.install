@@ -1,0 +1,106 @@
+<?php
+
+/**
+ * @file
+ * Install, update, uninstall and schema functions for the module.
+ */
+
+use Drupal\dxpr_builder\Common\ConfigEnforceDependency;
+use Drupal\Core\Config\FileStorage;
+use Drupal\field\Entity\FieldStorageConfig;
+
+/**
+ * Implements hook install.
+ */
+function dxpr_builder_page_install(): void {
+  // Ensure the body field storage exists.
+  // This is needed for Minimal profile installations where the body field
+  // storage might not exist yet.
+  if (!FieldStorageConfig::loadByName('node', 'body')) {
+    $module_path = \Drupal::service('extension.list.module')->getPath('dxpr_builder_page');
+    $source = new FileStorage($module_path . '/config/optional');
+    $body_storage_config = $source->read('field.storage.node.body');
+    if ($body_storage_config) {
+      FieldStorageConfig::create($body_storage_config)->save();
+    }
+  }
+
+  // Try automatic optional config installation first.
+  // This works on Standard profile where menu_ui and path modules exist.
+  \Drupal::service('config.installer')->installOptionalConfig();
+
+  // Check if the content type was created.
+  $node_type_storage = \Drupal::entityTypeManager()->getStorage('node_type');
+  if (!$node_type_storage->load('drag_and_drop_page')) {
+    // Content type wasn't created (Minimal profile case).
+    // Install it manually with adjusted dependencies.
+    _dxpr_builder_page_install_minimal_config();
+  }
+
+  // Add enforced dependencies to the configs.
+  dxpr_builder_page_update_8001();
+}
+
+/**
+ * Install config for Minimal profile without optional module dependencies.
+ */
+function _dxpr_builder_page_install_minimal_config() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('dxpr_builder_page');
+  $source = new FileStorage($module_path . '/config/optional');
+  $entity_type_manager = \Drupal::entityTypeManager();
+
+  // Install content type without menu_ui dependency.
+  $node_type_config = $source->read('node.type.drag_and_drop_page');
+  if ($node_type_config) {
+    // Remove menu_ui dependencies for Minimal profile.
+    unset($node_type_config['dependencies']['module']);
+    unset($node_type_config['third_party_settings']['menu_ui']);
+    $entity_type_manager->getStorage('node_type')->create($node_type_config)->save();
+  }
+
+  // Install body field.
+  $body_field_config = $source->read('field.field.node.drag_and_drop_page.body');
+  if ($body_field_config) {
+    $entity_type_manager->getStorage('field_config')->create($body_field_config)->save();
+  }
+
+  // Install form display without path/image widgets.
+  $form_display_config = $source->read('core.entity_form_display.node.drag_and_drop_page.default');
+  if ($form_display_config) {
+    // Remove dependencies on unavailable modules.
+    $form_display_config['dependencies']['module'] = array_intersect(
+      $form_display_config['dependencies']['module'] ?? [],
+      ['field_group', 'text']
+    );
+    // Remove widgets for unavailable modules.
+    unset($form_display_config['content']['path']);
+    unset($form_display_config['content']['field_dth_page_title_backgrou']);
+    $entity_type_manager->getStorage('entity_form_display')->create($form_display_config)->save();
+  }
+
+  // Install view display.
+  $view_display_config = $source->read('core.entity_view_display.node.drag_and_drop_page.default');
+  if ($view_display_config) {
+    $entity_type_manager->getStorage('entity_view_display')->create($view_display_config)->save();
+  }
+}
+
+/**
+ * Adds enforced dependencies to config.
+ */
+function dxpr_builder_page_update_8001(): void {
+  // Previous configuration to be fixed.
+  $config_list = [
+    'core.entity_form_display.node.drag_and_drop_page.default',
+    'core.entity_view_display.node.drag_and_drop_page.default',
+    'field.field.node.drag_and_drop_page.body',
+    'field.field.node.drag_and_drop_page.field_dth_hide_regions',
+    'field.field.node.drag_and_drop_page.field_dth_main_content_width',
+    'field.field.node.drag_and_drop_page.field_dth_page_layout',
+    'node.type.drag_and_drop_page',
+  ];
+
+  (new ConfigEnforceDependency('dxpr_builder_page', $config_list))
+    ->execute();
+
+}

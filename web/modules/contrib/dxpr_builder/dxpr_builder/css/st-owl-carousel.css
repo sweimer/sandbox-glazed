@@ -1,0 +1,226 @@
+.st-owl-theme .owl-controls {
+  line-height: 0;
+  text-align: center;
+}
+@media screen and (width <= 75rem) {
+  .st-owl-theme .owl-controls {
+    display: none;
+  }
+}
+.st-owl-theme .owl-pagination {
+  padding: 0.9375rem 0;
+}
+.st-owl-theme .owl-page {
+  background: #ccc;
+  display: inline-block;
+  height: 0.5625rem;
+  margin: 0 0.1875rem;
+  -webkit-transform-origin: 50% 100%;
+      -ms-transform-origin: 50% 100%;
+          transform-origin: 50% 100%;
+  -webkit-transition: -webkit-transform 0.3s;
+  transition: -webkit-transform 0.3s;
+  transition: transform 0.3s;
+  transition: transform 0.3s, -webkit-transform 0.3s;
+  width: 0.5625rem;
+}
+.st-owl-theme .owl-page.active {
+  background: #999;
+}
+.st-owl-theme.st-owl-pager-inside .owl-pagination {
+  bottom: 0.625rem;
+  left: 50%;
+  position: absolute;
+  -webkit-transform: translateX(-50%);
+      -ms-transform: translateX(-50%);
+          transform: translateX(-50%);
+}
+.st-owl-theme.st-owl-pager-inside .owl-pagination .owl-page {
+  background: rgba(0, 0, 0, 0.5);
+}
+.st-owl-theme.st-owl-pager-inside .owl-pagination .owl-page.active {
+  background: rgb(0, 0, 0);
+}
+.st-owl-theme.st-owl-pager-growTaller .owl-page.active {
+  -webkit-transform: scaleY(1.8);
+      -ms-transform: scaleY(1.8);
+          transform: scaleY(1.8);
+}
+.st-owl-theme.st-owl-pager-growWider .owl-page.active {
+  -webkit-transform: scaleX(1.6);
+      -ms-transform: scaleX(1.6);
+          transform: scaleX(1.6);
+}
+.st-owl-theme.st-owl-pager-scaleUp .owl-page.active {
+  -webkit-transform: scale(1.8, 1.8);
+      -ms-transform: scale(1.8, 1.8);
+          transform: scale(1.8, 1.8);
+}
+.st-owl-theme.st-owl-pager-square .owl-page {
+  border-radius: 0;
+}
+.st-owl-theme.st-owl-pager-circle .owl-page {
+  border-radius: 100%;
+}
+.st-owl-theme.st-owl-pager-circle .owl-page.active {
+  border-radius: 100%;
+}
+.st-owl-theme.st-owl-pager-bar .owl-page {
+  height: 0.25rem;
+  width: 1.875rem;
+}
+.st-owl-theme.st-owl-pager-triangle .owl-page {
+  background: transparent;
+  border-color: transparent transparent #ccc;
+  border-style: solid;
+  border-width: 0 0.375rem 0.75rem;
+  height: 0;
+  width: 0;
+}
+.st-owl-theme.st-owl-pager-triangle .owl-page.active {
+  border-color: transparent transparent #999;
+}
+.st-owl-theme .owl-buttons .owl-prev,
+.st-owl-theme .owl-buttons .owl-next {
+  -webkit-box-sizing: content-box;
+          box-sizing: content-box;
+  display: inline-block;
+  height: 1.875rem;
+  position: relative;
+  -webkit-transition: -webkit-transform 0.3s;
+  transition: -webkit-transform 0.3s;
+  transition: transform 0.3s;
+  transition: transform 0.3s, -webkit-transform 0.3s;
+  width: 1.875rem;
+}
+.st-owl-theme .owl-buttons .owl-prev.owl-next,
+.st-owl-theme .owl-buttons .owl-next.owl-next {
+  -webkit-transform: rotate(180deg);
+      -ms-transform: rotate(180deg);
+          transform: rotate(180deg);
+}
+.st-owl-theme .owl-buttons .owl-prev::before, .st-owl-theme .owl-buttons .owl-prev::after,
+.st-owl-theme .owl-buttons .owl-next::before,
+.st-owl-theme .owl-buttons .owl-next::after {
+  -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+  background: #999;
+  content: "";
+  height: 50%;
+  left: 26%;
+  position: absolute;
+  -webkit-transition: -webkit-transform 0.3s;
+  transition: -webkit-transform 0.3s;
+  transition: transform 0.3s;
+  transition: transform 0.3s, -webkit-transform 0.3s;
+  width: 0.125rem;
+}
+.st-owl-theme .owl-buttons .owl-prev::before,
+.st-owl-theme .owl-buttons .owl-next::before {
+  -webkit-transform: translateX(-50%) rotate(45deg);
+      -ms-transform: translateX(-50%) rotate(45deg);
+          transform: translateX(-50%) rotate(45deg);
+  -webkit-transform-origin: 0 100%;
+      -ms-transform-origin: 0 100%;
+          transform-origin: 0 100%;
+}
+.st-owl-theme .owl-buttons .owl-prev:hover::before,
+.st-owl-theme .owl-buttons .owl-next:hover::before {
+  -webkit-transform: translateY(-0.0625rem) translateX(-50%) rotate(55deg);
+      -ms-transform: translateY(-0.0625rem) translateX(-50%) rotate(55deg);
+          transform: translateY(-0.0625rem) translateX(-50%) rotate(55deg);
+}
+.st-owl-theme .owl-buttons .owl-prev::after,
+.st-owl-theme .owl-buttons .owl-next::after {
+  top: 50%;
+  -webkit-transform: translateX(-50%) rotate(-45deg);
+      -ms-transform: translateX(-50%) rotate(-45deg);
+          transform: translateX(-50%) rotate(-45deg);
+  -webkit-transform-origin: 0 0;
+      -ms-transform-origin: 0 0;
+          transform-origin: 0 0;
+}
+.st-owl-theme .owl-buttons .owl-prev:hover::after,
+.st-owl-theme .owl-buttons .owl-next:hover::after {
+  -webkit-transform: translateY(0.0625rem) translateX(-50%) rotate(-55deg);
+      -ms-transform: translateY(0.0625rem) translateX(-50%) rotate(-55deg);
+          transform: translateY(0.0625rem) translateX(-50%) rotate(-55deg);
+}
+.st-owl-theme .owl-controls .clickable .owl-buttons .owl-prev:hover,
+.st-owl-theme .owl-controls .clickable .owl-buttons .owl-next:hover {
+  text-decoration: none;
+}
+.st-owl-theme.st-owl-navigation-inside .owl-controls .owl-buttons .owl-prev,
+.st-owl-theme.st-owl-navigation-inside .owl-controls .owl-buttons .owl-next {
+  position: block;
+  position: absolute;
+  top: 50%;
+}
+.st-owl-theme.st-owl-navigation-inside .owl-controls .owl-buttons .owl-prev {
+  left: 0;
+  -webkit-transform: translateY(-50%);
+      -ms-transform: translateY(-50%);
+          transform: translateY(-50%);
+}
+.st-owl-theme.st-owl-navigation-inside .owl-controls .owl-buttons .owl-next {
+  right: 0;
+  -webkit-transform: translateY(-50%) rotate(180deg);
+      -ms-transform: translateY(-50%) rotate(180deg);
+          transform: translateY(-50%) rotate(180deg);
+}
+.st-owl-theme.st-owl-navigation-square .owl-buttons .owl-prev,
+.st-owl-theme.st-owl-navigation-square .owl-buttons .owl-next, .st-owl-theme.st-owl-navigation-circle .owl-buttons .owl-prev,
+.st-owl-theme.st-owl-navigation-circle .owl-buttons .owl-next, .st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-prev,
+.st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-next {
+  background: rgba(0, 0, 0, 0.5);
+  border: 0.625rem solid transparent;
+}
+.st-owl-theme.st-owl-navigation-square .owl-buttons .owl-prev::after, .st-owl-theme.st-owl-navigation-square .owl-buttons .owl-prev::before,
+.st-owl-theme.st-owl-navigation-square .owl-buttons .owl-next::after,
+.st-owl-theme.st-owl-navigation-square .owl-buttons .owl-next::before, .st-owl-theme.st-owl-navigation-circle .owl-buttons .owl-prev::after, .st-owl-theme.st-owl-navigation-circle .owl-buttons .owl-prev::before,
+.st-owl-theme.st-owl-navigation-circle .owl-buttons .owl-next::after,
+.st-owl-theme.st-owl-navigation-circle .owl-buttons .owl-next::before, .st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-prev::after, .st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-prev::before,
+.st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-next::after,
+.st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-next::before {
+  background: #fff;
+}
+.st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-prev,
+.st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-next {
+  border-width: 0.625rem 0;
+  width: 1.25rem;
+}
+.st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-prev::after, .st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-prev::before,
+.st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-next::after,
+.st-owl-theme.st-owl-navigation-bar .owl-buttons .owl-next::before {
+  left: 22%;
+}
+.st-owl-theme.st-owl-navigation-circle .owl-buttons .owl-prev,
+.st-owl-theme.st-owl-navigation-circle .owl-buttons .owl-next {
+  border-radius: 50%;
+  margin: 0.625rem 0.3125rem;
+}
+.st-owl-theme.st-owl-navigation-outside.st-owl-navigation-bottomLeft .owl-buttons, .st-owl-theme.st-owl-navigation-outside.st-owl-navigation-topLeft .owl-buttons {
+  text-align: left;
+}
+.st-owl-theme.st-owl-navigation-outside.st-owl-navigation-bottomRight .owl-buttons, .st-owl-theme.st-owl-navigation-outside.st-owl-navigation-topRight .owl-buttons {
+  text-align: right;
+}
+.st-owl-theme.st-owl-navigation-outside.st-owl-navigation-bottomCenter .owl-buttons, .st-owl-theme.st-owl-navigation-outside.st-owl-navigation-topCenter .owl-buttons {
+  text-align: center;
+}
+.st-owl-theme.st-owl-navigation-outside.st-owl-navigation-adjacent .owl-buttons::after {
+  clear: both;
+  content: "";
+  display: block;
+}
+.st-owl-theme.st-owl-navigation-outside.st-owl-navigation-adjacent .owl-buttons .owl-prev {
+  float: left;
+}
+.st-owl-theme.st-owl-navigation-outside.st-owl-navigation-adjacent .owl-buttons .owl-next {
+  float: right;
+}
+
+.owl-item.loading {
+  background: url("../images-frontend/AjaxLoader.gif") no-repeat center center;
+  min-height: 9.375rem;
+}

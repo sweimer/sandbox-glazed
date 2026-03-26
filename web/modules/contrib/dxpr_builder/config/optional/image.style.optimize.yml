@@ -1,0 +1,21 @@
+uuid: 29e15cb5-e7dd-4e5d-b027-6750615a6703
+langcode: en
+status: true
+dependencies: {  }
+name: optimize
+label: 'Optimize for fast loading'
+effects:
+  488604d2-4168-4c17-8567-430b00749cbf:
+    uuid: 488604d2-4168-4c17-8567-430b00749cbf
+    id: image_scale
+    weight: 1
+    data:
+      width: 1024
+      height: null
+      upscale: false
+  45f0f244-dd35-4101-9ad2-ad6d514ae79c:
+    uuid: 45f0f244-dd35-4101-9ad2-ad6d514ae79c
+    id: image_convert
+    weight: 2
+    data:
+      extension: webp

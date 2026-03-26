@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Node
+node_modules/
+npm-debug.log*
+pnpm-lock.yaml
+yarn.lock
+
+# Composer
+/vendor/
+composer.lock
+
+# Drupal
+/web/sites/default/files/
+/web/sites/*/settings*.php
+/web/sites/*/services*.yml
+
+# Lando
+.lando.local.yml
+.lando.yml.backup

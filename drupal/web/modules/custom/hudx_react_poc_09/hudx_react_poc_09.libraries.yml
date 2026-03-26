@@ -1,0 +1,7 @@
+hudx_react_poc_09:
+  version: 1.x
+  js:
+    dist/assets/index-LFtp_u9m.js: {}
+  css:
+    theme:
+      dist/assets/index-BXqOy896.css: {}

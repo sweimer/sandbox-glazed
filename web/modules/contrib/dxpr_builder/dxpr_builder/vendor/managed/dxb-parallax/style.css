@@ -1,0 +1,29 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+}
+.normal-section img {
+  width: 100%;
+}
+
+.wrapper {
+  box-sizing: border-box;
+  overflow: visible;
+  position: relative;
+}
+
+.parallax-section {
+  background-image: url('https://placecats.com/millie_neo/1920/1080');
+  height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  z-index: -1;
+}

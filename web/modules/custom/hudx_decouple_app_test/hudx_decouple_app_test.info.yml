@@ -1,0 +1,5 @@
+name: Decoupled - Decouple App Test
+type: module
+description: Decoupled React application module for Decoupled - Decouple App Test.
+core_version_requirement: ^10 || ^11
+package: Decoupled Apps

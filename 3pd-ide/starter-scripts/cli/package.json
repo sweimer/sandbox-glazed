@@ -1,0 +1,16 @@
+{
+  "name": "3pd-cli",
+  "version": "1.0.0",
+  "description": "3PD IDE command-line interface",
+  "type": "module",
+  "bin": {
+    "3pd": "./index.js"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "picocolors": "^1.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

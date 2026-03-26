@@ -1,0 +1,12 @@
+hudx_react_app_09:
+  version: 1.x
+  js:
+    dist/assets/hudx_react_app_09.js:
+      header: true
+      attributes:
+        type: module
+  css:
+    theme:
+      dist/assets/hudx_react_app_09.css: {}
+  dependencies:
+    - core/drupal

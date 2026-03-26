@@ -1,0 +1,41 @@
+dxpr_theme_helper.settings:
+  path: '/admin/appearance/settings/{theme}'
+  defaults:
+    _form: '\Drupal\system\Form\ThemeSettingsForm'
+    _title_callback: 'theme_handler:getName'
+  requirements:
+    _permission: 'administer themes'
+
+dxpr_theme_helper.admin.studio:
+  path: '/admin/dxpr_studio'
+  defaults:
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'DXPR Studio'
+  requirements:
+    _permission: 'administer themes'
+
+dxpr_theme_helper.admin.studio.theme:
+  path: '/admin/dxpr_studio/dxpr_theme'
+  defaults:
+    _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'DXPR Theme'
+  requirements:
+    _permission: 'administer themes'
+
+dxpr_theme_helper.generate_palette:
+  path: '/admin/dxpr-theme/generate-palette'
+  defaults:
+    _controller: '\Drupal\dxpr_theme_helper\Controller\AiPaletteController::generate'
+    _title: 'Generate AI Palette'
+  methods: [POST]
+  requirements:
+    _permission: 'administer themes'
+
+dxpr_theme_helper.generate_fonts:
+  path: '/admin/dxpr-theme/generate-fonts'
+  defaults:
+    _controller: '\Drupal\dxpr_theme_helper\Controller\AiFontController::generate'
+    _title: 'Generate AI Fonts'
+  methods: [POST]
+  requirements:
+    _permission: 'administer themes'

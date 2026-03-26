@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Don't forget to change the title! -->
+    <title>Theme 12 - Count Everest jQuery Plugin</title>
+
+    <!-- Load Google Fonts -->
+    <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Josefin+Slab:100,400" />
+
+    <!-- Load stylesheet -->
+    <link rel="stylesheet" href="../dist/counteverest.min.css" />
+
+    <!-- DEMO styles to center countdown vertically and horizontally -->
+    <style type="text/css">
+      html {
+        height: 100%;
+        width: 100%;
+      }
+
+      body {
+        display: table;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+          sans-serif;
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+      }
+
+      @keyframes gradientBG {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      .ce-countdown-wrap--theme-12 {
+        display: table-cell;
+        margin: 0;
+        padding: 0;
+        vertical-align: middle;
+      }
+
+      .ce-countdown {
+        margin: 0 auto;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Nothing to change here -->
+    <div class="ce-countdown-wrap--theme-12">
+      <div class="ce-countdown ce-countdown--theme-12 ce-clearfix"></div>
+      <!-- Video "Messier Marathon 2011" by http://mazwai.com -->
+      <video
+        autoplay
+        loop
+        poster="media/theme-12/bg-video-fallback.jpg"
+        class="ce-countdown-bg-video--theme-12"
+      >
+        <source src="media/theme-12/bg-video.webm" type="video/webm" />
+        <source src="media/theme-12/bg-video.mp4" type="video/mp4" />
+      </video>
+    </div>
+
+    <!-- Load all necessary JavaScript files -->
+    <script src="../dist/counteverest.min.js"></script>
+
+    <!-- Init Count Everest plugin -->
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const countdownElement = document.querySelector('.ce-countdown');
+        if (countdownElement) {
+          new CountEverest(countdownElement, {
+            day: 1,
+            month: 1,
+            year: 2026,
+            units: ['days', 'hours', 'minutes', 'seconds'],
+          });
+        }
+
+        // Fallback for Internet Explorer
+        if (
+          navigator.userAgent.indexOf('MSIE') !== -1 ||
+          navigator.appVersion.indexOf('Trident/') > 0
+        ) {
+          document.documentElement.classList.add('ce-ie');
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function hudx_react_poc_10_theme($existing, $type, $theme, $path) {
+  return [
+    'hudx_react_poc_10_block' => [
+      'variables' => [],
+      'template' => 'hudx-react-poc-10-block',
+      'path' => \Drupal::service('extension.list.module')->getPath('hudx_react_poc_10') . '/templates',
+    ],
+  ];
+}
