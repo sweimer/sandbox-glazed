@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function hudx_react___stracat_theme($existing, $type, $theme, $path) {
+  return [
+    'hudx_react___stracat_block' => [
+      'variables' => [],
+      'template' => 'hudx-react---stracat-block',
+      'path' => \Drupal::service('extension.list.module')->getPath('hudx_react___stracat') . '/templates',
+    ],
+  ];
+}

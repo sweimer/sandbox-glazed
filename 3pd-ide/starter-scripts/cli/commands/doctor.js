@@ -52,7 +52,7 @@ export default async function doctor({ ideRoot, internal }) {
   console.log('\n  Paths');
   check('IDE root', ideRoot);
   check('apps/', path.join(ideRoot, 'apps'));
-  check('react template', path.join(ideRoot, 'apps', 'react', 'starter-template'));
+  check('react template', path.join(ideRoot, 'apps', '0.starter-react', 'starter-template'));
 
   // NEW: Drupal root detection (correct architecture)
   const drupalRoot = path.join(ideRoot, '..', 'web');

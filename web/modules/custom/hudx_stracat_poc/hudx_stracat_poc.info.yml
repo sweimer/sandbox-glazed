@@ -1,5 +1,0 @@
-name: HUDX STraCAT POC
-type: module
-description: A simple React-based demo app mimicking STraCAT workflow.
-core_version_requirement: ^10 || ^11
-package: HUDX

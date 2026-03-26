@@ -2,7 +2,7 @@
  * 3pd react app <name>
  * File: commands/react-app.js
  *
- * Copies /3pd-ide/apps/react/starter-template → /3pd-ide/apps/<name>
+ * Copies /3pd-ide/apps/0.starter-react/starter-template → /3pd-ide/apps/react---<name>
  * then runs `npm install` inside the new folder.
  */
 
@@ -10,6 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { log } from '../shared/log.js';
+import { FRAMEWORK_PREFIXES } from '../shared/frameworks.js';
 
 /**
  * Recursively copy a directory
@@ -71,25 +72,27 @@ export default async function reactApp(name, { ideRoot }) {
   // Support multi-word names (Commander passes arrays when using <name...>)
   const rawName = Array.isArray(name) ? name.join(' ') : name;
 
-  const folderName = rawName
+  const slug = rawName
     .trim()
     .toLowerCase()
     .replace(/\s+/g, '-')          // spaces → hyphens
     .replace(/[^a-z0-9\-]/g, '');  // remove invalid chars
 
-  if (!folderName) {
+  if (!slug) {
     log.error("Invalid app name.");
     process.exit(1);
   }
 
-  const templateDir = path.join(ideRoot, 'apps', 'react', 'starter-template');
+  const folderName = FRAMEWORK_PREFIXES.react + slug;
+
+  const templateDir = path.join(ideRoot, 'apps', '0.starter-react', 'starter-template');
   const appDir      = path.join(ideRoot, 'apps', folderName);
 
   if (!fs.existsSync(templateDir)) {
     log.error("Starter template not found.");
     log.dim(`Expected at: ${templateDir}`);
     log.nl();
-    log.dim("Create /3pd-ide/apps/react/starter-template first.");
+    log.dim("Create /3pd-ide/apps/0.starter-react/starter-template first.");
     process.exit(1);
   }
 

@@ -1,6 +1,6 @@
 /**
  * 3pd react module
- * File: commands/fuse-module.js
+ * File: commands/react-module.js
  *
  * Generates a Drupal module from the current React app.
  * Supports:
@@ -49,7 +49,7 @@ export default async function reactModule({ ideRoot, internal }) {
   const createModulePath = path.join(
     ideRoot,
     'apps',
-    'react',
+    '0.starter-react',
     'create-module.js'
   );
 

@@ -51,11 +51,6 @@ ${chalk.bold('React Commands:')}
   ${chalk.green('3pd react module')}                Generate a Drupal module (3PD mode)
   ${chalk.green('3pd react module --install')}      Generate AND install the module (internal HUDX mode)
 
-${chalk.bold('Fuse Commands:')}
-  ${chalk.yellow('3pd fuse app <name>')}             Create a new Fuse application
-  ${chalk.yellow('3pd fuse module')}                 Generate a Drupal module (3PD mode)
-  ${chalk.yellow('3pd fuse module --install')}       Generate AND install the module (internal HUDX mode)
-
 ${chalk.bold('Angular Commands:')}
   ${chalk.yellow('3pd angular app <name>')}          (placeholder)
   ${chalk.yellow('3pd angular module')}              (placeholder)
@@ -153,33 +148,6 @@ ${chalk.bold('Examples:')}
   3pd react module --install
 `;
 };
-
-// ------------------------------------------------------------
-// FUSE NAMESPACE
-// ------------------------------------------------------------
-const fuse = program
-  .command('fuse')
-  .description('Fuse commands');
-
-fuse
-  .command('app <name...>')
-  .description('Create a new Fuse application')
-  .action(async (name) => {
-    const cmd = await import('./commands/fuse-app.js');
-    const folderName = Array.isArray(name) ? name.join(' ') : name;
-    cmd.default(folderName, { ideRoot, internal: isInternal });
-  });
-
-fuse
-  .command('module')
-  .description('Generate a Drupal module from the current Fuse app')
-  .option('--install', 'Install the generated module into Drupal (internal HUDX use only)')
-  .option('--internal', 'Alias for --install')
-  .action(async (options) => {
-    const cmd = await import('./commands/fuse-module.js');
-    const internal = options.install || options.internal || isInternal;
-    cmd.default({ ideRoot, internal });
-  });
 
 // ------------------------------------------------------------
 // ANGULAR NAMESPACE
