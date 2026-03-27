@@ -41,45 +41,78 @@ program
 program.helpInformation = function () {
   return `
 ${chalk.bold('3PD IDE CLI')}
-${chalk.gray('------------')}
+${chalk.gray('---------------------------------------------------------------------')}
+Build micro-frontend apps that embed as Drupal blocks via Layout Builder.
+Each app is developed independently, then packaged as a Drupal module.
 
-${chalk.bold('Usage:')}
-  3pd <command> [options]
+${chalk.bold('WORKFLOW')}
+${chalk.gray('---------------------------------------------------------------------')}
+${chalk.white('Step 1 — Create')}   3pd <framework> app <name>
+                   Scaffolds a new app from the starter template.
+                   Run from: 3pd-ide/ root
 
-${chalk.bold('React Commands:')}
-  ${chalk.green('3pd react app <name>')}            Create a new 3PD IDE React application
-  ${chalk.green('3pd react module')}                Generate a Drupal module (3PD mode)
-  ${chalk.green('3pd react module --install')}      Generate AND install the module (internal HUDX mode)
+${chalk.white('Step 2 — Develop')}  cd apps/<name> && npm run dev
+                   Start the dev server(s) and build your feature.
+                   Edit src/ freely — hot reload is active.
 
-${chalk.bold('Astro Commands:')}
-  ${chalk.cyan('3pd astro app <name>')}             Create a new Astro application (read-only, no backend)
-  ${chalk.cyan('3pd astro module')}                 Generate a Drupal module (3PD mode)
-  ${chalk.cyan('3pd astro module --install')}       Generate AND install the module (internal HUDX mode)
+${chalk.white('Step 3 — Package')}  3pd <framework> module
+                   Builds the app and packages it as a Drupal module folder.
+                   ${chalk.gray('3PD devs: push this folder in your feature branch.')}
+                   ${chalk.gray('HUDX internal: use --install instead (see below).')}
 
-${chalk.bold('Astro Forms Commands:')}
-  ${chalk.cyan('3pd astro-forms app <name>')}       Create a new Astro + Express + SQLite application
-  ${chalk.cyan('3pd astro-forms module')}           Generate a Drupal module (3PD mode)
-  ${chalk.cyan('3pd astro-forms module --install')} Generate AND install the module (internal HUDX mode)
+${chalk.white('Step 4 — Install')}  3pd <framework> module --install   ${chalk.gray('(HUDX internal only)')}
+                   Builds, packages, copies to /web/modules/custom/,
+                   enables the module, and clears Drupal cache (lando crx).
+                   Requires access to the Drupal repo (/web directory).
 
-${chalk.bold('Angular Commands:')}
-  ${chalk.yellow('3pd angular app <name>')}          (placeholder)
-  ${chalk.yellow('3pd angular module')}              (placeholder)
+${chalk.bold('STARTER KITS')}
+${chalk.gray('---------------------------------------------------------------------')}
+${chalk.cyan('astro')}        Read-only. Displays content from Drupal JSON:API.
+             No backend. No database. Static HTML/CSS/JS module.
+             Use when: the app only needs to show CMS content.
 
-${chalk.bold('Utility Commands:')}
-  ${chalk.magenta('3pd list')}                       List available apps and modules
-  ${chalk.magenta('3pd doctor')}                     Run environment diagnostics
-  ${chalk.magenta('3pd lint')}                       Run ESLint + Prettier
-  ${chalk.magenta('3pd scan')}                       Run Trivy security scan
-  ${chalk.magenta('3pd a11y')}                       Run Pa11y accessibility audit
-  ${chalk.magenta('3pd test')}                       Run unit tests (Vitest/Jest)
-  ${chalk.magenta('3pd validate')}                   Run lint, scan, a11y, and test
-  ${chalk.magenta('3pd help')}                       Show this help message
+${chalk.cyan('astro-forms')} Adds a data layer. Drupal content + form submissions.
+             Backend: Express API. Database: SQLite (app-owned, not Drupal).
+             Dev: npm run dev starts both Astro and Express together.
+             Use when: the app needs to collect or store data.
 
-${chalk.bold('Examples:')}
-  3pd react app my-app
-  cd apps/my-app
-  3pd react module
-  3pd react module --install
+${chalk.yellow('react')}        Full SPA. React + Vite + Express + SQLite.
+             Use when: the app needs client-side routing or complex state.
+
+${chalk.yellow('angular')}      (coming soon)
+
+${chalk.bold('COMMANDS')}
+${chalk.gray('---------------------------------------------------------------------')}
+${chalk.cyan('3pd astro app <name>')}                 Create read-only Astro app
+${chalk.cyan('3pd astro module')}                     Package as Drupal module (3PD)
+${chalk.cyan('3pd astro module --install')}           Package + install in Drupal (HUDX)
+
+${chalk.cyan('3pd astro-forms app <name>')}           Create Astro + Express + SQLite app
+${chalk.cyan('3pd astro-forms module')}               Package as Drupal module (3PD)
+${chalk.cyan('3pd astro-forms module --install')}     Package + install in Drupal (HUDX)
+
+${chalk.green('3pd react app <name>')}                 Create React + Express + SQLite app
+${chalk.green('3pd react module')}                     Package as Drupal module (3PD)
+${chalk.green('3pd react module --install')}           Package + install in Drupal (HUDX)
+
+${chalk.magenta('3pd list')}                             List apps + installed modules + test route URLs
+${chalk.magenta('3pd remove <module>')}                  Uninstall module from Drupal + delete files
+${chalk.magenta('3pd remove <module> --delete-app')}     Also delete the app source folder
+${chalk.magenta('3pd doctor')}                           Check environment dependencies
+${chalk.magenta('3pd validate')}                         Run lint + scan + a11y + tests
+${chalk.magenta('3pd help')}                             Show this help message
+
+${chalk.bold('3PD vs --install MODE')}
+${chalk.gray('---------------------------------------------------------------------')}
+${chalk.white('3PD mode')}   (default, no flag)
+  For third-party developers who do not have the Drupal codebase.
+  Packages the module folder inside the app directory.
+  Push it as a feature branch — the HUDX team handles installation.
+
+${chalk.white('--install')} (HUDX internal only)
+  Requires /web/modules/custom/ to exist (full Drupal repo).
+  Copies module to Drupal, enables it, and clears cache automatically.
+  Run from inside an app folder: cd apps/<name> && 3pd <fw> module --install
 `;
 };
 
@@ -235,10 +268,19 @@ angular
 // ------------------------------------------------------------
 program
   .command('list')
-  .description('List available apps and modules')
+  .description('List apps, installed modules, and test route URLs')
   .action(async () => {
     const cmd = await import('./commands/list.js');
     cmd.default({ ideRoot });
+  });
+
+program
+  .command('remove <module>')
+  .description('Uninstall a Drupal module and remove its files')
+  .option('--delete-app', 'Also delete the app source folder from apps/')
+  .action(async (moduleName, options) => {
+    const cmd = await import('./commands/remove.js');
+    cmd.default(moduleName, { ideRoot, deleteApp: options.deleteApp });
   });
 
 program

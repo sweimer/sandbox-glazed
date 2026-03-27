@@ -1,23 +1,17 @@
-import pg from 'pg';
+import Database from 'better-sqlite3';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: './server/.env' });
+dotenv.config();
 
-const pool = new pg.Pool({
-  host:     process.env.DB_HOST     || 'localhost',
-  port:     parseInt(process.env.DB_PORT || '5432', 10),
-  database: process.env.DB_NAME     || 'postgres',
-  user:     process.env.DB_USER     || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-});
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DB_PATH   = process.env.DB_PATH || path.join(__dirname, 'app.sqlite');
+const SCHEMA    = path.join(__dirname, 'schema.sql');
 
-export async function testConnection() {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    console.log('✅ Database connected:', result.rows[0].now);
-  } catch (err) {
-    console.error('❌ Database connection failed:', err.message);
-  }
-}
+const db = new Database(DB_PATH);
+db.pragma('journal_mode = WAL');
+db.exec(fs.readFileSync(SCHEMA, 'utf8'));
 
-export default pool;
+export default db;

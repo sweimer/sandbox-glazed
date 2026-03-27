@@ -1,0 +1,261 @@
+# 3PD IDE — Astro Forms Starter Kit: AI Guide
+# =========================================================
+# Read this file before building on or modifying this starter,
+# or before creating a new forms-capable starter for another
+# framework. Documents architecture decisions and lessons learned.
+# =========================================================
+
+
+## WHAT THIS STARTER IS
+
+An extension of the read-only Astro starter that adds a data persistence
+layer for apps that need to collect or store data (forms, submissions, etc.).
+
+Frontend:  Astro SSG (same as 0.starter-astro)
+Backend:   Express + SQLite (better-sqlite3)
+Data:      App-owned SQLite file — NOT Drupal's database
+
+The Drupal module contains ONLY the static build (HTML/CSS/JS).
+The Express server deploys separately alongside Drupal on the same server.
+
+
+## WHY NOT DRUPAL'S DATABASE
+
+Apps use their own SQLite DB for two reasons:
+1. Portability: if the client changes CMS, the Express server + SQLite file
+   move intact. The app's data is independent of the CMS.
+2. Compliance: for .gov/HUD deployments, all data stays within the
+   FedRAMP boundary on the same server as Drupal — not in external PaaS.
+
+See LOG.txt "Strategy decisions 2026-03-27" for full context.
+
+
+## DIRECTORY STRUCTURE
+
+3pd-ide/apps/0.starter-astro-forms/
+├── PROMPT.txt                  ← this file
+├── create-module.js            ← Drupal module generator (same as 0.starter-astro)
+└── starter-template/
+    ├── .env.example            ← PUBLIC_DRUPAL_BASE_URL, PUBLIC_API_BASE_URL, PORT, DB_PATH
+    ├── .gitignore              ← node_modules/, dist/, .env, server/db/*.sqlite
+    ├── package.json            ← astro + express + better-sqlite3 + cors + dotenv
+    ├── astro.config.mjs        ← Vite aliases for @hudx / @hudxjs
+    ├── src/
+    │   ├── env.d.ts            ← TypeScript env types for PUBLIC_* vars
+    │   ├── layouts/
+    │   │   └── Layout.astro   ← minimal HTML shell
+    │   └── pages/
+    │       └── index.astro    ← Drupal content list + form + submissions list
+    └── server/
+        ├── server.js           ← Express API (127.0.0.1, CORS for dev)
+        └── db/
+            ├── database.js     ← better-sqlite3 singleton, WAL mode, auto-schema
+            └── schema.sql      ← submissions table definition
+
+
+## CLI INTEGRATION
+
+Commands:
+  3pd astro-forms app <name>          → commands/astro-forms-app.js
+  3pd astro-forms module              → commands/astro-forms-module.js
+  3pd astro-forms module --install    → internal mode (copies to /web + enables)
+
+Framework prefix (shared/frameworks.js):
+  FRAMEWORK_PREFIXES.astroForms = 'astro-forms---'
+  Example output folder: astro-forms---my-app
+
+
+## HOW `3pd astro-forms app <name>` WORKS
+
+1. Slugifies name → prefixes with 'astro-forms---'
+2. Copies starter-template/ skipping node_modules
+3. Creates .env from .env.example
+4. Patches package.json "name" field
+5. Runs npm install
+   NOTE: better-sqlite3 compiles a native binary. Requires Python + Xcode CLI tools.
+   If npm install fails with a gyp error, check Node version compatibility (see below).
+
+No database setup step. SQLite file is created automatically on first server startup.
+
+
+## HOW `3pd astro-forms module` WORKS
+
+Identical to 0.starter-astro/create-module.js — packages only the static Astro
+build into a Drupal module. The Express server is NOT included in the module.
+
+The built JS has PUBLIC_API_BASE_URL baked in at build time:
+  Dev:   http://localhost:3001  (set in .env)
+  Prod:  '' (empty string) — form POSTs to /api/submissions on same domain
+
+The Drupal site owner is responsible for deploying the Express server and
+configuring the reverse proxy to route /api/<path> to it.
+
+
+## DEV WORKFLOW (single command)
+
+  cd apps/astro-forms---my-app
+  npm run dev
+  → Starts both Express API and Astro dev server via concurrently
+  → API:  http://127.0.0.1:3001
+  → UI:   http://localhost:4321
+  → SQLite file created at server/db/app.sqlite on first request
+
+Individual servers (if needed for debugging):
+  npm run dev:server   → Express only
+  npm run dev:astro    → Astro only
+
+Update YOUR_CONTENT_TYPE in src/pages/index.astro to your Drupal content type.
+The form + submissions work independently of Drupal.
+
+
+## EXPRESS SERVER DESIGN
+
+server.js binds to 127.0.0.1 (not 0.0.0.0):
+  - In dev: still reachable from the same machine (localhost = 127.0.0.1)
+  - In prod: not publicly accessible — only via reverse proxy on same server
+  - Never expose the Express port directly to the internet
+
+CORS is configured for the Astro dev server origin (localhost:4321).
+In production, both are on the same domain so CORS headers are not needed
+but don't cause harm.
+
+Routes:
+  GET  /api/submissions   → SELECT * ORDER BY created_at DESC → JSON array
+  POST /api/submissions   → INSERT, return saved row as JSON (201)
+
+Both routes validate input and return appropriate error responses.
+
+
+## SQLITE DESIGN
+
+better-sqlite3 is synchronous — no async/await needed for DB calls.
+This is safe because SQLite operations are microsecond-fast and this
+is a single-process server serving a small team, not a public API.
+
+WAL journal mode: allows concurrent reads while a write is in progress.
+Schema is applied via CREATE TABLE IF NOT EXISTS on every startup — safe
+and idempotent, no separate migration step needed in development.
+
+DB_PATH env var:
+  Dev:  ./server/db/app.sqlite  (relative to app root via process.cwd())
+  Prod: /var/app-data/<appname>/app.sqlite  (absolute, outside web root)
+
+The .sqlite file is gitignored. Never commit it.
+
+
+## PRODUCTION DEPLOYMENT
+
+The Drupal module (static assets) deploys with the Drupal repo.
+The Express server deploys separately on the same machine:
+
+  1. Copy server/ directory to the production server
+  2. npm install --production in that directory
+  3. Set env vars: PORT, DB_PATH, CORS_ORIGIN, HOST
+  4. Run via PM2: pm2 start server/server.js --name my-app-api
+  5. Configure reverse proxy:
+       nginx:  location /api/ { proxy_pass http://127.0.0.1:3001; }
+       Apache: ProxyPass /api/ http://127.0.0.1:3001/api/
+
+For .gov/HUD deployments: the Express server must run within the same
+FedRAMP-authorized infrastructure boundary as Drupal. No external hosting.
+
+
+## ENV VARS REFERENCE
+
+PUBLIC_DRUPAL_BASE_URL  Drupal site URL for JSON:API reads. Empty in production.
+PUBLIC_API_BASE_URL     Express server URL. Empty in production (same-origin).
+PORT                    Express port. Default: 3001.
+DB_PATH                 SQLite file path. Default: ./server/db/app.sqlite.
+CORS_ORIGIN             Astro dev server URL. Default: http://localhost:4321.
+HOST                    Express bind address. Default: 127.0.0.1.
+
+PUBLIC_* vars are baked into the Astro/Vite build at compile time.
+Server vars (PORT, DB_PATH, etc.) are read at Express startup time.
+
+
+## DEV VS PRODUCTION BEHAVIOR
+
+### Submissions on the Drupal test route (/hudx-test/<appname>)
+On Lando (local), the Submissions section shows HTTP 404. This is expected:
+- Express runs on the host Mac (localhost:3001)
+- Drupal runs inside the Lando container
+- The container has no route to the host's localhost
+- So /api/submissions hits Apache, which has no handler → 404
+
+In a real deployment (dev server or production):
+- Express runs on the same server as Drupal, bound to 127.0.0.1
+- The reverse proxy forwards /api/ to Express
+- Submissions load correctly from the Drupal test route
+
+Express MUST be running for the /api/ path to work. In production, manage it with PM2:
+  pm2 start server/server.js --name <appname>-api
+
+### CORS on localhost:4321
+The Astro dev server (localhost:4321) fetches Drupal JSON:API cross-origin.
+Drupal must have CORS configured to allow this.
+See: web/sites/default/services.yml — allowedOrigins: ['http://localhost:4321']
+This file must exist on the Drupal site. It is NOT generated by create-module.js.
+The Drupal site owner is responsible for it.
+
+
+## KNOWN ISSUES / LESSONS LEARNED
+
+1. better-sqlite3 requires Node 23+ compatible version (^11.0.0).
+   v9.x fails to compile on Node 23 with "C++20 or later required."
+   Always pin better-sqlite3 to ^11.0.0 or later in package.json.
+   If a 3PD dev hits a gyp compile error, first check their Node version
+   and the better-sqlite3 version in package.json.
+
+2. HAProxy strips square brackets from query strings — same as 0.starter-astro.
+   NEVER use bracket notation in fetch URLs (fields[type]=value, page[limit]=5).
+   See 0.starter-astro/PROMPT.txt for full details.
+
+3. version in libraries.yml uses Date.now() — never a static string.
+   create-module.js handles this. Do not hardcode version: 1.x.
+
+4. The Express server is NOT in the Drupal module.
+   The module is purely static. Deploying the module does not deploy the API.
+   The site owner must separately deploy the Express server and configure
+   the reverse proxy before the form will work in production.
+
+5. PUBLIC_API_BASE_URL is empty in production — the JS POSTs to /api/submissions
+   relative to the current domain. The reverse proxy must route that path.
+   If the proxy is not set up, form submissions will fail silently with a
+   network error. Check browser DevTools Network tab if the form does nothing.
+
+6. astro.config.mjs @hudx / @hudxjs aliases use monorepo-relative paths.
+   Will break in standalone repo. Fix when implementing standalone repos.
+
+
+## MANDATORY CHECKLIST FOR ALL MODULE GENERATORS
+
+  [x] version in libraries.yml = Date.now()
+  [x] No square brackets in fetch URLs
+  [x] lando crx for cache clear (never lando drush cr)
+  [x] node_modules skipped during template copy
+  [x] Express binds to 127.0.0.1 only
+  [x] DB_PATH configurable via env var
+  [x] .sqlite files gitignored
+  [x] better-sqlite3 pinned to ^11.0.0
+  [x] concurrently in devDependencies — npm run dev starts both servers
+  [x] .env.production exists in starter-template with both PUBLIC_* vars blank
+      Astro/Vite reads .env.production automatically during `astro build`.
+      .env keeps full dev URLs. No manual blanking needed before --install.
+
+
+## HOW TO BUILD A NEW FORMS STARTER FOR A DIFFERENT FRAMEWORK
+
+Use this starter as your reference. Key differences to account for:
+
+  - Does the framework's build output work with the same create-module.js?
+    → React: no (uses Vite, different bundle structure — see 0.starter-react)
+    → Vue/Svelte: likely yes, same Vite external bundle pattern as Astro
+
+  - Does the framework need a router that conflicts with Drupal?
+    → React: BrowserRouter → MemoryRouter required
+    → Vue Router: use hash mode
+
+  - The Express server pattern is IDENTICAL across all frameworks.
+    Copy server/ verbatim. Only the frontend changes.
+
+  - Apply all items in the mandatory checklist above.

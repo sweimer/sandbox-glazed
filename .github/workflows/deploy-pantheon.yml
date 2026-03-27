@@ -1,0 +1,33 @@
+name: Deploy to Pantheon
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure SSH
+        env:
+          PANTHEON_SSH_KEY: ${{ secrets.PANTHEON_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$PANTHEON_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p 2222 codeserver.dev.*.drush.in >> ~/.ssh/known_hosts 2>/dev/null || true
+          # Accept any Pantheon codeserver host
+          echo "Host codeserver.dev.*.drush.in" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+          echo "  Port 2222" >> ~/.ssh/config
+
+      - name: Push to Pantheon
+        run: |
+          git remote add pantheon ${{ secrets.PANTHEON_GIT_URL }}
+          git push pantheon main --force

@@ -33,17 +33,18 @@ Astro apps: No Express. No Lando service. Static build + Drupal JSON:API.
 
 ## STARTER KITS
 
-3pd-ide/apps/0.starter-react/   → React + Vite + Express + PostgreSQL (host) [NEEDS CLEANUP]
-3pd-ide/apps/0.starter-astro/   → Astro SSG + Drupal JSON:API (read-only, no backend)
-3pd-ide/apps/0.starter-astro-forms/  → Astro SSG + Express + SQLite (PLANNED — not yet built)
+3pd-ide/apps/0.starter-react/        → React + Vite + Express + PostgreSQL [NEEDS CLEANUP]
+3pd-ide/apps/0.starter-astro/        → Astro SSG + Drupal JSON:API (read-only) ✓ DONE
+3pd-ide/apps/0.starter-astro-forms/  → Astro SSG + Express + SQLite ✓ DONE
 
 EACH STARTER HAS A PROMPT.txt — READ IT AT THE START OF EVERY SESSION.
 The PROMPT.txt files are the single source of truth for how each starter works.
 They document architecture decisions, known issues, and lessons learned.
 Always read the relevant PROMPT.txt before touching any starter kit code.
 
-  0.starter-astro/PROMPT.txt      — Astro pipeline, HAProxy gotchas, JSON:API patterns
-  0.starter-react/PROMPT.txt      — React pipeline, known issues pending fix
+  0.starter-astro/PROMPT.txt       — Astro read-only pipeline, HAProxy gotchas, JSON:API patterns
+  0.starter-astro-forms/PROMPT.txt — Astro + Express + SQLite, forms pattern, prod deployment
+  0.starter-react/PROMPT.txt       — React pipeline, known issues pending fix (cleanup next)
 
 3PD REPO STRATEGY (decided 2026-03-27):
 Each starter kit will live in its own standalone repo. The 3PD (third-party) dev
@@ -200,38 +201,101 @@ See 0.starter-astro/PROMPT.txt for the full list. Key items:
   - lando crx for cache clear (never lando drush cr)
   - node_modules skipped during template copy
   - Express listens on 127.0.0.1 only in production builds
-  - DB_PATH configurable via env var (not hardcoded)
+  - DB_PATH configurable via env var
+  - Use .env.production for production build values (Vite/Astro reads this
+    automatically during `astro build`). Set both PUBLIC_DRUPAL_BASE_URL=
+    and PUBLIC_API_BASE_URL= to blank. .env keeps dev values (full URLs).
+    This pattern is now in all starter templates — no manual blanking needed. (not hardcoded)
+
+
+## SESSION: 2026-03-27 — Context compacted, picking up canvas fix
+
+Canvas module remnants were blocking `lando drush en`. Investigation complete.
+Canvas fix was IN PROGRESS when context ran out. See "WHERE WE LEFT OFF" below.
+
+Root cause confirmed:
+- canvas/canvas_stark appear in active Drupal config (core.extension) in the DB
+- canvas appears in system.schema key_value table in the DB
+- canvas-related sync config YAML files may exist in sites/default/files/config_*/sync/
+
+Fix needed:
+  1. Remove canvas from DB: delete from key_value where collection='system.schema'
+     and name IN ('canvas', 'canvas_stark'); also update core.extension config.
+  2. Remove canvas from sync config YAMLs if present.
+  3. Run lando crx after.
+  4. Then re-test: 3pd astro-forms module --install (verify lando drush en succeeds)
+  5. Verify test route: http://sandbox-glazed.lndo.site/hudx-test/<appname>
+
+After canvas fix, NEXT: React starter cleanup (see "NEXT" section below).
 
 
 ## WHERE WE LEFT OFF (pick up here next session)
 
-### Next: finish 0.starter-astro (read-only)
+### ✓ 0.starter-astro — DONE (2026-03-27)
+  - Clean read-only Astro SSG starter, no backend, no DB
+  - HAProxy bracket issue documented + fixed in template
+  - version: Date.now() in create-module.js
+  - node_modules removed from starter-template, .gitignore added
+  - .env.example uses generic placeholder URL
+  - index.astro has clear YOUR_CONTENT_TYPE placeholder with dev guidance
+  - PROMPT.txt complete including mandatory checklist
 
-What still needs doing before it's "done" as a reference starter:
-  1. Verify starter-template/src/pages/index.astro uses a clear placeholder
-     content type name with a comment telling devs to update it for their site.
-  2. Confirm .env.example is correct and well-commented.
-  3. Confirm create-module.js has all mandatory checklist items (version=Date.now() ✓,
-     no bracket URLs ✓, lando crx ✓, node_modules skip ✓).
-  4. Update PROMPT.txt with anything still missing (mostly done as of 2026-03-27).
-  5. Decide: does the read-only starter need anything else, or is it shippable?
+### ✓ 0.starter-astro-forms — DONE + FULLY TESTED (2026-03-27)
+  - Astro SSG + Express + SQLite (better-sqlite3 ^11.0.0)
+  - server/server.js: 127.0.0.1 bind, explicit CORS, GET+POST /api/submissions
+  - server/db/database.js: singleton, WAL mode, auto-schema on startup
+  - server/db/schema.sql: submissions table
+  - CLI: 3pd astro-forms app <name> / 3pd astro-forms module [--install]
+  - Tested end-to-end: form submits, SQLite persists, list renders
+  - concurrently added — npm run dev starts both Express + Astro in one command
+    (dev:server and dev:astro available individually for debugging)
+  - 3pd help rewritten: workflow steps at top, starter kit descriptions, 3PD vs --install explanation
+  - PROMPT.txt complete
+  - NOTE: better-sqlite3 must be ^11.0.0+ for Node 23 (v9.x fails to compile)
+  - .env.production added to starter-template — Astro/Vite uses this automatically
+    during `astro build`, baking in blank PUBLIC_* vars for same-origin production use.
+    .env keeps full dev URLs. No manual blanking needed before --install.
+  - CORS configured in web/sites/default/services.yml to allow localhost:4321
+    so the Astro dev server can fetch Drupal JSON:API cross-origin during development.
+  - Submissions 404 on Drupal test route is EXPECTED on Lando — Express runs on the
+    host Mac, not inside the container. Reverse proxy gap closes in real deployment.
+    Express must be running (via PM2 in production) for /api/ to connect.
 
-### After that: build 0.starter-astro-forms
-  - Copy 0.starter-astro as base
-  - Add server/ directory: server.js (Express, 127.0.0.1), db/database.js, db/schema.sql
-  - Add better-sqlite3 dependency
-  - Add .env.example with PORT + DB_PATH
-  - Update create-module.js if any forms-specific module generation is needed
-  - Write PROMPT.txt for astro-forms variant
+### REPO STRUCTURE — decided (2026-03-27)
 
-### After that: update 0.starter-react
-Apply all lessons from Astro work:
-  - Switch PostgreSQL → SQLite (better-sqlite3)
+Standalone starter repos live as siblings at the Drupal root level:
+
+  SANDBOX-glazed/
+    web/
+    3pd-astro/           ← standalone repo (3PD devs clone this)
+    3pd-astro-forms/     ← standalone repo
+    3pd-react/           ← standalone repo
+    3pd-ide/             ← internal workspace (active apps, --install tooling)
+
+Each starter repo is fully self-contained: starter-template/, cli/, create-module.js,
+package.json (with 3pd bin), PROMPT.txt. No shared CLI across repos.
+
+3pd-ide stays as the internal monorepo for running --install, managing active apps,
+and Drupal integration. 3PD devs never see it.
+
+Option A (all inside 3pd-ide/) was rejected — nested git repos create friction
+and 3PD devs would see sibling starters they don't need.
+
+CLI refactor needed: each repo gets its own trimmed cli/ (single framework only).
+Do this when extracting each starter into its own repo.
+
+
+### ✓ 0.starter-react — DONE (2026-03-27)
+  - PostgreSQL → SQLite (better-sqlite3 ^11.0.0)
   - version: Date.now() in libraries.yml
-  - Fix drush path in create-module.js (cd /app && vendor/bin/drush)
-  - Fix cors() to explicit options
-  - Fix Express listen to 127.0.0.1
-  - Consolidate PROMPT.txt with full mandatory checklist
+  - Fixed drush commands: lando drush en + php:eval fallback + lando crx
+  - Fixed Express cors() to explicit options, bind to 127.0.0.1
+  - Added test route (routing.yml + HudxTestController.php) to create-module.js
+  - Added .env.production with blank VITE_API_BASE_URL
+  - Consolidated to single root .env (removed server/.env.example)
+  - Removed PostgreSQL setup from react-app.js (no createdb/psql)
+  - Rewrote PROMPT.txt to match Astro starter standard
+  - NOTE: React uses VITE_ prefix (not PUBLIC_) for client-exposed env vars
 
 
 ## CONTENT TYPES ON THIS SITE
@@ -265,11 +329,26 @@ Drupal owner (this repo):
 The module subfolder is the deliverable. The app src/ is the development environment.
 
 
+## REVISIT IN CI/CD DISCUSSION
+
+### Test route in generated modules (/hudx-test/<appname>)
+Every generated Drupal module includes a HudxTestController + routing.yml
+that creates a /hudx-test/<appname> page for development testing.
+This route is gated by 'access content' permission only.
+
+Before production deployment this needs one of:
+  A) Remove routing.yml + src/Controller/ from the module before deploy
+  B) Gate route behind a stricter permission (e.g. 'administer site configuration')
+  C) Disable via environment-aware config (if dev/prod environments are split)
+
+The right answer depends on the CI/CD pipeline design.
+Flag this when starting the CI/CD discussion.
+
+
 ## KNOWN PENDING ISSUES
 
-- `canvas` module: config exists in DB but no code on disk. Causes `lando drush en`
-  to fail with "The module canvas does not exist." Workaround: use drush php:eval
-  with module_installer service. Low priority — doesn't affect site operation.
+- `canvas` module: FIXED (2026-03-27). Removed from DB active config + system.schema
+  key_value + all canvas.* sync config YAMLs. `lando drush en` now works cleanly.
 - React create-module.js still has old drush path (cd /app/web && drush).
   Fix when next touching React starter. See 0.starter-react/PROMPT.txt.
 - React server.js: bare cors() + missing 0.0.0.0 binding.

@@ -1,11 +1,10 @@
 import { Router } from 'express';
-import pool from '../db/database.js';
+import db from '../db/database.js';
 
 const router = Router();
 
 // POST /api/test/add — insert a new text entry
-router.post('/add', async (req, res) => {
-  console.log('🔥 POST /api/test/add hit:', req.body);
+router.post('/add', (req, res) => {
   const { text_value } = req.body;
 
   if (!text_value || text_value.trim() === '') {
@@ -13,29 +12,22 @@ router.post('/add', async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      'INSERT INTO test_entries (text_value) VALUES ($1) RETURNING *',
-      [text_value.trim()]
-    );
-    res.status(201).json(result.rows[0]);
+    const info = db.prepare('INSERT INTO test_entries (text_value) VALUES (?)').run(text_value.trim());
+    const row  = db.prepare('SELECT * FROM test_entries WHERE id = ?').get(info.lastInsertRowid);
+    res.status(201).json(row);
   } catch (err) {
-    console.error('POST /add error:', err.message);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
 // GET /api/test/all — return all rows
-router.get('/all', async (req, res) => {
+router.get('/all', (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM test_entries ORDER BY created_at DESC'
-    );
-    res.json(result.rows);
+    const rows = db.prepare('SELECT * FROM test_entries ORDER BY created_at DESC').all();
+    res.json(rows);
   } catch (err) {
-    console.error('GET /all error:', err.message);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
 export default router;
-

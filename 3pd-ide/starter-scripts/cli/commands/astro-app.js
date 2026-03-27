@@ -42,8 +42,23 @@ function setupEnvFile(appDir) {
     return;
   }
 
-  fs.copyFileSync(envExample, envFile);
-  log.success('.env created from .env.example');
+  let envContent = fs.readFileSync(envExample, 'utf8');
+
+  // Auto-detect Drupal URL from lando (internal devs only — fails silently for 3PD)
+  let drupalUrl = '';
+  try {
+    drupalUrl = execSync('lando ssh -c "cd /app && drush status --field=uri" 2>/dev/null', { encoding: 'utf8' }).trim();
+  } catch {}
+
+  if (drupalUrl) {
+    envContent = envContent.replace(/PUBLIC_DRUPAL_BASE_URL=.*/, `PUBLIC_DRUPAL_BASE_URL=${drupalUrl}`);
+    log.success(`.env created — Drupal URL auto-detected: ${drupalUrl}`);
+  } else {
+    log.success('.env created from .env.example');
+    log.warn('Could not auto-detect Drupal URL. Update PUBLIC_DRUPAL_BASE_URL in .env manually.');
+  }
+
+  fs.writeFileSync(envFile, envContent);
 }
 
 export default async function astroApp(name, { ideRoot }) {
@@ -117,7 +132,8 @@ export default async function astroApp(name, { ideRoot }) {
   log.nl();
   log.dim('Next steps:');
   log.dim(`  cd apps/${folderName}`);
-  log.dim('  npm run dev        # standalone dev (fetches from Drupal via PUBLIC_DRUPAL_BASE_URL)');
+  log.dim('  Edit src/pages/index.astro — replace YOUR_CONTENT_TYPE with your Drupal content type');
+  log.dim('  npm run dev        # starts Astro dev server on localhost:4321');
   log.dim('  3pd astro module   # when ready to generate a Drupal block module');
   log.nl();
 }

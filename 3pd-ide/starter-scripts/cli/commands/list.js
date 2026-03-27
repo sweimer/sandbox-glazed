@@ -1,81 +1,80 @@
 /**
  * 3pd list
- * File: commands/list.js
- *
- * Lists all apps in /3pd-ide/apps
- * Lists all Drupal modules in /3pd-ide/web/modules/custom
+ * Lists all apps and installed Drupal modules with their test routes.
  */
 
 import fs from 'fs';
 import path from 'path';
+import chalk from 'chalk';
 import { log } from '../shared/log.js';
 
-/**
- * @param {{ ideRoot: string }} opts
- */
+// OSC 8 clickable hyperlink (works in iTerm2, VS Code terminal, most modern terminals)
+function link(url, text) {
+  return `\u001b]8;;${url}\u001b\\${text}\u001b]8;;\u001b\\`;
+}
+
+function getTestUrl(moduleName, routingYmlPath) {
+  if (!fs.existsSync(routingYmlPath)) return null;
+  const content = fs.readFileSync(routingYmlPath, 'utf8');
+  const match   = content.match(/path:\s*['"]?([^'"\n]+)/);
+  return match ? match[1].trim() : null;
+}
+
 export default async function list({ ideRoot }) {
-  log.header("3PD IDE Inventory");
+  const appsDir        = path.join(ideRoot, 'apps');
+  const drupalRoot     = path.join(ideRoot, '..', 'web', 'modules', 'custom');
+  const siteBase       = 'https://sandbox-glazed.lndo.site';
 
-  //
-  // ────────────────────────────────────────────────────────────────
-  // Apps
-  // ────────────────────────────────────────────────────────────────
-  //
-  const appsDir = path.join(ideRoot, 'apps');
-  log.info("Apps");
-  log.dim(`Location: ${appsDir}`);
-  log.nl();
+  // ── Apps ──────────────────────────────────────────────────────────
+  log.header('Apps');
 
-  if (!fs.existsSync(appsDir)) {
-    log.warn("(directory not found)");
+  const starters = new Set(['0.starter-astro', '0.starter-astro-forms', '0.starter-react']);
+
+  const apps = fs.existsSync(appsDir)
+    ? fs.readdirSync(appsDir, { withFileTypes: true })
+        .filter(e => e.isDirectory() && !starters.has(e.name))
+        .map(e => e.name)
+        .filter(n => !n.startsWith('.'))
+    : [];
+
+  if (apps.length === 0) {
+    log.warn('No apps yet.');
   } else {
-    const apps = fs.readdirSync(appsDir, { withFileTypes: true })
-      .filter(e => e.isDirectory())
-      .map(e => e.name);
-
-    if (apps.length === 0) {
-      log.warn("(no apps yet — run `3pd react app <name>` to create one)");
-    } else {
-      apps.forEach(name => {
-        const hasPkg = fs.existsSync(path.join(appsDir, name, 'package.json'));
-        if (hasPkg) {
-          log.success(`• ${name}`);
-        } else {
-          log.warn(`• ${name}  (no package.json)`);
-        }
-      });
+    for (const name of apps) {
+      const hasPkg = fs.existsSync(path.join(appsDir, name, 'package.json'));
+      console.log(`  ${chalk.cyan(name)}${hasPkg ? '' : chalk.gray(' (no package.json)')}`);
     }
   }
 
-  log.nl(2);
-
-  //
-  // ────────────────────────────────────────────────────────────────
-  // Drupal Modules (web/modules/custom)
-  // ────────────────────────────────────────────────────────────────
-  //
-  const drupalModulesDir = path.join(ideRoot, '..', 'web', 'modules', 'custom');
-  log.info("Drupal Modules");
-  log.dim(`Location: ${drupalModulesDir}`);
+  // ── Installed Drupal modules + test routes ─────────────────────────
   log.nl();
+  log.header('Installed Modules + Test Routes');
 
-  // Auto-create Drupal custom modules directory if missing
-  if (!fs.existsSync(drupalModulesDir)) {
-    fs.mkdirSync(drupalModulesDir, { recursive: true });
-    log.dim("(created empty Drupal custom modules directory)");
+  if (!fs.existsSync(drupalRoot)) {
+    log.warn('No Drupal custom modules directory found (internal mode only).');
+    return;
   }
 
-  const modules = fs.readdirSync(drupalModulesDir, { withFileTypes: true })
+  const modules = fs.readdirSync(drupalRoot, { withFileTypes: true })
     .filter(e => e.isDirectory())
     .map(e => e.name);
 
   if (modules.length === 0) {
-    log.warn("(no modules yet — run `3pd react module` inside an app)");
+    log.warn('No modules installed.');
   } else {
-    modules.forEach(name => log.success(`• ${name}`));
+    for (const name of modules) {
+      const routingYml = path.join(drupalRoot, name, `${name}.routing.yml`);
+      const routePath  = getTestUrl(name, routingYml);
+      const fullUrl    = routePath ? `${siteBase}${routePath}` : null;
+
+      if (fullUrl) {
+        console.log(`  ${chalk.green(name)}`);
+        console.log(`    ${link(fullUrl, chalk.underline(fullUrl))}`);
+      } else {
+        console.log(`  ${chalk.yellow(name)}  ${chalk.gray('(no test route)')}`);
+      }
+    }
   }
 
-  log.nl();
-  log.success("Inventory complete.");
   log.nl();
 }

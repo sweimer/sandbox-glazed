@@ -311,11 +311,63 @@ class ${className} extends BlockBase {
   fs.writeFileSync(path.join(templatesDir, twigFilename), twig);
 
   // ---------------------------------------------------------
+  // Test route — controller + routing.yml
+  // Provides /hudx-test/<appName> for development testing.
+  // NOTE: gate or remove before production. See LOG.txt CI/CD notes.
+  // ---------------------------------------------------------
+  const controllerDir = path.join(moduleDir, 'src', 'Controller');
+  fs.mkdirSync(controllerDir, { recursive: true });
+
+  const controllerPhp = `
+<?php
+
+namespace Drupal\\${machineName}\\Controller;
+
+use Drupal\\Core\\Controller\\ControllerBase;
+
+/**
+ * Test page controller for ${displayName}.
+ *
+ * Renders the block at /hudx-test/${appName} for development testing.
+ * NOTE: Remove or gate this route before production deployment.
+ */
+class HudxTestController extends ControllerBase {
+
+  public function page() {
+    return [
+      '#theme' => '${themeHookKey}',
+      '#attached' => [
+        'library' => [
+          '${machineName}/${machineName}',
+        ],
+      ],
+    ];
+  }
+
+}
+`.trim() + '\n';
+
+  fs.writeFileSync(path.join(controllerDir, 'HudxTestController.php'), controllerPhp);
+
+  const routingYml = `
+${machineName}.test_page:
+  path: '/hudx-test/${appName}'
+  defaults:
+    _controller: '\\Drupal\\${machineName}\\Controller\\HudxTestController::page'
+    _title: 'HUDX Test: ${appName}'
+  requirements:
+    _permission: 'access content'
+`.trim() + '\n';
+
+  fs.writeFileSync(path.join(moduleDir, `${machineName}.routing.yml`), routingYml);
+
+  // ---------------------------------------------------------
   // 3PD mode ends here
   // ---------------------------------------------------------
   if (is3PD) {
     console.log('\n🎉 HUDX Drupal module created successfully!');
-    console.log(`📍 Location: ${moduleDir}\n`);
+    console.log(`📍 Location: ${moduleDir}`);
+    console.log(`🔗 Test route will be available at: /hudx-test/${appName}\n`);
     return;
   }
 
@@ -339,10 +391,10 @@ class ${className} extends BlockBase {
 
   console.log('\n⚙️  Enabling module...');
   const enabled = tryExec([
-    `lando drush en ${machineName} -y`,
-    `lando ssh -c "/app/vendor/bin/drush en ${machineName} -y"`,
+    `lando ssh -c "cd /app && drush en ${machineName} -y"`,
+    `lando ssh -c "cd /app && drush php:eval \\"\\\\Drupal::service('module_installer')->install(['${machineName}']);\\""`
   ]);
-  if (!enabled) console.log(`  ⚠  Could not enable automatically. Run: lando drush en ${machineName} -y`);
+  if (!enabled) console.log(`  ⚠  Could not enable automatically. Run: lando drush php:eval "\\Drupal::service('module_installer')->install(['${machineName}']);"`)
 
   console.log('\n🧹 Clearing caches...');
   const cleared = tryExec([
@@ -350,6 +402,14 @@ class ${className} extends BlockBase {
   ]);
   if (!cleared) console.log('  ⚠  Could not clear caches automatically. Run: lando crx');
 
+  // Resolve test page URL from Drupal site URI
+  let siteUri = '';
+  try {
+    siteUri = execSync('lando ssh -c "cd /app && drush status --field=uri" 2>/dev/null', { encoding: 'utf8' }).trim();
+  } catch {}
+  const testUrl = siteUri ? `${siteUri}/hudx-test/${appName}` : `/hudx-test/${appName}`;
+
   console.log('\n🎉 HUDX Drupal module created and installed!');
-  console.log(`📍 Module: ${drupalModuleDir}\n`);
+  console.log(`📍 Module: ${drupalModuleDir}`);
+  console.log(`🔗 Test page: ${testUrl}\n`);
 }

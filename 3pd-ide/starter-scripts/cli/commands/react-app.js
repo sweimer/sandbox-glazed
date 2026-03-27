@@ -34,28 +34,19 @@ function copyRecursive(src, dest) {
 }
 
 /**
- * Create .env from .env.example and inject DB name
+ * Create .env from .env.example
  */
-function setupEnvFile(appDir, folderName) {
-  const serverDir = path.join(appDir, 'server');
-  const envExample = path.join(serverDir, '.env.example');
-  const envFile = path.join(serverDir, '.env');
+function setupEnvFile(appDir) {
+  const envExample = path.join(appDir, '.env.example');
+  const envFile    = path.join(appDir, '.env');
 
   if (!fs.existsSync(envExample)) {
-    log.error("Missing .env.example in starter template.");
+    log.warn('No .env.example found — skipping .env creation.');
     return;
   }
 
-  // Convert react-app-07 → reactapp07
-  const dbName = folderName.replace(/-/g, '');
-
-  const envContent = fs
-    .readFileSync(envExample, 'utf8')
-    .replace(/DB_NAME=.*/, `DB_NAME=${dbName}`);
-
-  fs.writeFileSync(envFile, envContent);
-
-  log.success(`.env created → DB_NAME=${dbName}`);
+  fs.copyFileSync(envExample, envFile);
+  log.success('.env created from .env.example');
 }
 
 /**
@@ -117,30 +108,7 @@ export default async function reactApp(name, { ideRoot }) {
 
   // Create .env from .env.example
   log.header("Configuring Environment");
-  setupEnvFile(appDir, folderName);
-  log.success(".env configured.");
-
-  //
-  // ⭐ NEW: Automatic DB creation + schema import
-  //
-  try {
-    const dbName = folderName.replace(/-/g, '');
-    const serverDir = path.join(appDir, 'server');
-    const schemaPath = path.join(serverDir, 'schema.sql');
-
-    log.header("Setting Up Database");
-
-    // Create the database
-    execSync(`createdb -U ${process.env.USER} ${dbName}`, { stdio: 'inherit' });
-    log.success(`Database created → ${dbName}`);
-
-    // Apply schema.sql
-    execSync(`psql -U ${process.env.USER} -d ${dbName} -f ${schemaPath}`, { stdio: 'inherit' });
-    log.success("Database schema applied.");
-  } catch (err) {
-    log.error("Database setup failed.");
-    log.debug(err);
-  }
+  setupEnvFile(appDir);
 
   // Patch package.json name
   const pkgPath = path.join(appDir, 'package.json');
@@ -164,8 +132,9 @@ export default async function reactApp(name, { ideRoot }) {
   // Final summary
   log.header("Summary");
   log.success(`React app "${folderName}" created successfully.`);
-  log.dim("Next steps:");
-  log.dim(`  • cd apps/${folderName}`);
-  log.dim("  • npm run dev");
+  log.dim('Next steps:');
+  log.dim(`  cd apps/${folderName}`);
+  log.dim('  npm run dev          # starts React (Vite) + Express together');
+  log.dim('  3pd react module     # when ready to generate the Drupal block module');
   log.nl();
 }

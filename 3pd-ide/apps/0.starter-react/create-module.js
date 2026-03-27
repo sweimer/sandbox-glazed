@@ -349,9 +349,11 @@ function ${machineName}_theme($existing, $type, $theme, $path) {
   // ---------------------------------------------------------
   // Write .libraries.yml
   // ---------------------------------------------------------
+  const buildVersion = Date.now();
+
   const librariesYml = `
 ${machineName}:
-  version: 1.x
+  version: ${buildVersion}
   js:
     dist/assets/${stableJsFile}:
       header: true
@@ -433,11 +435,61 @@ class ${className} extends BlockBase {
   );
 
   // ---------------------------------------------------------
+  // Test route — controller + routing.yml
+  // ---------------------------------------------------------
+  const controllerDir = path.join(moduleDir, "src", "Controller");
+  fs.mkdirSync(controllerDir, { recursive: true });
+
+  const controllerPhp = `
+<?php
+
+namespace Drupal\\${machineName}\\Controller;
+
+use Drupal\\Core\\Controller\\ControllerBase;
+
+/**
+ * Test page controller for ${displayName}.
+ *
+ * Renders the block at /hudx-test/${appName} for development testing.
+ * NOTE: Remove or gate this route before production deployment.
+ */
+class HudxTestController extends ControllerBase {
+
+  public function page() {
+    return [
+      '#theme' => '${themeHookKey}',
+      '#attached' => [
+        'library' => [
+          '${machineName}/${machineName}',
+        ],
+      ],
+    ];
+  }
+
+}
+`.trim() + "\n";
+
+  fs.writeFileSync(path.join(controllerDir, "HudxTestController.php"), controllerPhp);
+
+  const routingYml = `
+${machineName}.test_page:
+  path: '/hudx-test/${appName}'
+  defaults:
+    _controller: '\\Drupal\\${machineName}\\Controller\\HudxTestController::page'
+    _title: 'HUDX Test: ${appName}'
+  requirements:
+    _permission: 'access content'
+`.trim() + "\n";
+
+  fs.writeFileSync(path.join(moduleDir, `${machineName}.routing.yml`), routingYml);
+
+  // ---------------------------------------------------------
   // 3PD mode ends here
   // ---------------------------------------------------------
   if (is3PD) {
     console.log("\n🎉 HUDX Drupal module created successfully!");
-    console.log(`📍 Location: ${moduleDir}\n`);
+    console.log(`📍 Location: ${moduleDir}`);
+    console.log(`🔗 Test route will be available at: /hudx-test/${appName}\n`);
     return;
   }
 
@@ -446,13 +498,7 @@ class ${className} extends BlockBase {
   // ---------------------------------------------------------
   console.log("\n🔧 INTERNAL MODE ENABLED");
 
-  // FIXED: Correct Drupal module destination
-  const drupalModuleDir = path.join(
-    drupalWebRoot,
-    "modules",
-    "custom",
-    machineName
-  );
+  const drupalModuleDir = path.join(drupalWebRoot, "modules", "custom", machineName);
 
   if (fs.existsSync(drupalModuleDir)) {
     fs.rmSync(drupalModuleDir, { recursive: true, force: true });
@@ -460,20 +506,24 @@ class ${className} extends BlockBase {
 
   copyRecursive(moduleDir, drupalModuleDir);
 
-  console.log("\n⚙️ Enabling module...");
-
-  // FIXED: Correct Drush working directory
-  tryExec([
-    `lando ssh -c "cd /app/web && drush en ${machineName} -y"`,
-    `cd ${path.dirname(drupalWebRoot)} && drush en ${machineName} -y`,
+  console.log("\n⚙️  Enabling module...");
+  const enabled = tryExec([
+    `lando ssh -c "cd /app && drush en ${machineName} -y"`,
+    `lando ssh -c "cd /app && drush php:eval \\"\\\\Drupal::service('module_installer')->install(['${machineName}']);\\""`
   ]);
+  if (!enabled) console.log(`  ⚠  Could not enable automatically. Run: lando drush php:eval "\\Drupal::service('module_installer')->install(['${machineName}']);"`);
 
   console.log("\n🧹 Clearing caches...");
-  tryExec([
-    `lando ssh -c "cd /app/web && drush cr"`,
-    `cd ${path.dirname(drupalWebRoot)} && drush cr`,
-  ]);
+  const cleared = tryExec([`lando crx`]);
+  if (!cleared) console.log("  ⚠  Could not clear caches automatically. Run: lando crx");
+
+  let siteUri = "";
+  try {
+    siteUri = execSync('lando ssh -c "cd /app && drush status --field=uri" 2>/dev/null', { encoding: "utf8" }).trim();
+  } catch {}
+  const testUrl = siteUri ? `${siteUri}/hudx-test/${appName}` : `/hudx-test/${appName}`;
 
   console.log("\n🎉 HUDX Drupal module created and installed!");
-  console.log(`📍 Module: ${drupalModuleDir}\n`);
+  console.log(`📍 Module: ${drupalModuleDir}`);
+  console.log(`🔗 Test page: ${testUrl}\n`);
 }

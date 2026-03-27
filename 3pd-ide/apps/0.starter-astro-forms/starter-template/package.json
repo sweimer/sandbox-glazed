@@ -4,10 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "concurrently \"node server/server.js\" \"astro dev\"",
     "dev:server": "node server/server.js",
+    "dev:astro": "astro dev",
     "build": "astro build",
     "preview": "astro preview"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
   },
   "dependencies": {
     "astro": "^4.11.0",
