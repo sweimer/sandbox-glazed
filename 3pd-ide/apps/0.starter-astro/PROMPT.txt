@@ -1,0 +1,261 @@
+# 3PD IDE — Astro Starter Kit: AI Guide
+# =========================================================
+# Read this file before building a new framework starter or
+# modifying the Astro pipeline. Documents exactly how this
+# starter works so you can replicate or extend it safely.
+# =========================================================
+
+
+## WHAT THIS STARTER IS
+
+A Drupal micro-frontend pattern using Astro SSG on the frontend.
+The starter produces a Drupal block module that embeds the Astro app
+into any Layout Builder region.
+
+Data source: Drupal JSON:API (same-origin when embedded in Drupal).
+No Express. No separate database. No Lando service.
+
+
+## DIRECTORY STRUCTURE
+
+3pd-ide/apps/0.starter-astro/
+├── PROMPT.txt                  ← this file
+├── create-module.js            ← Drupal module generator (called by CLI)
+└── starter-template/           ← copied verbatim when `3pd astro app <name>` runs
+    ├── .env.example            ← copy to .env, set PUBLIC_DRUPAL_BASE_URL for dev
+    ├── package.json            ← Astro only, no Express or Prisma
+    ├── astro.config.mjs        ← Vite aliases for @hudx / @hudxjs globals
+    └── src/
+        ├── layouts/
+        │   └── Layout.astro   ← minimal HTML shell
+        └── pages/
+            └── index.astro    ← static page + client-side JSON:API fetch
+
+
+## CLI INTEGRATION
+
+Registered in: 3pd-ide/starter-scripts/cli/index.js
+Commands:
+  3pd astro app <name>          → commands/astro-app.js
+  3pd astro module              → commands/astro-module.js
+  3pd astro module --install    → commands/astro-module.js (internal mode)
+
+Framework prefix (shared/frameworks.js):
+  FRAMEWORK_PREFIXES.astro = 'astro---'
+  Example output folder: astro---my-app
+
+
+## HOW `3pd astro app <name>` WORKS (astro-app.js)
+
+1. Slugifies the name (lowercase, spaces→hyphens)
+2. Prefixes with 'astro---' → folder name e.g. astro---my-app
+3. Copies starter-template/ → 3pd-ide/apps/astro---my-app/
+4. Creates .env from .env.example
+5. Patches package.json "name" field to the folder name
+6. Runs `npm install`
+
+No database setup. No Prisma. No start.sh.
+
+
+## HOW `3pd astro module` WORKS (create-module.js)
+
+Naming conventions (derived from app folder name):
+  appName:      astro---my-app
+  machineName:  hudx_astro___my_app       (hudx_ prefix, hyphens→underscores)
+  hyphenName:   hudx-astro---my-app       (underscores→hyphens)
+  mountId:      hudx-astro---my-app-root  (used only in external bundle case)
+  className:    HudxAstro3pdMyAppBlock    (PascalCase for PHP class)
+
+Steps:
+1. Runs `npm run build` (astro build → dist/)
+
+2. Checks dist/_astro/ for external JS/CSS bundles (Astro produces these
+   when the page contains a <script> tag with dynamic imports or env vars)
+
+3. If external bundles found (Case A):
+   - Renames hashed bundles to stable filenames:
+     dist/_astro/index-[hash].js  → dist/_astro/hudx_astro___my_app.js
+     dist/_astro/index-[hash].css → dist/_astro/hudx_astro___my_app.css
+   - Twig template: <div id="hudx-astro---my-app-root"></div>
+   - libraries.yml: references dist/assets/[name].js with type: module
+
+4. If NO external bundles (Case B — pure static Astro, no client scripts):
+   - Extracts <script>, <style>, and <body> HTML from dist/index.html
+   - Writes extracted JS/CSS to dist/assets/[name].js and .css
+   - Twig template: full body HTML from dist/index.html
+
+5. Creates module directory at: 3pd-ide/apps/astro---my-app/hudx_astro___my_app/
+
+6. Generates Drupal module files:
+   - hudx_astro___my_app.info.yml
+   - hudx_astro___my_app.module    (implements hook_theme)
+   - hudx_astro___my_app.libraries.yml
+   - src/Plugin/Block/HudxAstro3pdMyAppBlock.php
+   - templates/hudx-astro---my-app-block.html.twig
+
+7. In --install mode (internal):
+   - Copies module to web/modules/custom/hudx_astro___my_app/
+   - Runs: lando drush en hudx_astro___my_app -y
+   - Runs: lando crx  (NOT lando drush cr — drush cr hangs, crx is the fix)
+
+
+## DRUPAL BLOCK LIBRARIES.YML PATTERN (Case A — external bundles)
+
+hudx_astro___my_app:
+  version: <timestamp>          ← Date.now() set at build time by create-module.js
+  js:
+    dist/assets/hudx_astro___my_app.js:
+      header: true
+      attributes:
+        type: module
+  css:
+    theme:
+      dist/assets/hudx_astro___my_app.css: {}
+  dependencies:
+    - core/drupal
+
+IMPORTANT: version must change on every rebuild or the browser will serve stale JS.
+create-module.js uses Date.now() so each build gets a unique ?v= cache buster.
+NEVER hardcode version: 1.x in a module generator — it breaks after the first deploy.
+
+
+## DRUPAL JSON:API FETCH PATTERN
+
+The starter uses client-side fetch from Drupal JSON:API.
+
+When embedded in Drupal: PUBLIC_DRUPAL_BASE_URL is '' (empty), so the fetch
+goes to /jsonapi/... — same-origin, no CORS needed.
+
+When running standalone dev server: set PUBLIC_DRUPAL_BASE_URL in .env:
+  PUBLIC_DRUPAL_BASE_URL=http://sandbox-glazed.lndo.site
+
+The Drupal JSON:API endpoint is at /jsonapi/ (no auth needed for public content).
+
+CRITICAL — DO NOT USE SQUARE BRACKETS IN FETCH URLS (Lando HAProxy issue):
+  BROKEN:  /jsonapi/node/page?fields[node--page]=title&page[limit]=5
+  BROKEN:  /jsonapi/node/page?fields%5Bnode--page%5D=title   ← encoded also stripped
+  WORKING: /jsonapi/node/page
+  WORKING: /jsonapi/node/page?filter[status]=1   ← single-level params OK
+
+Lando's HAProxy proxy strips square brackets (and their %5B/%5D encoded form)
+from query strings before forwarding to Apache. The request arrives with an
+empty or truncated parameter, causing JSON:API to return `"data": []`.
+Use the base URL without sparse fieldsets when running under Lando.
+If you need filtering, test your exact query string via curl inside the container
+(lando ssh) to confirm whether HAProxy is stripping it.
+
+To fetch at BUILD TIME (SSG) instead of client-side, use Astro's server-side
+frontmatter (--- block). This bakes data into HTML at build time:
+  const res = await fetch(`${DRUPAL_BASE}/jsonapi/node/page`);
+  const { data } = await res.json();
+  Then render {data.map(...)} directly in the template.
+
+
+## KEY DIFFERENCES FROM REACT STARTER
+
+| Aspect             | React                          | Astro                           |
+|--------------------|--------------------------------|---------------------------------|
+| Build output       | External JS bundle (dist/assets/)| External JS (dist/_astro/) OR inline |
+| Twig template      | Always <div id="..."> mount    | Mount div OR full body HTML     |
+| Data backend       | Express + PostgreSQL (host)    | Drupal JSON:API (no Express)    |
+| DB setup           | createdb + psql on host        | None                            |
+| Lando service      | None                           | None                            |
+| Router             | MemoryRouter required          | No router (SSG pages)           |
+| JS bundler         | Vite (always external)         | Astro (inline or external)      |
+
+Astro produces external bundles when the page has a <script> tag that uses
+import.meta.env or imports ES modules. Pure static pages (no <script>) produce
+inline scripts or no JS at all.
+
+
+## CACHE CLEARING AFTER MODULE INSTALL
+
+ALWAYS use `lando crx` — never `lando drush cr`.
+
+lando drush cr hangs after a full cache clear because Apache workers deadlock
+trying to compile the Drupal service container simultaneously. lando crx:
+  1. Deletes files/php/ compiled container
+  2. Truncates all DB cache tables
+  3. Stops Apache
+  4. Runs drush status to pre-warm container into DB
+  5. Restarts Apache
+
+See .lando.yml for the full crx command definition.
+
+
+## KNOWN ISSUES / LESSONS LEARNED
+
+1. HAProxy strips square brackets from query strings — NEVER use [] in fetch URLs.
+   Lando's HAProxy proxy removes bracket notation (and %5B/%5D encoding) from
+   query parameters before forwarding to Apache. This causes JSON:API sparse
+   fieldsets (?fields[type]=field) and pagination (?page[limit]=5) to silently
+   return empty data — no error, just `"data": []`. The fetch succeeds (200 OK)
+   but the data is empty. Diagnosis: open the URL with params directly in the
+   browser address bar — if data is missing there but present without params,
+   HAProxy is stripping the brackets. Fix: use the plain base URL without sparse
+   fieldsets, or use non-bracket query params.
+
+2. Browser cache requires a changing version string in libraries.yml.
+   If version: is static (e.g. 1.x), browsers cache the JS forever and serve
+   stale code after every rebuild. Drupal appends ?v=<version> to asset URLs.
+   create-module.js uses Date.now() so each build produces a unique version.
+   Apply this pattern to ALL module generators (React, Angular, Vanilla JS, etc).
+
+3. NEVER add an Astro Lando service.
+   A dedicated Lando service for the Astro Express backend (the old pattern)
+   caused HSTS poisoning of all *.lndo.site subdomains — browser cached lndo.site
+   as HTTPS-only, breaking all HTTP API calls and causing drush bootstrap hangs.
+   Fix: removed the service entirely. Express (if needed) must run on the HOST
+   machine via npm run dev, not inside Docker.
+
+2. Astro build output depends on whether <script> uses import.meta.env.
+   If the <script> block uses import.meta.env.PUBLIC_*, Astro bundles it
+   as an external file in dist/_astro/. If not, it may inline it.
+   create-module.js handles both cases.
+
+3. lando drush cr hangs after cache clear — use lando crx.
+   Root cause: Apache prefork workers all race to compile the Drupal service
+   container when cache_container is empty, deadlocking each other.
+   See SANDBOX-glazed/LOG.txt for full explanation.
+
+4. The Twig template for Case B (inline/static) uses full body HTML, not a
+   mount div. This means the block renders pure HTML with no JS dependency.
+   Styles are inlined or loaded via libraries.yml.
+
+5. astro.config.mjs @hudx / @hudxjs aliases use monorepo-relative paths.
+   The aliases resolve via `../../starter-scripts/hudx-global/` which works
+   inside the monorepo (apps/astro---my-app/../../starter-scripts/).
+   When starter kits move to standalone repos these paths will break.
+   Fix when implementing standalone repos: either bundle hudx-global into the
+   starter template, or make the aliases optional/conditional.
+
+6. import.meta.env.PUBLIC_* variables are replaced at build time.
+   In the Drupal module, PUBLIC_DRUPAL_BASE_URL becomes '' (empty string)
+   because no .env.production is needed — the Drupal site IS the origin.
+   Ensure the .env.example documents this clearly for developers.
+
+
+## HOW TO BUILD A NEW STARTER FOR A DIFFERENT FRAMEWORK
+
+Use this Astro starter and the React starter as your references.
+See 0.starter-react/PROMPT.txt for the React-specific notes.
+
+Key questions for any new framework:
+  - Does the build produce external bundles or inline scripts?
+    → External (React/Svelte/Vue): mount div in Twig, JS loads app
+    → Inline (plain Astro SSG, Vanilla JS): extract body HTML for Twig
+  - Does the framework use a client-side router?
+    → React: BrowserRouter → MemoryRouter rewrite
+    → Astro: no router (file-based pages)
+  - What data source does the template use?
+    → React: Express + PostgreSQL on host machine
+    → Astro: Drupal JSON:API (no separate backend)
+  - Does the Express server need to run inside Docker?
+    → NEVER. Always host machine via npm run dev.
+
+Mandatory checklist for every new module generator (create-module.js):
+  [ ] version in libraries.yml uses Date.now() — never a static string
+  [ ] fetch URLs do NOT use square bracket query params (HAProxy strips them)
+  [ ] lando crx used for cache clear — never lando drush cr
+  [ ] node_modules skipped when copying starter-template (preserves .bin symlinks)
+  [ ] dist/ build output uses stable filenames (no hashes) for reliable Twig references

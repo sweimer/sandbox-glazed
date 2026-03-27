@@ -155,7 +155,6 @@ This validates:
       index.js
       commands/
         react-app.js
-        fuse-module.js
     shared/
       log.js
   global/

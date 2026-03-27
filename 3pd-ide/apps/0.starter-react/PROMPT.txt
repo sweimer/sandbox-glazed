@@ -1,0 +1,196 @@
+# 3PD IDE — React Starter Kit: AI Guide
+# =========================================================
+# Read this file before building a new framework starter.
+# It documents exactly how the React starter was built so
+# you can replicate the same pattern for other frameworks.
+# =========================================================
+
+
+## WHAT THIS STARTER IS
+
+A Drupal micro-frontend pattern using React + Vite on the frontend,
+Express + PostgreSQL on the backend. The starter produces a Drupal block
+module that embeds the React SPA into any Layout Builder region.
+
+
+## DIRECTORY STRUCTURE
+
+3pd-ide/apps/0.starter-react/
+├── PROMPT.txt                  ← this file
+├── package.json                ← minimal, just marks this as ESM ("type": "module")
+├── create-module.js            ← Drupal module generator (called by CLI)
+└── starter-template/           ← copied verbatim when `3pd react app <name>` runs
+    ├── index.html              ← Vite entry HTML, has <div id="root">
+    ├── package.json            ← React + Vite + Express + pg dependencies
+    ├── vite.config.js          ← Vite config with lib/bundle output settings
+    ├── eslint.config.js
+    ├── src/
+    │   ├── main.jsx            ← React entry point (gets REWRITTEN by module generator)
+    │   ├── App.jsx             ← Root component (BrowserRouter → MemoryRouter on build)
+    │   └── pages/
+    │       ├── Home.jsx
+    │       ├── ApiReference.jsx
+    │       └── StyleGuide.jsx
+    └── server/
+        ├── server.js           ← Express API, listens on 0.0.0.0 (required for Docker)
+        ├── schema.sql
+        ├── .env.example
+        └── db/
+            ├── database.js
+            └── schema.sql
+
+
+## CLI INTEGRATION
+
+Registered in: 3pd-ide/starter-scripts/cli/index.js
+Commands:
+  3pd react app <name>          → commands/react-app.js
+  3pd react module              → commands/react-module.js
+  3pd react module --install    → commands/react-module.js (internal mode)
+
+Framework prefix (shared/frameworks.js):
+  FRAMEWORK_PREFIXES.react = 'react---'
+  Example output folder: react---my-app
+
+
+## HOW `3pd react app <name>` WORKS (react-app.js)
+
+1. Slugifies the name (lowercase, spaces→hyphens)
+2. Prefixes with 'react---' → folder name e.g. react---my-app
+3. Copies starter-template/ → 3pd-ide/apps/react---my-app/
+4. Creates server/.env from server/.env.example, injects DB_NAME=(name with hyphens stripped)
+5. Patches package.json "name" field to the folder name
+6. Runs `createdb -U $USER <dbname>` to create a local PostgreSQL database
+7. Runs `psql -U $USER -d <dbname> -f server/schema.sql` to apply the schema
+8. Runs `npm install`
+
+
+## HOW `3pd react module` WORKS (create-module.js)
+
+Naming conventions (derived from app folder name):
+  appName:      react---my-app
+  machineName:  hudx_react___my_app       (hudx_ prefix, hyphens→underscores)
+  hyphenName:   hudx-react---my-app       (underscores→hyphens)
+  mountId:      hudx-react---my-app-root  (used as the DOM element id)
+  className:    HudxReact3pdPocBlock      (PascalCase for PHP class)
+
+Steps:
+1. REWRITES src/main.jsx with a Drupal-safe mount pattern:
+   - Mounts React into the element with id="${mountId}"
+   - Guards against double-mounting (el.__hudxReactRoot)
+   - Waits for DOMContentLoaded
+   - Registers a Drupal.behaviors.${behaviorName} for Layout Builder AJAX compatibility
+
+2. ENFORCES MemoryRouter in src/App.jsx via AST transform (@babel/parser):
+   - Removes BrowserRouter imports and wraps
+   - Replaces with MemoryRouter (required: BrowserRouter breaks inside Drupal iframes/blocks)
+
+3. REWRITES index.html: changes <div id="root"> → <div id="${mountId}">
+
+4. Runs `npm run build` (Vite always produces external bundles in dist/assets/)
+
+5. Renames hashed bundles to stable filenames:
+   dist/assets/index-[hash].js  → dist/assets/hudx_react___my_app.js
+   dist/assets/index-[hash].css → dist/assets/hudx_react___my_app.css
+
+6. Creates module directory at: 3pd-ide/apps/react---my-app/hudx_react___my_app/
+
+7. Generates Drupal module files:
+   - hudx_react___my_app.info.yml
+   - hudx_react___my_app.module    (implements hook_theme)
+   - hudx_react___my_app.libraries.yml  (references dist/assets/[name].js + .css)
+   - src/Plugin/Block/HudxReact3pdMyAppBlock.php
+   - templates/hudx-react---my-app-block.html.twig  → <div id="${mountId}"></div>
+
+8. In --install mode (internal):
+   - Copies module to web/modules/custom/hudx_react___my_app/
+   - Runs: lando ssh -c "cd /app && vendor/bin/drush en hudx_react___my_app -y"
+   - Runs: lando ssh -c "cd /app && vendor/bin/drush cr"
+
+IMPORTANT: React always produces external JS/CSS bundles via Vite.
+The Twig template is always just a mount div. The JS mounts React into it.
+
+
+## DRUPAL BLOCK LIBRARIES.YML PATTERN
+
+hudx_react___my_app:
+  version: 1.x
+  js:
+    dist/assets/hudx_react___my_app.js:
+      header: true
+      attributes:
+        type: module
+  css:
+    theme:
+      dist/assets/hudx_react___my_app.css: {}
+  dependencies:
+    - core/drupal
+
+
+## KNOWN ISSUES / LESSONS LEARNED
+
+1. Express server must listen on 0.0.0.0, not localhost, to be reachable inside Docker/Lando.
+   The current starter-template/server/server.js is missing this — it uses the default
+   localhost binding. Fix: app.listen(PORT, '0.0.0.0', () => { ... })
+
+2. BrowserRouter breaks in Drupal. The module generator enforces MemoryRouter via AST.
+   Never use BrowserRouter in the starter template — or the generator will strip it anyway.
+
+3. The drush commands in create-module.js --install mode still use the OLD path:
+     lando ssh -c "cd /app/web && drush en ..."
+   This fails because drush is not in PATH inside the container.
+   The CORRECT path (already fixed in the Astro create-module.js) is:
+     lando ssh -c "cd /app && vendor/bin/drush en ..."
+     lando drush en ...   (fallback)
+   Fix create-module.js before using --install mode.
+
+4. Vite always produces external bundles for React (dist/assets/*.js + *.css).
+   No need to handle the inline script case (that's an Astro-specific issue).
+
+5. CORS: the starter-template/server/server.js uses bare `app.use(cors())`.
+   This should be explicit to avoid preflight failures:
+     app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders: ['Content-Type'] }));
+   Do NOT add `app.options('*', cors())` — Express 5 (path-to-regexp v8) rejects
+   bare `*` as a path and will crash the server on startup.
+
+
+## HOW TO BUILD A NEW STARTER FOR A DIFFERENT FRAMEWORK
+
+Use this React starter as your reference. To add e.g. Svelte:
+
+1. Create: 3pd-ide/apps/0.starter-svelte/
+   - starter-template/ with the Svelte app
+   - create-module.js modelled after this one (adjust build output path for Svelte)
+   - PROMPT.txt documenting the Svelte-specific notes
+
+2. Add to shared/frameworks.js:
+   svelte: 'svelte---'
+
+3. Create CLI commands:
+   - starter-scripts/cli/commands/svelte-app.js  (copy react-app.js, adjust for Svelte)
+   - starter-scripts/cli/commands/svelte-module.js  (copy react-module.js, change path)
+
+4. Register in cli/index.js under a new `svelte` namespace (copy the react block).
+
+5. Add Svelte commands to the helpInformation() string in cli/index.js.
+
+Key questions to answer for each new framework:
+  - Does the build produce external bundles or inline scripts?
+    → External (React/Svelte/Vue/Angular): mount div in Twig, copy from dist/
+    → Inline (plain Astro SSG, Vanilla JS): extract from HTML, use full body in Twig
+  - Does the framework use a router that conflicts with Drupal?
+    → React: BrowserRouter → MemoryRouter rewrite needed
+    → Angular: use HashLocationStrategy
+  - What database does the template use?
+    → React: PostgreSQL (createdb + psql)
+    → Astro: SQLite via Prisma
+  - Does the Express server need a start.sh for Lando?
+    → Only if the Lando `astro` service (or equivalent) runs it at startup
+
+
+## LANDO SERVICE NOTE
+
+The React apps do NOT have a dedicated Lando service. The Express server is
+run manually by the developer with `npm run dev`. Only the Astro starter has
+a dedicated `astro` Lando service that runs the Express API automatically.
+See 0.starter-astro/PROMPT.txt for details on that pattern.

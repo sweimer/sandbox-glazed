@@ -1,0 +1,12 @@
+hudx_astro___poc_02:
+  version: 1.x
+  js:
+    dist/assets/hudx_astro___poc_02.js:
+      header: true
+      attributes:
+        type: module
+  css:
+    theme:
+      dist/assets/hudx_astro___poc_02.css: {}
+  dependencies:
+    - core/drupal

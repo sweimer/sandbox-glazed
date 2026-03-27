@@ -1,0 +1,56 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="HUDX Astro App">
+  <main style="padding: 2rem; max-width: 640px;">
+    <h1>Welcome to your HUDX Astro App</h1>
+    <p>Pages from Drupal:</p>
+    <ul id="nodes-list">
+      <li style="color: #999;">Loading…</li>
+    </ul>
+  </main>
+</Layout>
+
+<script>
+  // ---------------------------------------------------------------------
+  // Drupal JSON:API fetch — client-side, runs in the browser.
+  //
+  // SETUP: Update the content type in the URL below to match your Drupal
+  // site. Replace 'YOUR_CONTENT_TYPE' with the machine name of the content
+  // type you want to fetch (e.g. 'article', 'basic_page', 'landing_page').
+  //
+  // To find your content type machine name:
+  //   Drupal admin → Structure → Content types → hover the type name
+  //   or check: /admin/structure/types
+  //
+  // IMPORTANT — do NOT add query string parameters with square brackets:
+  //   BROKEN:  /jsonapi/node/page?fields[node--page]=title
+  //   WORKING: /jsonapi/node/page
+  // Lando's HAProxy proxy strips bracket notation from query strings,
+  // causing JSON:API to return empty results with no error.
+  //
+  // When embedded in Drupal: DRUPAL_BASE is '' (same-origin, no CORS needed).
+  // Standalone dev: set PUBLIC_DRUPAL_BASE_URL in .env → copy from .env.example.
+  // ---------------------------------------------------------------------
+  const DRUPAL_BASE = import.meta.env.PUBLIC_DRUPAL_BASE_URL || '';
+
+  async function loadNodes() {
+    const list = document.getElementById('nodes-list');
+    try {
+      const res = await fetch(
+        `${DRUPAL_BASE}/jsonapi/node/YOUR_CONTENT_TYPE`
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { data } = await res.json();
+
+      list.innerHTML = data.length
+        ? data.map((n) => `<li>${n.attributes.title}</li>`).join('')
+        : '<li style="color:#999">No content found.</li>';
+    } catch (err) {
+      list.innerHTML = `<li style="color:#c00">Could not load: ${err.message}</li>`;
+    }
+  }
+
+  loadNodes();
+</script>

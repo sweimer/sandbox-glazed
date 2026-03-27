@@ -1,0 +1,278 @@
+# SANDBOX-glazed — Session Log
+# =========================================================
+# Running notes for AI assistant continuity between sessions.
+# Update this at the end of each session before closing.
+# =========================================================
+
+
+## PROJECT OVERVIEW
+
+A Drupal 11 Lando site that embeds micro-frontend apps (React, Astro) as
+Drupal blocks via a custom CLI toolkit at 3pd-ide/starter-scripts/cli/.
+
+CLI command: `3pd`
+Key commands:
+  3pd astro app <name>          Create new Astro app
+  3pd astro module --install    Build + install as Drupal block module
+  3pd react app <name>          Create new React app
+  3pd react module --install    Build + install as Drupal block module
+
+
+## ARCHITECTURE
+
+Lando services (2 only — do NOT add more):
+  appserver   → Drupal 11 at http://sandbox-glazed.lndo.site
+  database    → MariaDB 10.6
+
+IMPORTANT: The astro Lando service was REMOVED. It caused HSTS poisoning of
+all *.lndo.site subdomains. Do NOT add it back. No framework gets a Lando service.
+
+React apps: Express runs on the HOST machine via npm run dev. No Lando service.
+Astro apps: No Express. No Lando service. Static build + Drupal JSON:API.
+
+
+## STARTER KITS
+
+3pd-ide/apps/0.starter-react/   → React + Vite + Express + PostgreSQL (host) [NEEDS CLEANUP]
+3pd-ide/apps/0.starter-astro/   → Astro SSG + Drupal JSON:API (read-only, no backend)
+3pd-ide/apps/0.starter-astro-forms/  → Astro SSG + Express + SQLite (PLANNED — not yet built)
+
+EACH STARTER HAS A PROMPT.txt — READ IT AT THE START OF EVERY SESSION.
+The PROMPT.txt files are the single source of truth for how each starter works.
+They document architecture decisions, known issues, and lessons learned.
+Always read the relevant PROMPT.txt before touching any starter kit code.
+
+  0.starter-astro/PROMPT.txt      — Astro pipeline, HAProxy gotchas, JSON:API patterns
+  0.starter-react/PROMPT.txt      — React pipeline, known issues pending fix
+
+3PD REPO STRATEGY (decided 2026-03-27):
+Each starter kit will live in its own standalone repo. The 3PD (third-party) dev
+clones only their relevant starter repo — they never see /web or the Drupal codebase.
+`3pd <framework> module` (no --install) packages the Drupal module subfolder.
+The 3PD dev pushes a feature branch. The Drupal owner pulls it and runs --install.
+See "3PD WORKFLOW" section below for full details.
+
+
+## ACTIVE APPS
+
+react---3pd-depot     → Drupal module: hudx_react___3pd_depot
+react---3pd-poc       → Drupal module: hudx_react___3pd_poc
+react---stracat       → Drupal module: hudx_react___stracat
+astro---poc-01        → Drupal module: hudx_astro___poc_01 (static, working)
+astro---poc-02        → Drupal module: hudx_astro___poc_02 ← ACTIVE WORK
+
+
+## LANDO COMMANDS
+
+lando crx   — Full cache reset. Does: rm files/php/ + TRUNCATE all cache tables
+              + stop Apache + drush status (pre-warms container into DB) + restart Apache.
+              Use after every lando rebuild AND after enabling/installing modules.
+
+lando drush — Standard drush. DO NOT use for cache clearing. Use lando crx.
+
+
+## CRITICAL: lando crx / cache reset procedure
+
+After lando rebuild OR after enabling modules OR when drush hangs:
+  1. lando crx        ← handles everything
+  2. Open browser     ← site loads immediately
+
+NEVER use `lando drush cr` — it hangs. See SANDBOX-glazed/.lando.yml for
+the full crx command. Root cause: Apache workers deadlock compiling the Drupal
+service container simultaneously when cache is empty. crx stops Apache first,
+pre-warms via drush status, then restarts Apache.
+
+If URLs don't resolve after lando restart:
+  lando poweroff && lando start   (re-registers proxy routes)
+  If still broken: lando rebuild -y, then immediately lando crx
+
+
+## SESSION: 2026-03-26 — What we fixed / built
+
+### Astro starter kit — fully rebuilt
+- Removed: Express, Prisma, SQLite, start.sh, Lando service entirely
+- New architecture: Astro SSG + client-side Drupal JSON:API fetch
+- No separate backend. No Lando service. Data from Drupal's own JSON:API.
+- starter-template now has: package.json (astro only), index.astro (JSON:API
+  client fetch), .env.example (PUBLIC_DRUPAL_BASE_URL for dev)
+- astro-app.js: removed Prisma setup, removed start.sh patching, skips
+  node_modules during copy (fixes broken .bin symlinks)
+- react-app.js: same node_modules skip fix applied
+- create-module.js: changed `lando drush cr` → `lando crx`
+- PROMPT.txt written for 0.starter-astro (full reference doc)
+
+### JSON:API module — enabled
+- Was not enabled on this Drupal site
+- Could not enable via `lando drush en` because of missing `canvas` module code
+  (config exists in DB but no .info.yml on disk)
+- Workaround: enabled via `drush php:eval` using module_installer service
+- Routes activated via `drupal_flush_all_caches()` via php:eval
+
+### astro---poc-02 — created and deployed
+- Created with `3pd astro app poc-02`
+- Updated index.astro to use `basic_page_layout_builder` (this site has no
+  `page` content type nodes — types are: drag_and_drop_page,
+  basic_page_layout_builder)
+- Deployed with `3pd astro module --install`
+- Block renders in Drupal but shows "No pages found."
+
+
+## SESSION: 2026-03-27 — What we fixed / built
+
+### astro---poc-02 — WORKING. Shows live Drupal data.
+
+Root causes found and fixed:
+
+1. HAProxy strips square brackets from query strings.
+   `?fields[node--basic_page_layout_builder]=title` → `?fields=` (empty)
+   Fix: removed the sparse fieldset param entirely. Plain URL with no params works.
+   Note: %5B/%5D encoding also gets stripped by HAProxy — do NOT use brackets
+   in query strings for Lando-proxied fetches.
+
+2. Browser cache served stale JS after rebuild.
+   `?v=1.x` was hardcoded in libraries.yml — never changed between builds.
+   Fix: 0.starter-astro/create-module.js now uses Date.now() as version.
+   Every rebuild produces a new ?v=<timestamp> cache buster.
+
+3. Old starter template default URL was node/page — this site has no `page` nodes.
+   Fix: poc-02 index.astro updated to fetch basic_page_layout_builder.
+   The starter template (0.starter-astro) still uses node/page as placeholder —
+   this is correct since it's generic. Apps must update it for their content type.
+
+Block at node/6 now displays:
+  - SANDBOX - 3PD Depot
+  - SANDBOX - Stracat
+  - Sandbox - Layout Builder
+
+
+## SESSION: 2026-03-27 — Strategy decisions (no code changes)
+
+### 3PD repo strategy — decided
+Each starter kit gets its own standalone git repo.
+3PD devs clone only their framework's repo. No /web, no Drupal, no Lando required.
+`3pd <framework> module` (without --install) packages the module subfolder only.
+3PD dev pushes a feature branch. Drupal owner pulls + runs --install.
+The --install flag is INTERNAL USE ONLY (copies to /web + enables in Drupal).
+
+### Data persistence — decided
+Apps that collect data (forms etc.) use Express + SQLite. NOT Drupal's DB.
+Reasons:
+  1. Portability: if client changes CMS, Express + SQLite file moves intact.
+  2. Compliance: .gov/HUD site — data must stay within FedRAMP boundary.
+     No external PaaS (Railway, Render etc.) for data storage on this project.
+  3. Simplicity: SQLite is a file, zero infrastructure overhead vs PostgreSQL.
+
+In production: Express backend co-deployed on the Drupal server, behind the
+same reverse proxy / auth wall as Drupal. Module JS calls /api/app-name/ on
+the same domain — already protected by the auth layer, no extra token needed.
+
+SQLite file location:
+  Dev:  ./server/db/app.sqlite  (relative, inside app folder)
+  Prod: /var/app-data/<appname>/app.sqlite  (absolute, outside web root)
+
+### Client context — HUD (.gov federal agency)
+The Drupal site is behind a sign-in wall for a HUD federal agency.
+Federal guidance applies (FedRAMP, FISMA, NIST 800-53, Section 508).
+Apps ONLY exist as Drupal modules in production — never standalone.
+All data infrastructure must stay within the compliance boundary.
+No unauthorized cloud services. Data must be US-hosted on approved infra.
+
+### Starter kit plan — agreed order
+1. Finish 0.starter-astro (read-only SSG — nearly done)
+2. Build 0.starter-astro-forms (Astro SSG + Express + SQLite)
+3. Update 0.starter-react (apply all lessons: SQLite, version string, drush path, cors)
+4. Further frameworks (Vanilla JS, Angular, Svelte) follow the same pattern
+
+### Two Astro starter variants
+Read-only apps (display CMS content only):
+  0.starter-astro → Astro SSG, no backend, no DB. Current pattern.
+  Use when: app only needs to show Drupal content.
+
+Apps with forms / data persistence:
+  0.starter-astro-forms → Astro SSG + Express + SQLite.
+  Express listens on 127.0.0.1 only (not 0.0.0.0 — not a public service).
+  Use when: app needs to collect or store data.
+
+### Mandatory checklist for ALL module generators (create-module.js)
+See 0.starter-astro/PROMPT.txt for the full list. Key items:
+  - version in libraries.yml = Date.now() (never static 1.x)
+  - No square brackets in fetch URLs (HAProxy strips them)
+  - lando crx for cache clear (never lando drush cr)
+  - node_modules skipped during template copy
+  - Express listens on 127.0.0.1 only in production builds
+  - DB_PATH configurable via env var (not hardcoded)
+
+
+## WHERE WE LEFT OFF (pick up here next session)
+
+### Next: finish 0.starter-astro (read-only)
+
+What still needs doing before it's "done" as a reference starter:
+  1. Verify starter-template/src/pages/index.astro uses a clear placeholder
+     content type name with a comment telling devs to update it for their site.
+  2. Confirm .env.example is correct and well-commented.
+  3. Confirm create-module.js has all mandatory checklist items (version=Date.now() ✓,
+     no bracket URLs ✓, lando crx ✓, node_modules skip ✓).
+  4. Update PROMPT.txt with anything still missing (mostly done as of 2026-03-27).
+  5. Decide: does the read-only starter need anything else, or is it shippable?
+
+### After that: build 0.starter-astro-forms
+  - Copy 0.starter-astro as base
+  - Add server/ directory: server.js (Express, 127.0.0.1), db/database.js, db/schema.sql
+  - Add better-sqlite3 dependency
+  - Add .env.example with PORT + DB_PATH
+  - Update create-module.js if any forms-specific module generation is needed
+  - Write PROMPT.txt for astro-forms variant
+
+### After that: update 0.starter-react
+Apply all lessons from Astro work:
+  - Switch PostgreSQL → SQLite (better-sqlite3)
+  - version: Date.now() in libraries.yml
+  - Fix drush path in create-module.js (cd /app && vendor/bin/drush)
+  - Fix cors() to explicit options
+  - Fix Express listen to 127.0.0.1
+  - Consolidate PROMPT.txt with full mandatory checklist
+
+
+## CONTENT TYPES ON THIS SITE
+
+  drag_and_drop_page          (nid 4: "Sandbox - DXPR")
+  basic_page_layout_builder   (nid 6: "Sandbox - Layout Builder",
+                               nid 10: "SANDBOX - 3PD Depot",
+                               nid 11: "SANDBOX - Stracat")
+
+There is NO `page` content type with nodes. The starter template's
+`node/page` default fetch URL needs to be updated to `basic_page_layout_builder`
+for this specific site.
+
+
+## 3PD WORKFLOW (third-party developer process)
+
+3PD dev (no access to /web Drupal codebase):
+  1. Clone their framework's starter repo (e.g. 0.starter-astro)
+  2. Run: 3pd astro app <feature-name>
+  3. Build the feature in their app folder
+  4. Run: 3pd astro module   (no --install — packages module subfolder only)
+  5. Push feature branch containing the module subfolder
+  6. Open PR to main repo
+
+Drupal owner (this repo):
+  1. Pull the feature branch
+  2. Run: 3pd astro module --install   (copies to /web/modules/custom + enables)
+  3. Run: lando crx
+  4. Place block in Layout Builder
+
+The module subfolder is the deliverable. The app src/ is the development environment.
+
+
+## KNOWN PENDING ISSUES
+
+- `canvas` module: config exists in DB but no code on disk. Causes `lando drush en`
+  to fail with "The module canvas does not exist." Workaround: use drush php:eval
+  with module_installer service. Low priority — doesn't affect site operation.
+- React create-module.js still has old drush path (cd /app/web && drush).
+  Fix when next touching React starter. See 0.starter-react/PROMPT.txt.
+- React server.js: bare cors() + missing 0.0.0.0 binding.
+  Fix when next touching React starter.
+- Docker Desktop update recommended (shown in lando output warnings).
+- OPcache CLI not yet enabled (was causing startup issues — skip for now).

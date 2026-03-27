@@ -51,6 +51,11 @@ ${chalk.bold('React Commands:')}
   ${chalk.green('3pd react module')}                Generate a Drupal module (3PD mode)
   ${chalk.green('3pd react module --install')}      Generate AND install the module (internal HUDX mode)
 
+${chalk.bold('Astro Commands:')}
+  ${chalk.cyan('3pd astro app <name>')}             Create a new Astro application
+  ${chalk.cyan('3pd astro module')}                 Generate a Drupal module (3PD mode)
+  ${chalk.cyan('3pd astro module --install')}       Generate AND install the module (internal HUDX mode)
+
 ${chalk.bold('Angular Commands:')}
   ${chalk.yellow('3pd angular app <name>')}          (placeholder)
   ${chalk.yellow('3pd angular module')}              (placeholder)
@@ -148,6 +153,33 @@ ${chalk.bold('Examples:')}
   3pd react module --install
 `;
 };
+
+// ------------------------------------------------------------
+// ASTRO NAMESPACE
+// ------------------------------------------------------------
+const astro = program
+  .command('astro')
+  .description('Astro commands');
+
+astro
+  .command('app <name...>')
+  .description('Create a new Astro application')
+  .action(async (name) => {
+    const cmd = await import('./commands/astro-app.js');
+    const folderName = Array.isArray(name) ? name.join(' ') : name;
+    cmd.default(folderName, { ideRoot, internal: isInternal });
+  });
+
+astro
+  .command('module')
+  .description('Generate a Drupal module from the current Astro app')
+  .option('--install', 'Install the generated module into Drupal (internal HUDX use only)')
+  .option('--internal', 'Alias for --install')
+  .action(async (options) => {
+    const cmd = await import('./commands/astro-module.js');
+    const internal = options.install || options.internal || isInternal;
+    cmd.default({ ideRoot, internal });
+  });
 
 // ------------------------------------------------------------
 // ANGULAR NAMESPACE
