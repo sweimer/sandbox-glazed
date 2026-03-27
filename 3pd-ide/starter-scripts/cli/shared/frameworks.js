@@ -1,7 +1,8 @@
 // shared/frameworks.js
 export const FRAMEWORK_PREFIXES = {
-  react:     'react---',
-  astro:     'astro---',
-  angular:   'angular---',
-  vanillajs: 'vanillajs---',
+  react:      'react---',
+  astro:      'astro---',
+  astroForms: 'astro-forms---',
+  angular:    'angular---',
+  vanillajs:  'vanillajs---',
 };

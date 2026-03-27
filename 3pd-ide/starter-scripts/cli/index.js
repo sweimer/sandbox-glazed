@@ -52,9 +52,14 @@ ${chalk.bold('React Commands:')}
   ${chalk.green('3pd react module --install')}      Generate AND install the module (internal HUDX mode)
 
 ${chalk.bold('Astro Commands:')}
-  ${chalk.cyan('3pd astro app <name>')}             Create a new Astro application
+  ${chalk.cyan('3pd astro app <name>')}             Create a new Astro application (read-only, no backend)
   ${chalk.cyan('3pd astro module')}                 Generate a Drupal module (3PD mode)
   ${chalk.cyan('3pd astro module --install')}       Generate AND install the module (internal HUDX mode)
+
+${chalk.bold('Astro Forms Commands:')}
+  ${chalk.cyan('3pd astro-forms app <name>')}       Create a new Astro + Express + SQLite application
+  ${chalk.cyan('3pd astro-forms module')}           Generate a Drupal module (3PD mode)
+  ${chalk.cyan('3pd astro-forms module --install')} Generate AND install the module (internal HUDX mode)
 
 ${chalk.bold('Angular Commands:')}
   ${chalk.yellow('3pd angular app <name>')}          (placeholder)
@@ -177,6 +182,33 @@ astro
   .option('--internal', 'Alias for --install')
   .action(async (options) => {
     const cmd = await import('./commands/astro-module.js');
+    const internal = options.install || options.internal || isInternal;
+    cmd.default({ ideRoot, internal });
+  });
+
+// ------------------------------------------------------------
+// ASTRO-FORMS NAMESPACE
+// ------------------------------------------------------------
+const astroForms = program
+  .command('astro-forms')
+  .description('Astro + Express + SQLite commands (apps with forms/data)');
+
+astroForms
+  .command('app <name...>')
+  .description('Create a new Astro Forms application')
+  .action(async (name) => {
+    const cmd = await import('./commands/astro-forms-app.js');
+    const folderName = Array.isArray(name) ? name.join(' ') : name;
+    cmd.default(folderName, { ideRoot, internal: isInternal });
+  });
+
+astroForms
+  .command('module')
+  .description('Generate a Drupal module from the current Astro Forms app')
+  .option('--install', 'Install the generated module into Drupal (internal HUDX use only)')
+  .option('--internal', 'Alias for --install')
+  .action(async (options) => {
+    const cmd = await import('./commands/astro-forms-module.js');
     const internal = options.install || options.internal || isInternal;
     cmd.default({ ideRoot, internal });
   });
