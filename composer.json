@@ -28,7 +28,7 @@
         "drupal/gemini_provider": "^1.0@beta",
         "drupal/key": "^1.22",
         "drupal/token": "^1.17",
-        "drupal/webform": "^6.2",
+        "drupal/webform": "6.3.0-beta8",
         "drupal/webform_views": "^5.6",
         "drush/drush": "^13.7",
         "pantheon-systems/drupal-integrations": "^11.2"
@@ -36,7 +36,7 @@
     "conflict": {
         "drupal/drupal": "*"
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "beta",
     "prefer-stable": true,
     "config": {
         "allow-plugins": {

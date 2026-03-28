@@ -13,7 +13,6 @@ yarn.lock
 
 # Composer
 /vendor/
-composer.lock
 
 # Drupal
 /web/sites/default/files/
