@@ -511,11 +511,40 @@ To get test routes on existing apps: re-run `3pd react module --install` or
 `3pd astro module --install` to regenerate the module with the new template.
 New apps created from this point will have /hudx-test/<appname> automatically.
 
-#### LANDO SSL FIX — ACTION REQUIRED
-lando rebuild -y has NOT been run yet. The .lando.yml build_as_root change
-won't take effect until rebuild runs. After rebuild: lando crx.
-Current workaround: docker exec works with --skip-ssl but lando drush still
-has the SSL issue until rebuild runs.
+#### SESSION: 2026-03-28 (continued) — Lando bootstrap deadlock fix
+
+##### Root cause
+After `lando rebuild -y`, multiple modules with external HTTP calls (ai, ai_automators,
+ai_api_explorer, ai_ckeditor, ai_observability, gemini_provider, announcements_feed,
+update, dxpr_builder) all tried to make DNS lookups during bootstrap. Docker's DNS
+resolver hung on the first lookup, deadlocking all Apache workers simultaneously.
+The crx pre-warm procedure (stop Apache → drush status → start Apache) also hung
+because drush itself was blocked on the same DNS call.
+
+##### Fix applied
+1. Added to settings.php (above Lando DB block):
+     $settings['http_client_config']['timeout'] = 5;
+   This bounds all Guzzle HTTP requests to 5 seconds, preventing DNS hangs from
+   blocking the bootstrap indefinitely.
+
+2. Added TRUNCATE TABLE router to crx command in .lando.yml — the router table
+   was not being cleared by crx, causing "No route found" errors after cache clears.
+
+3. Added router rebuild step to crx in .lando.yml:
+     drush php:eval "\Drupal::service('router.builder')->rebuild();"
+   NOTE: .lando.yml changes require `lando rebuild -y` to take effect.
+   Current session used manual `drush php:eval` workaround after each crx.
+
+##### lando rebuild -y — DONE (2026-03-28)
+SSL fix (build_as_root nossl.cnf) is now applied. lando crx works again.
+
+##### IMPORTANT: next lando rebuild required
+.lando.yml now has router truncate + rebuild in crx, but this requires
+another `lando rebuild -y` to take effect. Until then, after any lando crx
+that clears the router, run manually:
+  lando drush php:eval "\Drupal::service('router.builder')->rebuild();"
+OR just refresh the browser — Drupal rebuilds the router on the first web request
+if the router table is empty (may show "no route" on first load, reload fixes it).
 
 ### AFTER PANTHEON IS UP
 

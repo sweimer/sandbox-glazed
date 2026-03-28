@@ -863,6 +863,10 @@ $settings['config_sync_directory'] = 'sites/default/files/config_3_8ANiOh2Hfzojo
 
 $settings['extension_discovery_scan_tests'] = TRUE;
 
+// Short HTTP client timeout — prevents modules (announcements_feed, ai, etc.)
+// from blocking bootstrap indefinitely on slow/unavailable external endpoints.
+$settings['http_client_config']['timeout'] = 5;
+
 // Lando local database (only applied when running inside Lando).
 if (isset($_ENV['LANDO_APP_NAME'])) {
   $databases['default']['default'] = [
