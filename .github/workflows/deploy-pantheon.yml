@@ -30,4 +30,4 @@ jobs:
       - name: Push to Pantheon
         run: |
           git remote add pantheon ${{ secrets.PANTHEON_GIT_URL }}
-          git push pantheon main --force
+          git push pantheon main:master --force
