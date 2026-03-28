@@ -879,17 +879,8 @@ if (isset($_ENV['LANDO_APP_NAME'])) {
   ];
 }
 
-// Pantheon database credentials (injected via environment variables).
-if (isset($_ENV['PANTHEON_ENVIRONMENT'])) {
-  $databases['default']['default'] = [
-    'driver' => 'mysql',
-    'database' => $_ENV['DB_NAME'],
-    'username' => $_ENV['DB_USER'],
-    'password' => $_ENV['DB_PASSWORD'],
-    'host' => $_ENV['DB_HOST'],
-    'port' => $_ENV['DB_PORT'],
-    'prefix' => '',
-    'namespace' => 'Drupal\\mysql\\Driver\\Database\\mysql',
-    'autoload' => 'core/modules/mysql/src/Driver/Database/mysql/',
-  ];
+// Pantheon environment settings (DB, hash salt, trusted hosts, twig cache, etc.).
+$pantheon_settings = __DIR__ . '/../../../vendor/pantheon-systems/drupal-integrations/vendored-assets/settings.pantheon.php';
+if (file_exists($pantheon_settings)) {
+  require $pantheon_settings;
 }
