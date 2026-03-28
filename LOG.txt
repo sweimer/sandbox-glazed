@@ -355,3 +355,81 @@ Flag this when starting the CI/CD discussion.
   Fix when next touching React starter.
 - Docker Desktop update recommended (shown in lando output warnings).
 - OPcache CLI not yet enabled (was causing startup issues — skip for now).
+
+
+## README.md
+
+Created README.md at the repo root (2026-03-28) for lower-level devs setting up locally.
+Covers: prerequisites, first-time setup, settings.php DB block, lando crx explanation,
+troubleshooting, project structure, 3pd CLI usage, content types, Pantheon info.
+
+KEEP THIS UPDATED. Any time the setup process changes — new prereqs, new lando commands,
+new content types, Pantheon URL changes, CLI command changes — update README.md to match.
+
+
+## SESSION: 2026-03-28 — Pantheon setup
+
+### Goal
+Stand up a shared Pantheon Dev environment so 3PD devs can point their apps at a
+real live Drupal JSON:API endpoint (instead of running Lando locally).
+
+### What was done
+
+1. Created Pantheon site "3PD IDE" (machine name: 3-pd-ide) using Drupal (Composer Managed) upstream.
+   Site ID: 5921a711-db26-437b-93a3-6c5aa093be3d
+   Dev URL: https://dev-3-pd-ide.pantheonsite.io
+
+2. Created .github/workflows/deploy-pantheon.yml — pushes main → Pantheon master on every push to main.
+   Uses two GitHub repo secrets:
+     PANTHEON_SSH_KEY  — RSA private key (ed25519 not supported by Pantheon)
+     PANTHEON_GIT_URL  — ssh://codeserver.dev.5921a711-db26-437b-93a3-6c5aa093be3d@codeserver.dev.5921a711-db26-437b-93a3-6c5aa093be3d.drush.in:2222/~/repository.git
+
+3. Added pantheon.yml (NOT pantheon.upstream.yml — that's reserved for upstream):
+     api_version: 1
+     web_docroot: true
+     build_step: true
+     php_version: 8.3
+     database:
+       version: 10.6
+
+4. Fixed settings.php — wrapped lando DB credentials in isset($_ENV['LANDO_APP_NAME'])
+   check so they only apply locally. Added Pantheon settings include at bottom:
+     if (file_exists('/var/www/html/sites/default/settings.pantheon.php')) {
+       require '/var/www/html/sites/default/settings.pantheon.php';
+     }
+
+5. Exported database as db/3pddb5.sql.gz (stripped MariaDB 11.x header line that
+   breaks MariaDB 10.6). Successfully imported to Pantheon via:
+     terminus import:database 3-pd-ide.dev https://raw.githubusercontent.com/sweimer/sandbox-glazed/main/db/3pddb5.sql.gz
+
+6. SSH keys for Pantheon (RSA only — ed25519 not supported):
+   - pantheon_deploy  (RSA) — for GitHub Actions
+   - pantheon_local   (RSA) — for local terminus/drush commands
+   Both added via `terminus ssh-key:add`.
+   Also added id_samhsa_rsa_m1.pub as fallback local key.
+   Run `ssh-add ~/.ssh/pantheon_local` before using terminus remote:drush.
+
+### WHERE WE LEFT OFF
+
+Pantheon build is failing at 95% during "Sync code on dev" workflow.
+Root cause: drupal/webform is pinned to `6.3.x-dev` in composer.json — this requires
+cloning a git repo instead of downloading a release, likely timing out on Pantheon's
+sandbox tier.
+
+Fix in progress (NOT yet committed/tested):
+  - Changed composer.json: "drupal/webform": "6.3.x-dev" → "^6.2"
+  - Next step: run `lando composer update drupal/webform --with-dependencies`
+    to regenerate composer.lock, then commit both files and push.
+
+After that, watch Pantheon dashboard → Dev → Workflows for successful build.
+Then verify: https://dev-3-pd-ide.pantheonsite.io should load Drupal.
+
+### AFTER PANTHEON IS UP
+
+- Update .env in all 3pd-ide/apps/* to use Pantheon URL instead of lando URL
+  for PUBLIC_DRUPAL_BASE_URL (so apps can be tested without Lando running)
+- Update astro-app.js and astro-forms-app.js auto-detect fallback to suggest
+  Pantheon URL if lando is not running
+- Standalone repo extraction: create 3pd-astro/, 3pd-astro-forms/, 3pd-react/
+  as independent repos alongside 3pd-ide/ at the SANDBOX-glazed root
+- CI/CD discussion: test route gating, --install → git commit+push for Pantheon
