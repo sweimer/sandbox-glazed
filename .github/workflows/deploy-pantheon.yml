@@ -19,8 +19,8 @@ jobs:
           PANTHEON_SSH_KEY: ${{ secrets.PANTHEON_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$PANTHEON_SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          echo "$PANTHEON_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p 2222 codeserver.dev.*.drush.in >> ~/.ssh/known_hosts 2>/dev/null || true
           # Accept any Pantheon codeserver host
           echo "Host codeserver.dev.*.drush.in" >> ~/.ssh/config
