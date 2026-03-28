@@ -439,47 +439,60 @@ real live Drupal JSON:API endpoint (instead of running Lando locally).
 
 4. README.md written and pushed to GitHub — see "README.md" section above
 
-#### WHERE WE LEFT OFF (2026-03-28) — PICK UP HERE NEXT SESSION
+#### SESSION: 2026-03-28 (continued) — Pantheon deploy pipeline fixed
 
-Pantheon build is at 95% and still running as of session end. Two workflows
-were active simultaneously (normal — one was the failed pantheon.yml validation
-cleanup, the other is the real build). Outcome unknown — verify next session.
+##### Composer timeout — SOLVED
+Root cause: Pantheon sandbox tier was timing out running composer install.
+Solution: Option B — run composer install in GitHub Actions, push pre-built
+artifact (including vendor/) to Pantheon. build_step: false in pantheon.yml.
 
-If build succeeded: https://dev-3-pd-ide.pantheonsite.io should load Drupal.
-Pantheon build STILL failing at 95% after cleanup. Composer install is
-consistently timing out on Pantheon's sandbox tier regardless of what is pushed.
-All of these were tried and did not fix it:
-  - webform 6.3.x-dev → 6.3.0-beta8 (fixes git clone issue but not timeout)
-  - committed composer.lock (so Pantheon uses exact pinned versions)
-  - removed pantheon.upstream.yml (trailing space filename, was confusing pipeline)
-  - removed stray drupal/ directory from repo root
+Changes made:
+  - .github/workflows/deploy-pantheon.yml: added shivammathur/setup-php@v2
+    (PHP 8.3 + Composer 2), composer install --no-dev --optimize-autoloader,
+    git add -f vendor/, git commit, then push HEAD:master to Pantheon.
+  - pantheon.yml: build_step: false (Pantheon no longer runs composer).
+  - vendor/ stays gitignored in source repo. Only the Pantheon-bound push
+    includes it. Source repo stays clean.
+  - Pantheon context: this is a POC shared dev endpoint only. When project
+    goes to production, code will be copy-pasted to a different Drupal
+    codebase — not deployed from this repo.
 
-DECISION NEEDED — two options:
+##### settings.php — FIXED and committed
+Was gitignored — Pantheon was showing install page because no settings.php
+existed on the server to connect to the database.
+  - Updated .gitignore: /web/sites/*/settings*.php →
+    /web/sites/*/settings.local.php (only ignore local overrides)
+  - settings.php is now committed and pushed.
 
-  Option A (pragmatic, do this): Commit vendor/ to the repo
-    - Set build_step: false in pantheon.yml
-    - Run composer install locally
-    - Commit vendor/ directory (~50MB)
-    - Bypasses Pantheon build step entirely — guaranteed to work
-    - Downside: every composer update needs a new vendor commit
-    - Right choice since Pantheon is just a shared dev endpoint, not production
+##### Pantheon DB connection — FIXED
+Two failed attempts before finding the right approach:
+  1. Hardcoded /var/www/html path → wrong on Pantheon (web_docroot: true
+     means path is /code/web). Fixed to use __DIR__.
+  2. $ENV['DB_NAME'] etc. → wrong. Pantheon passes DB credentials via
+     $_SERVER['PRESSFLOW_SETTINGS'] (JSON blob), not individual env vars.
+  3. CORRECT FIX: require settings.pantheon.php from vendor/:
+       vendor/pantheon-systems/drupal-integrations/vendored-assets/settings.pantheon.php
+     This file is the official Pantheon integration — handles DB via
+     PRESSFLOW_SETTINGS, sets hash_salt, trusted_host_patterns, twig cache,
+     and registers PantheonServiceProvider. It ships in vendor/ which is
+     now included in every Pantheon push.
+     Path in settings.php: __DIR__ . '/../../../vendor/pantheon-systems/...'
 
-  Option B (proper long-term): Pantheon Build Tools plugin
-    - terminus-build-tools-plugin runs composer on GitHub Actions
-    - Pushes built artifact to Pantheon (not raw source)
-    - More complex setup — revisit when Pantheon becomes production
+##### WHERE WE LEFT OFF (2026-03-28 continued) — PICK UP HERE NEXT SESSION
 
-RECOMMENDATION: Before going with Option A, check the actual build log first.
+Pantheon pipeline is deploying cleanly (GH Actions build: Success, Pantheon
+sync: Success). settings.php with correct vendor/ settings.pantheon.php
+include has been pushed as of last commit (3d03c923).
 
-HOW TO GET THE REAL ERROR:
-  Pantheon dashboard → Workflows → "Synced code on dev" 12:20 PM → View details
-  This will show the actual composer install error, not just the timeout.
-  Paste it into chat next session — may reveal a simpler fix than committing vendor/.
+VERIFY NEXT SESSION:
+  1. Check https://dev-3-pd-ide.pantheonsite.io — should load Drupal (not install page).
+     If still showing install page: check Pantheon Dashboard → Database tab to
+     confirm the DB import (terminus import:database) is still present.
+  2. If Drupal loads: re-import DB if needed (terminus import:database 3-pd-ide.dev
+     https://raw.githubusercontent.com/sweimer/sandbox-glazed/main/db/3pddb5.sql.gz)
+     Remember: ssh-add ~/.ssh/pantheon_local first.
 
-NOTE: The "Updated pantheon.yml" log we saw shows the composer_version rejection
-— that's already fixed and not the issue. We need the 12:20 PM "Synced code" log.
-
-#### LANDO SSL FIX — ACTION REQUIRED NEXT SESSION
+#### LANDO SSL FIX — ACTION REQUIRED
 lando rebuild -y has NOT been run yet. The .lando.yml build_as_root change
 won't take effect until rebuild runs. After rebuild: lando crx.
 Current workaround: docker exec works with --skip-ssl but lando drush still
