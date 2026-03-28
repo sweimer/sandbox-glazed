@@ -478,19 +478,38 @@ Two failed attempts before finding the right approach:
      now included in every Pantheon push.
      Path in settings.php: __DIR__ . '/../../../vendor/pantheon-systems/...'
 
-##### WHERE WE LEFT OFF (2026-03-28 continued) — PICK UP HERE NEXT SESSION
+##### Pantheon — FULLY WORKING (2026-03-28)
 
-Pantheon pipeline is deploying cleanly (GH Actions build: Success, Pantheon
-sync: Success). settings.php with correct vendor/ settings.pantheon.php
-include has been pushed as of last commit (3d03c923).
+https://dev-3-pd-ide.pantheonsite.io is live and loading Drupal.
+DB connected, Drupal 11.3.3, bootstrap successful (confirmed via terminus drush status).
 
-VERIFY NEXT SESSION:
-  1. Check https://dev-3-pd-ide.pantheonsite.io — should load Drupal (not install page).
-     If still showing install page: check Pantheon Dashboard → Database tab to
-     confirm the DB import (terminus import:database) is still present.
-  2. If Drupal loads: re-import DB if needed (terminus import:database 3-pd-ide.dev
-     https://raw.githubusercontent.com/sweimer/sandbox-glazed/main/db/3pddb5.sql.gz)
-     Remember: ssh-add ~/.ssh/pantheon_local first.
+terminus remote:drush SSH fix:
+  The RSA keys (pantheon_local, id_samhsa_rsa_m1) were in the agent but the
+  SSH client was only offering ED25519 keys (routed through 1Password agent).
+  Fix: added IdentityFile + algorithm flags to ~/.ssh/config for *.drush.in:
+    Host *.drush.in
+      IdentityFile ~/.ssh/pantheon_local
+      PubkeyAcceptedAlgorithms +ssh-rsa
+      HostKeyAlgorithms +ssh-rsa
+  terminus remote:drush now works. Use for remote drush commands going forward.
+
+JSON:API endpoint (for 3PD devs):
+  https://dev-3-pd-ide.pantheonsite.io/jsonapi
+  https://dev-3-pd-ide.pantheonsite.io/jsonapi/node/basic_page_layout_builder
+
+##### /hudx-test/ routes — NOTE
+The test route feature (routing.yml + HudxTestController) was added to
+create-module.js AFTER the existing modules were generated. None of the
+currently installed modules have a /hudx-test/ URL:
+  hudx_react___3pd_depot  — no test route
+  hudx_react___3pd_poc    — no test route
+  hudx_react___stracat    — no test route
+  hudx_astro___poc_01     — no test route
+  hudx_astro___poc_02     — no test route (astro modules not in web/modules/custom)
+
+To get test routes on existing apps: re-run `3pd react module --install` or
+`3pd astro module --install` to regenerate the module with the new template.
+New apps created from this point will have /hudx-test/<appname> automatically.
 
 #### LANDO SSL FIX — ACTION REQUIRED
 lando rebuild -y has NOT been run yet. The .lando.yml build_as_root change
