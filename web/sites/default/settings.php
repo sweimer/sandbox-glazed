@@ -880,6 +880,6 @@ if (isset($_ENV['LANDO_APP_NAME'])) {
 }
 
 // Pantheon environment settings (DB, Redis, trusted hosts, etc.).
-if (file_exists('/var/www/html/sites/default/settings.pantheon.php')) {
-  require '/var/www/html/sites/default/settings.pantheon.php';
+if (file_exists(__DIR__ . '/settings.pantheon.php')) {
+  require __DIR__ . '/settings.pantheon.php';
 }
