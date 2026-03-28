@@ -15,6 +15,15 @@ jobs:
           fetch-depth: 0
           submodules: false
 
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
       - name: Configure SSH
         env:
           PANTHEON_SSH_KEY: ${{ secrets.PANTHEON_SSH_KEY }}
@@ -22,13 +31,15 @@ jobs:
           mkdir -p ~/.ssh
           echo "$PANTHEON_SSH_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p 2222 codeserver.dev.*.drush.in >> ~/.ssh/known_hosts 2>/dev/null || true
-          # Accept any Pantheon codeserver host
           echo "Host codeserver.dev.*.drush.in" >> ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
           echo "  Port 2222" >> ~/.ssh/config
 
-      - name: Push to Pantheon
+      - name: Push artifact to Pantheon
         run: |
+          git config user.email "deploy@github-actions"
+          git config user.name "GitHub Actions"
+          git add -f vendor/
+          git commit -m "Deploy: include vendor/ [skip ci]"
           git remote add pantheon ${{ secrets.PANTHEON_GIT_URL }}
-          git push pantheon main:master --force
+          git push pantheon HEAD:master --force

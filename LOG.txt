@@ -409,20 +409,81 @@ real live Drupal JSON:API endpoint (instead of running Lando locally).
    Also added id_samhsa_rsa_m1.pub as fallback local key.
    Run `ssh-add ~/.ssh/pantheon_local` before using terminus remote:drush.
 
-### WHERE WE LEFT OFF
+### SESSION: 2026-03-28 — Pantheon build debugging
 
-Pantheon build is failing at 95% during "Sync code on dev" workflow.
-Root cause: drupal/webform is pinned to `6.3.x-dev` in composer.json — this requires
-cloning a git repo instead of downloading a release, likely timing out on Pantheon's
-sandbox tier.
+#### Fixes applied this session
 
-Fix in progress (NOT yet committed/tested):
-  - Changed composer.json: "drupal/webform": "6.3.x-dev" → "^6.2"
-  - Next step: run `lando composer update drupal/webform --with-dependencies`
-    to regenerate composer.lock, then commit both files and push.
+1. webform version — composer.json changed from `6.3.x-dev` to `6.3.0-beta8`
+   - 6.3.x-dev required a git clone on Pantheon (timeout)
+   - 6.3.0-beta8 is a tagged dist release (zip download, no git clone)
+   - minimum-stability changed from `stable` to `beta` (required for beta packages;
+     prefer-stable: true kept so everything else stays stable)
+   - composer.lock was gitignored — removed from .gitignore and committed so Pantheon
+     uses exact pinned versions during composer install
 
-After that, watch Pantheon dashboard → Dev → Workflows for successful build.
-Then verify: https://dev-3-pd-ide.pantheonsite.io should load Drupal.
+2. Lando SSL fix — .lando.yml updated
+   - After a Docker Desktop update, appserver MariaDB client upgraded to 11.8.3
+   - 11.8.3 client requires SSL by default; MariaDB 10.6 server has no SSL configured
+   - Fix: build_as_root step drops /etc/mysql/conf.d/nossL.cnf with [client] skip-ssl
+   - Also added --skip-ssl to crx mysql command as backstop
+   - REQUIRES: lando rebuild -y (build_as_root only runs at image build time)
+   - After rebuild: lando crx to pre-warm
+
+3. Repo cleanup
+   - Removed pantheon.upstream.yml (trailing space in filename, invalid file,
+     was being pushed to Pantheon and likely confusing build pipeline)
+   - Removed drupal/ directory (stray copy of hudx_react_poc_09 at repo root,
+     real location is web/modules/custom/)
+   - Removed invalid `composer_version: ^2` key from pantheon.yml (Pantheon
+     rejected the push — that key is not supported)
+
+4. README.md written and pushed to GitHub — see "README.md" section above
+
+#### WHERE WE LEFT OFF (2026-03-28) — PICK UP HERE NEXT SESSION
+
+Pantheon build is at 95% and still running as of session end. Two workflows
+were active simultaneously (normal — one was the failed pantheon.yml validation
+cleanup, the other is the real build). Outcome unknown — verify next session.
+
+If build succeeded: https://dev-3-pd-ide.pantheonsite.io should load Drupal.
+Pantheon build STILL failing at 95% after cleanup. Composer install is
+consistently timing out on Pantheon's sandbox tier regardless of what is pushed.
+All of these were tried and did not fix it:
+  - webform 6.3.x-dev → 6.3.0-beta8 (fixes git clone issue but not timeout)
+  - committed composer.lock (so Pantheon uses exact pinned versions)
+  - removed pantheon.upstream.yml (trailing space filename, was confusing pipeline)
+  - removed stray drupal/ directory from repo root
+
+DECISION NEEDED — two options:
+
+  Option A (pragmatic, do this): Commit vendor/ to the repo
+    - Set build_step: false in pantheon.yml
+    - Run composer install locally
+    - Commit vendor/ directory (~50MB)
+    - Bypasses Pantheon build step entirely — guaranteed to work
+    - Downside: every composer update needs a new vendor commit
+    - Right choice since Pantheon is just a shared dev endpoint, not production
+
+  Option B (proper long-term): Pantheon Build Tools plugin
+    - terminus-build-tools-plugin runs composer on GitHub Actions
+    - Pushes built artifact to Pantheon (not raw source)
+    - More complex setup — revisit when Pantheon becomes production
+
+RECOMMENDATION: Before going with Option A, check the actual build log first.
+
+HOW TO GET THE REAL ERROR:
+  Pantheon dashboard → Workflows → "Synced code on dev" 12:20 PM → View details
+  This will show the actual composer install error, not just the timeout.
+  Paste it into chat next session — may reveal a simpler fix than committing vendor/.
+
+NOTE: The "Updated pantheon.yml" log we saw shows the composer_version rejection
+— that's already fixed and not the issue. We need the 12:20 PM "Synced code" log.
+
+#### LANDO SSL FIX — ACTION REQUIRED NEXT SESSION
+lando rebuild -y has NOT been run yet. The .lando.yml build_as_root change
+won't take effect until rebuild runs. After rebuild: lando crx.
+Current workaround: docker exec works with --skip-ssl but lando drush still
+has the SSL issue until rebuild runs.
 
 ### AFTER PANTHEON IS UP
 
