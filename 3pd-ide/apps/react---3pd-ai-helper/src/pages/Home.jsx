@@ -69,7 +69,7 @@ export default function MarkupBuilder() {
       const csrfToken = await tokenRes.text();
 
       // 2. Create node via JSON:API
-      const nodeRes = await fetch(`${DRUPAL_BASE}/jsonapi/node/basic_page_layout_builder`, {
+      const nodeRes = await fetch(`${DRUPAL_BASE}/jsonapi/node/page`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -79,7 +79,7 @@ export default function MarkupBuilder() {
         },
         body: JSON.stringify({
           data: {
-            type: 'node--basic_page_layout_builder',
+            type: 'node--page',
             attributes: {
               title: title.trim(),
               body: {
