@@ -88,7 +88,7 @@ import Layout from '../layouts/Layout.astro';
   async function loadNodes() {
     const list = document.getElementById('nodes-list');
     try {
-      const res = await fetch(`${DRUPAL_BASE}/jsonapi/node/YOUR_CONTENT_TYPE`);
+      const res = await fetch(`${DRUPAL_BASE}/jsonapi/node/basic_page_layout_builder`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { data } = await res.json();
       list.innerHTML = data.length
