@@ -890,7 +890,10 @@ if (file_exists($pantheon_settings)) {
 }
 
 // Pantheon API keys — set here so PHP getenv() works for custom modules.
-// Set ANTHROPIC_API_KEY in Pantheon Dashboard → Settings → Environment Variables.
-if (isset($_ENV['PANTHEON_ENVIRONMENT']) && !empty($_ENV['ANTHROPIC_API_KEY'])) {
-  putenv('ANTHROPIC_API_KEY=' . $_ENV['ANTHROPIC_API_KEY']);
+// Secret stored via Pantheon Secrets Manager (Runtime / Web scope).
+if (isset($_ENV['PANTHEON_ENVIRONMENT']) && function_exists('pantheon_get_secret')) {
+  $anthropic_key = pantheon_get_secret('ANTHROPIC_API_KEY');
+  if (!empty($anthropic_key)) {
+    putenv('ANTHROPIC_API_KEY=' . $anthropic_key);
+  }
 }
