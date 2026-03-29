@@ -173,6 +173,9 @@ export default function ThreePDLandingPage() {
               </p>
               <a href="/hudx-test/astro-forms---3pd-checklist" className="btn btn-primary mt-auto">
                 Manage 3PD Modules
+              </a><br/>
+              <a href="/admin/content" className="btn btn-primary mt-auto">
+                Content Manager
               </a>
             </div>
           </div>
