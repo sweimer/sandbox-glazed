@@ -112,7 +112,11 @@ export default async function reactDbPull({ ideRoot }) {
   log.info('Fetching data from Drupal...');
   let rows;
   try {
+    // Allow self-signed certs for local Lando URLs.
+    const isLocal = apiUrl.includes('lndo.site') || apiUrl.includes('localhost');
+    if (isLocal) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     const res = await fetch(apiUrl);
+    if (isLocal) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
     if (!res.ok) {
       log.error(`HTTP ${res.status} — ${apiUrl}`);
       log.dim('Check that the module is installed on Pantheon and the route is active.');

@@ -293,6 +293,7 @@ type: module
 description: '3PD AI Helper — Claude-powered markup generator.'
 core_version_requirement: ^10 || ^11
 package: 3PD IDE Apps
+configure: ${machineName}.test_page
 `.trim() + '\n');
 
   // .module
