@@ -17,7 +17,7 @@ yarn.lock
 # Drupal
 /web/sites/default/files/
 /web/sites/*/settings.local.php
-/web/sites/*/services*.yml
+/web/sites/*/services.local.yml
 
 # Lando
 .lando.local.yml

@@ -1,0 +1,15 @@
+parameters:
+  cors.config:
+    enabled: true
+    # Allow the Astro dev server to fetch from Drupal JSON:API.
+    # In production the module is same-origin so CORS headers are not needed,
+    # but they do not cause harm.
+    allowedHeaders:
+      - '*'
+    allowedMethods:
+      - GET
+    allowedOrigins:
+      - 'http://localhost:4321'
+    exposedHeaders: false
+    maxAge: false
+    supportsCredentials: false
