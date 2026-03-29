@@ -43,3 +43,22 @@ jobs:
           git commit -m "Deploy: include vendor/ [skip ci]"
           git remote add pantheon ${{ secrets.PANTHEON_GIT_URL }}
           git push pantheon HEAD:master --force
+
+      - name: Install Terminus
+        run: |
+          curl -fsSL https://github.com/pantheon-systems/terminus/releases/latest/download/terminus.phar -o /usr/local/bin/terminus
+          chmod +x /usr/local/bin/terminus
+
+      - name: Authenticate Terminus
+        env:
+          PANTHEON_MACHINE_TOKEN: ${{ secrets.PANTHEON_MACHINE_TOKEN }}
+        run: terminus auth:login --machine-token="$PANTHEON_MACHINE_TOKEN"
+
+      - name: Wait for Pantheon sync and enable new modules
+        run: |
+          # Wait for Quicksilver post-deploy to finish (updb + router + cr runs automatically)
+          sleep 30
+          # Enable any custom modules present in code but not yet enabled in DB
+          terminus remote:drush 3-pd-ide.dev -- pm:list --type=module --status=disabled --no-core --field=name 2>/dev/null \
+            | grep '^hudx_' \
+            | xargs -r terminus remote:drush 3-pd-ide.dev -- pm:enable -y --
