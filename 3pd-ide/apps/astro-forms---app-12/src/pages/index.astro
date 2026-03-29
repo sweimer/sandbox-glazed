@@ -1,0 +1,161 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="HUDX Astro App">
+  <main style="padding: 2rem; max-width: 640px;">
+    <h1>Welcome to your HUDX Astro App</h1>
+
+    <!-- ============================================================
+         SECTION 1: Content from Drupal JSON:API (read-only)
+         Update basic_page_layout_builder to match your Drupal site.
+         See: Drupal admin → Structure → Content types
+         ============================================================ -->
+    <section>
+      <h2>Content from Drupal</h2>
+      <ul id="nodes-list">
+        <li style="color: #999;">Loading…</li>
+      </ul>
+    </section>
+
+    <!-- ============================================================
+         SECTION 2: Form — submits to Express API → saves to SQLite
+         ============================================================ -->
+    <section style="margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+      <h2>Submit a Message</h2>
+      <form id="submission-form">
+        <div>
+          <label for="name">Name</label><br />
+          <input
+            type="text"
+            id="name"
+            name="name"
+            required
+            style="width: 100%; padding: 0.4rem; margin-top: 0.25rem;"
+          />
+        </div>
+        <div style="margin-top: 0.75rem;">
+          <label for="message">Message</label><br />
+          <textarea
+            id="message"
+            name="message"
+            required
+            rows="3"
+            style="width: 100%; padding: 0.4rem; margin-top: 0.25rem;"
+          ></textarea>
+        </div>
+        <button type="submit" style="margin-top: 0.75rem; padding: 0.5rem 1.25rem; cursor: pointer;">
+          Submit
+        </button>
+        <p id="form-status" style="margin-top: 0.5rem; min-height: 1.25rem;"></p>
+      </form>
+    </section>
+
+    <!-- ============================================================
+         SECTION 3: Submissions — loaded from Express API / SQLite
+         ============================================================ -->
+    <section style="margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+      <h2>Submissions</h2>
+      <ul id="submissions-list">
+        <li style="color: #999;">Loading…</li>
+      </ul>
+    </section>
+  </main>
+</Layout>
+
+<script>
+  // -----------------------------------------------------------------------
+  // CONFIGURATION
+  //
+  // DRUPAL_BASE  — base URL for Drupal JSON:API reads.
+  //   Dev:  set PUBLIC_DRUPAL_BASE_URL in .env (copy from .env.example)
+  //   Prod: leave unset — module runs same-origin inside Drupal
+  //
+  // API_BASE — base URL for the Express backend (form submissions).
+  //   Dev:  set PUBLIC_API_BASE_URL=http://localhost:3001 in .env
+  //   Prod: leave unset — reverse proxy routes /api/ on the same domain
+  //
+  // CONTENT TYPE — update basic_page_layout_builder to your Drupal content type.
+  //   Find it: Drupal admin → Structure → Content types
+  //   IMPORTANT: no square brackets in the URL (Lando HAProxy strips them).
+  // -----------------------------------------------------------------------
+  const DRUPAL_BASE = import.meta.env.PUBLIC_DRUPAL_BASE_URL || '';
+  const API_BASE    = import.meta.env.PUBLIC_API_BASE_URL    || '';
+
+  // -----------------------------------------------------------------------
+  // Load Drupal content
+  // -----------------------------------------------------------------------
+  async function loadNodes() {
+    const list = document.getElementById('nodes-list');
+    try {
+      const res = await fetch(`${DRUPAL_BASE}/jsonapi/node/basic_page_layout_builder`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { data } = await res.json();
+      list.innerHTML = data.length
+        ? data.map((n) => `<li>${n.attributes.title}</li>`).join('')
+        : '<li style="color:#999">No content found.</li>';
+    } catch (err) {
+      list.innerHTML = `<li style="color:#c00">Could not load Drupal content: ${err.message}</li>`;
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Load submissions from Express API
+  // -----------------------------------------------------------------------
+  async function loadSubmissions() {
+    const list = document.getElementById('submissions-list');
+    try {
+      const res = await fetch(`${API_BASE}/api/submissions`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const rows = await res.json();
+      list.innerHTML = rows.length
+        ? rows
+            .map(
+              (r) =>
+                `<li>
+                  <strong>${r.name}</strong>: ${r.message}
+                  <small style="color:#999; margin-left: 0.5rem;">${r.created_at}</small>
+                </li>`
+            )
+            .join('')
+        : '<li style="color:#999">No submissions yet.</li>';
+    } catch (err) {
+      list.innerHTML = `<li style="color:#c00">Could not load submissions: ${err.message}</li>`;
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Handle form submit — POST to Express, then reload submissions list
+  // -----------------------------------------------------------------------
+  document.getElementById('submission-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status  = document.getElementById('form-status');
+    const name    = document.getElementById('name').value.trim();
+    const message = document.getElementById('message').value.trim();
+
+    status.style.color = '#666';
+    status.textContent = 'Submitting…';
+
+    try {
+      const res = await fetch(`${API_BASE}/api/submissions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, message }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      status.style.color = '#060';
+      status.textContent = 'Submitted!';
+      e.target.reset();
+      loadSubmissions();
+      setTimeout(() => { status.textContent = ''; }, 3000);
+    } catch (err) {
+      status.style.color = '#c00';
+      status.textContent = `Error: ${err.message}`;
+    }
+  });
+
+  // Initial load
+  loadNodes();
+  loadSubmissions();
+</script>

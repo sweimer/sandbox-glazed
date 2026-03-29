@@ -33,7 +33,15 @@ function copyRecursive(src, dest) {
   }
 }
 
-function setupEnvFile(appDir) {
+function loadProjectConfig(appDir) {
+  const configPath = path.join(appDir, '..', '..', '..', '3pd.config.json');
+  if (fs.existsSync(configPath)) {
+    try { return JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
+  }
+  return {};
+}
+
+function setupEnvFile(appDir, config = {}) {
   const envExample = path.join(appDir, '.env.example');
   const envFile    = path.join(appDir, '.env');
 
@@ -44,21 +52,35 @@ function setupEnvFile(appDir) {
 
   let envContent = fs.readFileSync(envExample, 'utf8');
 
-  // Auto-detect Drupal URL from lando (internal devs only — fails silently for 3PD)
-  let drupalUrl = '';
-  try {
-    drupalUrl = execSync('lando ssh -c "cd /app && drush status --field=uri" 2>/dev/null', { encoding: 'utf8' }).trim();
-  } catch {}
+  // Resolve Drupal URL: 3pd.config.json (Pantheon) → Lando → warn
+  let drupalUrl = config.pantheonUrl || '';
+
+  // Fall back to Lando detection
+  if (!drupalUrl) {
+    try {
+      drupalUrl = execSync('lando ssh -c "cd /app && drush status --field=uri" 2>/dev/null', { encoding: 'utf8' }).trim();
+    } catch {}
+  }
 
   if (drupalUrl) {
     envContent = envContent.replace(/PUBLIC_DRUPAL_BASE_URL=.*/, `PUBLIC_DRUPAL_BASE_URL=${drupalUrl}`);
-    log.success(`.env created — Drupal URL auto-detected: ${drupalUrl}`);
+    log.success(`.env created — Drupal URL: ${drupalUrl}`);
   } else {
     log.success('.env created from .env.example');
-    log.warn('Could not auto-detect Drupal URL. Update PUBLIC_DRUPAL_BASE_URL in .env manually.');
+    log.warn('Could not resolve Drupal URL. Update PUBLIC_DRUPAL_BASE_URL in .env manually.');
   }
 
   fs.writeFileSync(envFile, envContent);
+}
+
+function setupIndexAstro(appDir, config = {}) {
+  if (!config.defaultContentType) return;
+  const indexPath = path.join(appDir, 'src', 'pages', 'index.astro');
+  if (fs.existsSync(indexPath)) {
+    const updated = fs.readFileSync(indexPath, 'utf8').replace(/YOUR_CONTENT_TYPE/g, config.defaultContentType);
+    fs.writeFileSync(indexPath, updated);
+    log.success(`index.astro — content type set to: ${config.defaultContentType}`);
+  }
 }
 
 export default async function astroApp(name, { ideRoot }) {
@@ -108,7 +130,9 @@ export default async function astroApp(name, { ideRoot }) {
   log.success('Template copied.');
 
   log.header('Configuring Environment');
-  setupEnvFile(appDir);
+  const config = loadProjectConfig(appDir);
+  setupEnvFile(appDir, config);
+  setupIndexAstro(appDir, config);
 
   const pkgPath = path.join(appDir, 'package.json');
   if (fs.existsSync(pkgPath)) {

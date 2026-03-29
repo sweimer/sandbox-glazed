@@ -75,25 +75,47 @@ export default async function astroFormsApp(name, { ideRoot }) {
   log.success('Template copied.');
 
   log.header('Configuring Environment');
-  const envExample = path.join(appDir, '.env.example');
-  if (fs.existsSync(envExample)) {
-    let envContent = fs.readFileSync(envExample, 'utf8');
 
-    // Auto-detect Drupal URL from lando (internal devs only — fails silently for 3PD)
-    let drupalUrl = '';
+  // Load 3pd.config.json at repo root
+  let drupalUrl = '';
+  let defaultContentType = '';
+  const configPath = path.join(ideRoot, '..', '3pd.config.json');
+  if (fs.existsSync(configPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (config.pantheonUrl) drupalUrl = config.pantheonUrl;
+      if (config.defaultContentType) defaultContentType = config.defaultContentType;
+    } catch {}
+  }
+
+  // Fall back to Lando detection
+  if (!drupalUrl) {
     try {
       drupalUrl = execSync('lando ssh -c "cd /app && drush status --field=uri" 2>/dev/null', { encoding: 'utf8' }).trim();
     } catch {}
+  }
 
+  const envExample = path.join(appDir, '.env.example');
+  if (fs.existsSync(envExample)) {
+    let envContent = fs.readFileSync(envExample, 'utf8');
     if (drupalUrl) {
       envContent = envContent.replace(/PUBLIC_DRUPAL_BASE_URL=.*/, `PUBLIC_DRUPAL_BASE_URL=${drupalUrl}`);
-      log.success(`.env created — Drupal URL auto-detected: ${drupalUrl}`);
+      log.success(`.env created — Drupal URL: ${drupalUrl}`);
     } else {
       log.success('.env created from .env.example');
-      log.warn('Could not auto-detect Drupal URL. Update PUBLIC_DRUPAL_BASE_URL in .env manually.');
+      log.warn('Could not resolve Drupal URL. Update PUBLIC_DRUPAL_BASE_URL in .env manually.');
     }
-
     fs.writeFileSync(path.join(appDir, '.env'), envContent);
+  }
+
+  // Replace YOUR_CONTENT_TYPE placeholder in index.astro
+  if (defaultContentType) {
+    const indexPath = path.join(appDir, 'src', 'pages', 'index.astro');
+    if (fs.existsSync(indexPath)) {
+      const updated = fs.readFileSync(indexPath, 'utf8').replace(/YOUR_CONTENT_TYPE/g, defaultContentType);
+      fs.writeFileSync(indexPath, updated);
+      log.success(`index.astro — content type set to: ${defaultContentType}`);
+    }
   }
 
   const pkgPath = path.join(appDir, 'package.json');

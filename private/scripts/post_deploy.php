@@ -21,4 +21,16 @@ passthru("$drush --root=$root --uri=$uri php:eval \"\Drupal::service('router.bui
 echo "=== Post-deploy: clearing caches ===\n";
 passthru("$drush --root=$root --uri=$uri cr 2>&1");
 
+echo "=== Post-deploy: re-seeding hudx module data ===\n";
+$custom_modules = '/code/web/modules/custom';
+if (is_dir($custom_modules)) {
+  foreach (scandir($custom_modules) as $mod) {
+    $seed_file = "$custom_modules/$mod/data/seed.json";
+    if (file_exists($seed_file)) {
+      echo "  Seeding $mod...\n";
+      passthru("$drush --root=$root --uri=$uri php:eval \"\\Drupal::moduleHandler()->loadInclude('$mod', 'install'); _${mod}_import_seed();\" 2>&1");
+    }
+  }
+}
+
 echo "=== Post-deploy complete ===\n";

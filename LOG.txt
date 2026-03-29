@@ -589,3 +589,99 @@ Until then: after lando crx, reload browser once if "No route found" appears.
 - Standalone repo extraction: create 3pd-astro/, 3pd-astro-forms/, 3pd-react/
   as independent repos alongside 3pd-ide/ at the SANDBOX-glazed root
 - CI/CD discussion: test route gating, --install → git commit+push for Pantheon
+
+
+## SESSION: 2026-03-29 — Form persistence via Drupal DB (Option A)
+
+### Problem
+astro-forms apps deployed as Drupal modules had broken form submit + submissions
+list (HTTP 404) because the module's static JS called /api/submissions on the
+same origin (Drupal), but no route existed there. Express/SQLite only runs locally.
+
+### Decision: Option A — Drupal handles the API
+The Drupal module now exposes /api/submissions itself, backed by Drupal's MySQL DB.
+This is the right fit for Pantheon (no separate process, same-origin, no CORS needed).
+The local Express/SQLite remains for 3PD dev workflow (they don't run Drupal locally).
+On --install, SQLite data is read and baked into the module as seed data.
+
+### What was built
+
+#### 3pd.config.json (new file, repo root)
+Project-level config read by the CLI when creating new apps:
+  {
+    "pantheonUrl": "https://dev-3-pd-ide.pantheonsite.io",
+    "defaultContentType": "basic_page_layout_builder"
+  }
+
+Both astro-forms-app.js and astro-app.js now read this on app creation:
+  1. Sets PUBLIC_DRUPAL_BASE_URL automatically (no manual .env edit)
+  2. Replaces YOUR_CONTENT_TYPE in index.astro automatically (no manual edit)
+New apps are fully functional out of the box.
+
+#### create-module.js — major additions (0.starter-astro-forms)
+
+1. SQLite reader (readSqlite)
+   Writes a temp .mjs script into the app dir, runs it via node to read
+   server/db/app.sqlite using better-sqlite3. Reads all rows + PRAGMA table_info
+   from the submissions table. Returns empty gracefully if DB doesn't exist.
+
+2. data/seed.json
+   Written into every generated module. Contains SQLite columns + all rows.
+   Committed to git with the module — bakes local dev data into the deploy artifact.
+
+3. {machineName}.install
+   - hook_schema(): defines the submissions table in Drupal's schema API.
+     Column types derived from SQLite PRAGMA (INTEGER→serial/int, TEXT→text big,
+     DATETIME/VARCHAR→varchar 255). Falls back to hardcoded defaults if no DB.
+   - hook_install(): calls _import_seed() on first enable. Drupal creates the
+     table from hook_schema() before hook_install() runs.
+   - _import_seed(): truncates the table, inserts all rows from seed.json.
+     Called by hook_install() on first install, and by post_deploy.php on every
+     Pantheon deploy to keep seed data in sync.
+
+4. src/Controller/SubmissionsController.php
+   - list(): GET /api/submissions — SELECT * ORDER BY id DESC → JsonResponse
+   - create(): POST /api/submissions — INSERT name+message+created_at → 201
+
+5. .routing.yml — updated with API routes
+   - {machineName}.api_submissions_list:  GET  /api/submissions
+   - {machineName}.api_submissions_create: POST /api/submissions
+   No CSRF token required (JsonResponse controllers, not form submissions).
+
+#### private/scripts/post_deploy.php — updated
+Scans /code/web/modules/custom/ for any module with a data/seed.json.
+For each found, calls _import_seed() via drush php:eval.
+Result: every Pantheon push re-syncs seed data for all hudx forms modules.
+Pattern: update local SQLite → run --install → push → Pantheon auto-seeds.
+
+### Status: TESTING IN PROGRESS
+Test with: `3pd astro-forms module --install` from astro-forms---app-12.
+Verifies: SQLite read, seed.json written, .install generated, SubmissionsController
+working, GET + POST /api/submissions functional, Lando test route working.
+
+### ⚠ KNOWN ISSUE: /api/submissions route conflict
+Every astro-forms module registers /api/submissions.
+Installing TWO astro-forms apps on the same Drupal will cause a routing conflict.
+FIX NEEDED before going beyond one active forms app:
+  Option 1: Namespace the route per app: /api/{machineName}/submissions
+  Option 2: One shared Drupal module handles all /api/submissions routing,
+            dispatching to the correct table based on a query param or path segment.
+  Option 3: Keep one forms app per site (acceptable for POC).
+Route must also be updated in the Astro app's JS fetch calls to match.
+Address this BEFORE applying the same pattern to the React starter.
+
+### TODO — after form persistence testing passes
+1. Update 3pd help command output to reflect new workflow
+   (apps now auto-configure from 3pd.config.json, form submissions go to Drupal DB)
+2. Update 0.starter-astro-forms/PROMPT.txt:
+   - Document 3pd.config.json as the config source of truth
+   - Document form persistence architecture (Option A: Drupal DB via .install)
+   - Document seed.json pattern (local SQLite → committed JSON → Drupal import)
+   - Document /api/submissions route conflict issue + chosen fix
+   - Update dev vs prod behavior section
+3. End-to-end test: create new app → --install → push to Pantheon → verify
+   form submit + list work on https://dev-3-pd-ide.pantheonsite.io
+4. Apply lessons to 0.starter-react:
+   - Same 3pd.config.json auto-config (VITE_ prefix not PUBLIC_)
+   - Same .install + seed.json pattern for form persistence
+   - Same route conflict solution (decided in step 2 above)

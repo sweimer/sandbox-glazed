@@ -53,6 +53,32 @@ function toHumanName(appName) {
 }
 
 // ---------------------------------------------------------
+// Map SQLite PRAGMA column type → Drupal schema field array
+// ---------------------------------------------------------
+function buildDrupalSchemaPhp(columns) {
+  return columns.map((col) => {
+    const t = (col.type || '').toUpperCase();
+    let lines = `        '${col.name}' => [\n`;
+
+    if (col.pk === 1) {
+      lines += `          'type' => 'serial',\n          'unsigned' => TRUE,\n          'not null' => TRUE,\n`;
+    } else if (t === 'INTEGER' || t === 'INT') {
+      lines += `          'type' => 'int',\n          'not null' => FALSE,\n`;
+    } else if (t === 'REAL' || t === 'FLOAT' || t === 'DOUBLE') {
+      lines += `          'type' => 'float',\n          'not null' => FALSE,\n`;
+    } else if (t === 'TEXT' || t === 'BLOB' || t === '') {
+      lines += `          'type' => 'text',\n          'size' => 'big',\n          'not null' => FALSE,\n`;
+    } else {
+      // DATETIME, VARCHAR, CHAR, etc.
+      lines += `          'type' => 'varchar',\n          'length' => 255,\n          'not null' => FALSE,\n`;
+    }
+
+    lines += `        ],`;
+    return lines;
+  }).join('\n');
+}
+
+// ---------------------------------------------------------
 // Auto-detect Drupal root
 // ---------------------------------------------------------
 function findDrupalRoot(startDir) {
@@ -73,6 +99,37 @@ function findDrupalRoot(startDir) {
 }
 
 // ---------------------------------------------------------
+// Read SQLite submissions table via a temp script
+// Returns { columns: [], rows: [] } — empty on any failure
+// ---------------------------------------------------------
+function readSqlite(appRoot) {
+  const dbPath = path.join(appRoot, 'server', 'db', 'app.sqlite');
+  if (!fs.existsSync(dbPath)) {
+    console.log('  ℹ  No SQLite DB found — seed data will be empty.');
+    return { columns: [], rows: [] };
+  }
+
+  const tmpScript = path.join(appRoot, '_3pd_read_db.mjs');
+  try {
+    fs.writeFileSync(tmpScript, `
+import Database from 'better-sqlite3';
+const db = new Database(${JSON.stringify(dbPath)}, { readonly: true });
+const rows = db.prepare('SELECT * FROM submissions ORDER BY id ASC').all();
+const cols = db.prepare('PRAGMA table_info(submissions)').all();
+db.close();
+process.stdout.write(JSON.stringify({ rows, cols }));
+`);
+    const result = execSync(`node ${JSON.stringify(tmpScript)}`, { cwd: appRoot, encoding: 'utf8' });
+    return JSON.parse(result);
+  } catch (e) {
+    console.log('  ⚠  Could not read SQLite — seed data will be empty.');
+    return { columns: [], rows: [] };
+  } finally {
+    if (fs.existsSync(tmpScript)) fs.unlinkSync(tmpScript);
+  }
+}
+
+// ---------------------------------------------------------
 // MAIN EXPORTED FUNCTION
 // ---------------------------------------------------------
 export default async function createModule(appNameFromCli, { internal }) {
@@ -86,6 +143,7 @@ export default async function createModule(appNameFromCli, { internal }) {
   const machineName = `hudx_${appName.replace(/-/g, '_')}`;
   const hyphenName  = machineName.replace(/_/g, '-');
   const moduleDir   = path.join(appRoot, machineName);
+  const tableName   = `${machineName}_submissions`;
 
   console.log(`Machine name:     ${machineName}`);
   console.log(`Hyphen name:      ${hyphenName}`);
@@ -169,6 +227,18 @@ Falling back to 3PD mode.
   }
 
   // ---------------------------------------------------------
+  // Read SQLite — build seed data for Drupal DB
+  // ---------------------------------------------------------
+  console.log('\n🗃  Reading SQLite submissions...');
+  const { cols: sqliteCols, rows: sqliteRows } = readSqlite(appRoot);
+  const seedData = {
+    table:   'submissions',
+    columns: sqliteCols || [],
+    rows:    sqliteRows || [],
+  };
+  console.log(`  ✔  ${seedData.rows.length} row(s) found.`);
+
+  // ---------------------------------------------------------
   // Create module directory and copy assets
   // ---------------------------------------------------------
   fs.mkdirSync(moduleDir);
@@ -184,6 +254,13 @@ Falling back to 3PD mode.
     if (inlineJs)  fs.writeFileSync(path.join(moduleAssetsDir, stableJsFile), inlineJs);
     if (inlineCss) fs.writeFileSync(path.join(moduleAssetsDir, stableCssFile), inlineCss);
   }
+
+  // ---------------------------------------------------------
+  // Write data/seed.json
+  // ---------------------------------------------------------
+  const dataDir = path.join(moduleDir, 'data');
+  fs.mkdirSync(dataDir);
+  fs.writeFileSync(path.join(dataDir, 'seed.json'), JSON.stringify(seedData, null, 2) + '\n');
 
   // ---------------------------------------------------------
   // Write .info.yml
@@ -219,6 +296,94 @@ function ${machineName}_theme($existing, $type, $theme, $path) {
 `.trim() + '\n';
 
   fs.writeFileSync(path.join(moduleDir, `${machineName}.module`), modulePhp);
+
+  // ---------------------------------------------------------
+  // Write .install — hook_schema + hook_install + _import_seed
+  // ---------------------------------------------------------
+  const schemaFields = seedData.columns.length
+    ? buildDrupalSchemaPhp(seedData.columns)
+    : `        'id' => [
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ],
+        'name' => [
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+        ],
+        'message' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'created_at' => [
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+        ],`;
+
+  const installPhp = `<?php
+
+/**
+ * Implements hook_schema().
+ *
+ * Defines the submissions table for ${displayName}.
+ * Created automatically by 3PD module generator — do not edit manually.
+ */
+function ${machineName}_schema() {
+  return [
+    '${tableName}' => [
+      'description' => 'Form submissions for ${displayName}.',
+      'fields' => [
+${schemaFields}
+      ],
+      'primary key' => ['id'],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_install().
+ *
+ * Seeds the submissions table from data/seed.json on first install.
+ */
+function ${machineName}_install() {
+  _${machineName}_import_seed();
+}
+
+/**
+ * Import (or re-import) seed data from data/seed.json.
+ *
+ * Called by hook_install() on first enable, and by post_deploy.php on
+ * every Pantheon deploy to keep seed data in sync with the committed JSON.
+ * Truncates the table before inserting — existing submissions are replaced.
+ */
+function _${machineName}_import_seed() {
+  $module_path = \\Drupal::service('extension.list.module')->getPath('${machineName}');
+  $seed_file   = $module_path . '/data/seed.json';
+
+  if (!file_exists($seed_file)) {
+    return;
+  }
+
+  $seed = json_decode(file_get_contents($seed_file), TRUE);
+
+  if (empty($seed['rows'])) {
+    return;
+  }
+
+  $connection = \\Drupal::database();
+  $connection->truncate('${tableName}')->execute();
+
+  foreach ($seed['rows'] as $row) {
+    unset($row['id']); // let the DB assign the serial ID
+    $connection->insert('${tableName}')->fields($row)->execute();
+  }
+}
+`;
+
+  fs.writeFileSync(path.join(moduleDir, `${machineName}.install`), installPhp);
 
   // ---------------------------------------------------------
   // Write .libraries.yml
@@ -311,14 +476,72 @@ class ${className} extends BlockBase {
   fs.writeFileSync(path.join(templatesDir, twigFilename), twig);
 
   // ---------------------------------------------------------
-  // Test route — controller + routing.yml
-  // Provides /hudx-test/<appName> for development testing.
-  // NOTE: gate or remove before production. See LOG.txt CI/CD notes.
+  // Submissions API controller
+  // Handles GET /api/submissions and POST /api/submissions.
+  // Replaces the local Express/SQLite backend when running inside Drupal.
   // ---------------------------------------------------------
   const controllerDir = path.join(moduleDir, 'src', 'Controller');
   fs.mkdirSync(controllerDir, { recursive: true });
 
-  const controllerPhp = `
+  const submissionsControllerPhp = `<?php
+
+namespace Drupal\\${machineName}\\Controller;
+
+use Drupal\\Core\\Controller\\ControllerBase;
+use Symfony\\Component\\HttpFoundation\\JsonResponse;
+use Symfony\\Component\\HttpFoundation\\Request;
+
+/**
+ * REST-like API for form submissions — mirrors the local Express server.
+ *
+ * GET  /api/submissions  — returns all rows, newest first.
+ * POST /api/submissions  — inserts a new row.
+ *
+ * Generated by 3PD module generator — do not edit manually.
+ */
+class SubmissionsController extends ControllerBase {
+
+  public function list(): JsonResponse {
+    $rows = \\Drupal::database()
+      ->select('${tableName}', 's')
+      ->fields('s')
+      ->orderBy('s.id', 'DESC')
+      ->execute()
+      ->fetchAll(\\PDO::FETCH_ASSOC);
+
+    return new JsonResponse(array_values($rows));
+  }
+
+  public function submit(Request $request): JsonResponse {
+    $data = json_decode($request->getContent(), TRUE);
+
+    if (empty($data['name']) || empty($data['message'])) {
+      return new JsonResponse(['error' => 'name and message are required.'], 400);
+    }
+
+    \\Drupal::database()
+      ->insert('${tableName}')
+      ->fields([
+        'name'       => $data['name'],
+        'message'    => $data['message'],
+        'created_at' => date('Y-m-d H:i:s'),
+      ])
+      ->execute();
+
+    return new JsonResponse(['status' => 'ok'], 201);
+  }
+
+}
+`;
+
+  fs.writeFileSync(path.join(controllerDir, 'SubmissionsController.php'), submissionsControllerPhp);
+
+  // ---------------------------------------------------------
+  // Test page controller
+  // Provides /hudx-test/<appName> for development testing.
+  // NOTE: gate or remove before production. See LOG.txt CI/CD notes.
+  // ---------------------------------------------------------
+  const testControllerPhp = `
 <?php
 
 namespace Drupal\\${machineName}\\Controller;
@@ -347,14 +570,35 @@ class HudxTestController extends ControllerBase {
 }
 `.trim() + '\n';
 
-  fs.writeFileSync(path.join(controllerDir, 'HudxTestController.php'), controllerPhp);
+  fs.writeFileSync(path.join(controllerDir, 'HudxTestController.php'), testControllerPhp);
 
+  // ---------------------------------------------------------
+  // Write .routing.yml — test page + submissions API
+  // ---------------------------------------------------------
   const routingYml = `
 ${machineName}.test_page:
   path: '/hudx-test/${appName}'
   defaults:
     _controller: '\\Drupal\\${machineName}\\Controller\\HudxTestController::page'
     _title: 'HUDX Test: ${appName}'
+  requirements:
+    _permission: 'access content'
+
+${machineName}.api_submissions_list:
+  path: '/api/submissions'
+  defaults:
+    _controller: '\\Drupal\\${machineName}\\Controller\\SubmissionsController::list'
+    _title: 'Submissions'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+${machineName}.api_submissions_create:
+  path: '/api/submissions'
+  defaults:
+    _controller: '\\Drupal\\${machineName}\\Controller\\SubmissionsController::submit'
+    _title: 'Create Submission'
+  methods: [POST]
   requirements:
     _permission: 'access content'
 `.trim() + '\n';
@@ -389,18 +633,25 @@ ${machineName}.test_page:
 
   copyRecursive(moduleDir, drupalModuleDir);
 
-  console.log('\n⚙️  Enabling module...');
+  console.log('\n⚙️  Reinstalling module (uninstall → enable runs hook_schema + hook_install)...');
+  tryExec([`lando ssh -c "cd /app && drush pm:uninstall ${machineName} -y"`]);
   const enabled = tryExec([
     `lando ssh -c "cd /app && drush en ${machineName} -y"`,
     `lando ssh -c "cd /app && drush php:eval \\"\\\\Drupal::service('module_installer')->install(['${machineName}']);\\""`
   ]);
-  if (!enabled) console.log(`  ⚠  Could not enable automatically. Run: lando drush php:eval "\\Drupal::service('module_installer')->install(['${machineName}']);"`)
+  if (!enabled) console.log(`  ⚠  Could not enable automatically. Run: lando drush pm:uninstall ${machineName} -y && lando drush en ${machineName} -y`);
 
   console.log('\n🧹 Clearing caches...');
-  const cleared = tryExec([
-    `lando crx`,
-  ]);
+  const cleared = tryExec([`lando crx`]);
   if (!cleared) console.log('  ⚠  Could not clear caches automatically. Run: lando crx');
+
+  console.log('\n🔀 Rebuilding router...');
+  try {
+    const repoRoot = path.dirname(drupalWebRoot);
+    execSync(`lando drush php:eval "\\Drupal::service('router.builder')->rebuild();"`, { stdio: 'inherit', cwd: repoRoot });
+  } catch {
+    console.log('  ⚠  Could not rebuild router automatically. Run: lando drush php:eval "\\Drupal::service(\'router.builder\')->rebuild();"');
+  }
 
   // Resolve test page URL from Drupal site URI
   let siteUri = '';

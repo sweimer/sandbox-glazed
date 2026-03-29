@@ -1,0 +1,45 @@
+{
+  "table": "submissions",
+  "columns": [
+    {
+      "cid": 0,
+      "name": "id",
+      "type": "INTEGER",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 1
+    },
+    {
+      "cid": 1,
+      "name": "name",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 2,
+      "name": "message",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 3,
+      "name": "created_at",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": "datetime('now')",
+      "pk": 0
+    }
+  ],
+  "rows": [
+    {
+      "id": 1,
+      "name": "c",
+      "message": "c",
+      "created_at": "2026-03-29 01:24:56"
+    }
+  ]
+}
