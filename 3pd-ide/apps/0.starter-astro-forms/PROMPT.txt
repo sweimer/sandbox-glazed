@@ -36,9 +36,11 @@ controller that handles /api/submissions. No separate server needed in productio
 ### Data flow direction
 Pantheon dev is the DB of record once the module is live.
 Before starting new local dev work: pull current data from Pantheon.
-(Future: `3pd astro-forms db pull` command — not yet built)
+  3pd astro-forms db pull
+  (fetches GET /api/{APP_SLUG}/{table} from Pantheon, writes rows to server/db/app.sqlite)
+  After pull: restart dev server — lsof -ti:3001 | xargs kill -9 && npm run dev
 Do NOT blindly push seed.json from a stale local SQLite — it will truncate
-Pantheon's current submissions on the next deploy.
+Pantheon's current data on the next deploy.
 
 
 ## WHY TWO BACKENDS
