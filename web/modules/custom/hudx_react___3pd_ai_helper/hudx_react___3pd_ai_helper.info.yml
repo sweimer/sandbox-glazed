@@ -1,5 +1,5 @@
-name: 3PD IDE - React   3pd Ai Helper
+name: 3PD IDE - AI Helper
 type: module
-description: '3PD IDE React application module for 3PD IDE - React   3pd Ai Helper.'
+description: '3PD AI Helper — Claude-powered markup generator.'
 core_version_requirement: ^10 || ^11
 package: 3PD IDE Apps

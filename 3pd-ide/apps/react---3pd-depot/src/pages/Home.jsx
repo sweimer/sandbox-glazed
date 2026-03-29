@@ -86,8 +86,8 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Drag‑and‑drop React builder with AI assistance for creating more advanced HUDX features.
               </p>
-              <a href="/node/add/basic_page_layout_builder" className="btn btn-primary">
-                Option 1 - COMING SOON
+              <a href="/3pd/ai-helper" className="btn btn-primary">
+                Option 1 - 3PD AI Helper
               </a>
             <br/>
               <a href="/node/add/basic_page_layout_builder" className="btn btn-primary">

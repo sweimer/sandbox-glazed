@@ -6,18 +6,9 @@ function mountHudxReactApp(context = document) {
   const el = context.getElementById
     ? context.getElementById("hudx-react---3pd-ai-helper-root")
     : document.getElementById("hudx-react---3pd-ai-helper-root");
-
   if (!el) return;
-
-  if (!el.__hudxReactRoot) {
-    el.__hudxReactRoot = ReactDOM.createRoot(el);
-  }
-
-  el.__hudxReactRoot.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+  if (!el.__hudxReactRoot) el.__hudxReactRoot = ReactDOM.createRoot(el);
+  el.__hudxReactRoot.render(<React.StrictMode><App /></React.StrictMode>);
 }
 
 function waitForMount() {
@@ -33,9 +24,7 @@ waitForMount();
 if (typeof window !== "undefined" && window.Drupal && window.Drupal.behaviors) {
   (function (Drupal) {
     Drupal.behaviors.HudxReact3pdAiHelperBehavior = {
-      attach(context) {
-        mountHudxReactApp(context);
-      },
+      attach(context) { mountHudxReactApp(context); },
     };
   })(window.Drupal);
 }

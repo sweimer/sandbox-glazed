@@ -888,3 +888,9 @@ $pantheon_settings = __DIR__ . '/../../../vendor/pantheon-systems/drupal-integra
 if (file_exists($pantheon_settings)) {
   require $pantheon_settings;
 }
+
+// Pantheon API keys — set here so PHP getenv() works for custom modules.
+// Set ANTHROPIC_API_KEY in Pantheon Dashboard → Settings → Environment Variables.
+if (isset($_ENV['PANTHEON_ENVIRONMENT']) && !empty($_ENV['ANTHROPIC_API_KEY'])) {
+  putenv('ANTHROPIC_API_KEY=' . $_ENV['ANTHROPIC_API_KEY']);
+}

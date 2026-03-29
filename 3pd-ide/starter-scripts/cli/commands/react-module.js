@@ -46,18 +46,21 @@ export default async function reactModule({ ideRoot, internal }) {
   log.dim(`Directory: ${cwd}`);
   log.nl();
 
-  const createModulePath = path.join(
-    ideRoot,
-    'apps',
-    '0.starter-react',
-    'create-module.js'
-  );
+  const localCreateModulePath   = path.join(cwd, 'create-module.js');
+  const starterCreateModulePath = path.join(ideRoot, 'apps', '0.starter-react', 'create-module.js');
+  const createModulePath = fs.existsSync(localCreateModulePath)
+    ? localCreateModulePath
+    : starterCreateModulePath;
 
   if (!fs.existsSync(createModulePath)) {
     log.error("create-module.js not found.");
-    log.dim(`Expected at: ${createModulePath}`);
+    log.dim(`Expected at: ${starterCreateModulePath}`);
     log.nl();
     process.exit(1);
+  }
+
+  if (createModulePath === localCreateModulePath) {
+    log.dim(`Using local create-module.js override.`);
   }
 
   log.header("Building React App");

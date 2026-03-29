@@ -6,20 +6,40 @@ hudx_react___3pd_ai_helper.test_page:
   requirements:
     _permission: 'access content'
 
-hudx_react___3pd_ai_helper.api_submissions_list:
-  path: '/api/react---3pd-ai-helper/submissions'
+hudx_react___3pd_ai_helper.api_generate:
+  path: '/api/react---3pd-ai-helper/generate'
   defaults:
-    _controller: '\Drupal\hudx_react___3pd_ai_helper\Controller\SubmissionsController::list'
-    _title: 'Submissions'
+    _controller: '\Drupal\hudx_react___3pd_ai_helper\Controller\GenerateController::generate'
+    _title: 'Generate Markup'
+  requirements:
+    _permission: 'access content'
+  methods: [POST]
+
+hudx_react___3pd_ai_helper.api_history_list:
+  path: '/api/react---3pd-ai-helper/history'
+  defaults:
+    _controller: '\Drupal\hudx_react___3pd_ai_helper\Controller\HistoryController::list'
+    _title: 'History'
   requirements:
     _permission: 'access content'
   methods: [GET]
 
-hudx_react___3pd_ai_helper.api_submissions_create:
-  path: '/api/react---3pd-ai-helper/submissions'
+hudx_react___3pd_ai_helper.api_history_update:
+  path: '/api/react---3pd-ai-helper/history/{id}'
   defaults:
-    _controller: '\Drupal\hudx_react___3pd_ai_helper\Controller\SubmissionsController::submit'
-    _title: 'Submit'
+    _controller: '\Drupal\hudx_react___3pd_ai_helper\Controller\HistoryController::update'
+    _title: 'Update History'
   requirements:
     _permission: 'access content'
-  methods: [POST]
+    id: '\d+'
+  methods: [PATCH]
+
+hudx_react___3pd_ai_helper.api_history_delete:
+  path: '/api/react---3pd-ai-helper/history/{id}'
+  defaults:
+    _controller: '\Drupal\hudx_react___3pd_ai_helper\Controller\HistoryController::delete'
+    _title: 'Delete History'
+  requirements:
+    _permission: 'access content'
+    id: '\d+'
+  methods: [DELETE]

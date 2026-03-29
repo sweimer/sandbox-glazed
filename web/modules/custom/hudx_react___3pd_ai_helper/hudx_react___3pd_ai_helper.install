@@ -5,7 +5,7 @@
  */
 function hudx_react___3pd_ai_helper_schema() {
   $schema['hudx_react___3pd_ai_helper_history'] = [
-    'description' => 'Submissions table for the 3PD IDE - React   3pd Ai Helper React app.',
+    'description' => 'AI markup generation history for the 3PD AI Helper.',
     'fields' => [
         'id' => [
           'type' => 'serial',
@@ -40,24 +40,13 @@ function hudx_react___3pd_ai_helper_install() {
   _hudx_react___3pd_ai_helper_import_seed();
 }
 
-/**
- * Import seed data from data/seed.json into the Drupal submissions table.
- * Called on install and by post_deploy.php on every Pantheon push.
- */
 function _hudx_react___3pd_ai_helper_import_seed() {
   $seed_path = \Drupal::service('extension.list.module')->getPath('hudx_react___3pd_ai_helper') . '/data/seed.json';
-  if (!file_exists($seed_path)) {
-    return;
-  }
-
+  if (!file_exists($seed_path)) return;
   $seed = json_decode(file_get_contents($seed_path), TRUE);
-  if (empty($seed['rows'])) {
-    return;
-  }
-
+  if (empty($seed['rows'])) return;
   $db = \Drupal::database();
   $db->truncate('hudx_react___3pd_ai_helper_history')->execute();
-
   foreach ($seed['rows'] as $row) {
     unset($row['id']);
     $db->insert('hudx_react___3pd_ai_helper_history')->fields($row)->execute();
