@@ -127,16 +127,29 @@ export default async function createModule(appNameFromCli, { internal }) {
 
   let inlineJs = '', inlineCss = '', bodyHtml = '';
 
-  if (jsFiles.length === 0) {
-    const htmlPath = path.join(distDir, 'index.html');
-    if (fs.existsSync(htmlPath)) {
-      const html = fs.readFileSync(htmlPath, 'utf8');
+  // Always extract body HTML — Astro SSG renders the page structure at build time.
+  // The JS bundle adds interactivity to existing DOM elements; without the body
+  // HTML the twig would be a bare mount div and the JS would fail silently because
+  // elements like #load-status, #checklist-table etc. would not exist in the DOM.
+  // Script and link tags are stripped — libraries.yml handles asset loading.
+  const distHtmlPath = path.join(distDir, 'index.html');
+  if (fs.existsSync(distHtmlPath)) {
+    const html = fs.readFileSync(distHtmlPath, 'utf8');
+
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/);
+    if (bodyMatch) {
+      bodyHtml = bodyMatch[1]
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<link[^>]*\/?>/gi, '')
+        .trim();
+    }
+
+    // For inline bundles (no external JS file), also extract JS + CSS for assets
+    if (jsFiles.length === 0) {
       const scriptMatch = html.match(/<script type="module">([\s\S]*?)<\/script>/);
       if (scriptMatch) inlineJs = scriptMatch[1].trim();
       const styleMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/);
       if (styleMatch) inlineCss = styleMatch[1].trim();
-      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/);
-      if (bodyMatch) bodyHtml = bodyMatch[1].trim();
     }
   }
 
@@ -255,10 +268,11 @@ function ${machineName}_schema() {
           'length'   => 255,
           'not null' => FALSE,
         ],
-        'checked_at' => [
+        'workflow_status' => [
           'type'     => 'varchar',
           'length'   => 255,
           'not null' => FALSE,
+          'default'  => 'Not Tested',
         ],
       ],
       'primary key' => ['id'],
@@ -367,7 +381,7 @@ class ${className} extends BlockBase {
   // ---------------------------------------------------------
   const templatesDir = path.join(moduleDir, 'templates');
   fs.mkdirSync(templatesDir);
-  const twig = (jsFiles.length > 0 || !bodyHtml) ? `<div id="${mountId}"></div>\n` : `${bodyHtml}\n`;
+  const twig = bodyHtml ? `${bodyHtml}\n` : `<div id="${mountId}"></div>\n`;
   fs.writeFileSync(path.join(templatesDir, twigFilename), twig);
 
   // ---------------------------------------------------------
@@ -469,7 +483,10 @@ class ChecklistController extends ControllerBase {
     $module_name = $data['module_name'];
     $checked     = !empty($data['checked']) ? 1 : 0;
     $tester_name = $data['tester_name'] ?? '';
-    $checked_at  = ($checked && $tester_name) ? date('Y-m-d H:i:s') : '';
+    $valid_statuses = ['Not Tested', 'Tested', 'Returned', 'Approved', 'Ready for Deploy', 'Deployed'];
+    $workflow_status = in_array($data['workflow_status'] ?? '', $valid_statuses)
+      ? $data['workflow_status']
+      : 'Not Tested';
 
     $existing = $db->select('${tableName}', 'c')
       ->fields('c', ['id'])
@@ -480,11 +497,11 @@ class ChecklistController extends ControllerBase {
     if ($existing) {
       $db->update('${tableName}')
         ->fields([
-          'tech_type'    => $data['tech_type']    ?? '',
-          'display_name' => $data['display_name'] ?? '',
-          'checked'      => $checked,
-          'tester_name'  => $tester_name,
-          'checked_at'   => $checked_at,
+          'tech_type'       => $data['tech_type']    ?? '',
+          'display_name'    => $data['display_name'] ?? '',
+          'checked'         => $checked,
+          'tester_name'     => $tester_name,
+          'workflow_status' => $workflow_status,
         ])
         ->condition('module_name', $module_name)
         ->execute();
@@ -492,12 +509,12 @@ class ChecklistController extends ControllerBase {
     else {
       $db->insert('${tableName}')
         ->fields([
-          'module_name'  => $module_name,
-          'tech_type'    => $data['tech_type']    ?? '',
-          'display_name' => $data['display_name'] ?? '',
-          'checked'      => $checked,
-          'tester_name'  => $tester_name,
-          'checked_at'   => $checked_at,
+          'module_name'     => $module_name,
+          'tech_type'       => $data['tech_type']    ?? '',
+          'display_name'    => $data['display_name'] ?? '',
+          'checked'         => $checked,
+          'tester_name'     => $tester_name,
+          'workflow_status' => $workflow_status,
         ])
         ->execute();
     }

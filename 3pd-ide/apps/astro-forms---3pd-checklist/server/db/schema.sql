@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS checklist (
   module_name  TEXT    NOT NULL UNIQUE,
   tech_type    TEXT    NOT NULL DEFAULT '',
   display_name TEXT    NOT NULL DEFAULT '',
-  checked      INTEGER NOT NULL DEFAULT 0,
-  tester_name  TEXT    NOT NULL DEFAULT '',
-  checked_at   TEXT    NOT NULL DEFAULT ''
+  checked          INTEGER NOT NULL DEFAULT 0,
+  tester_name      TEXT    NOT NULL DEFAULT '',
+  workflow_status  TEXT    NOT NULL DEFAULT 'Not Tested'
 );

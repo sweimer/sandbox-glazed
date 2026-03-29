@@ -30,9 +30,13 @@ import Layout from '../layouts/Layout.astro';
         style="padding: 0.35rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.875em; min-width: 160px;">
 
       <select id="filter-status" style="padding: 0.35rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.875em; cursor: pointer;">
-        <option value="">All Status</option>
-        <option value="tested">Tested</option>
-        <option value="untested">Not tested</option>
+        <option value="">All Workflow</option>
+        <option value="Not Tested">Not Tested</option>
+        <option value="Tested">Tested</option>
+        <option value="Returned">Returned</option>
+        <option value="Approved">Approved</option>
+        <option value="Ready for Deploy">Ready for Deploy</option>
+        <option value="Deployed">Deployed</option>
       </select>
 
       <button id="filter-clear" style="padding: 0.35rem 0.7rem; border: 1px solid #ccc; border-radius: 4px;
@@ -69,8 +73,8 @@ import Layout from '../layouts/Layout.astro';
           </th>
           <th id="th-status"
               style="padding: 0.6rem 0.75rem; text-align: left; border-bottom: 2px solid #ddd;
-                     width: 180px; cursor: pointer; user-select: none; white-space: nowrap;">
-            Status
+                     width: 200px; cursor: pointer; user-select: none; white-space: nowrap;">
+            Workflow
           </th>
         </tr>
       </thead>
@@ -168,9 +172,7 @@ import Layout from '../layouts/Layout.astro';
     if (filters.status) {
       result = result.filter(m => {
         const s = checklist[m.module_name] || {};
-        return filters.status === 'tested'
-          ? s.checked == 1 && s.checked_at
-          : !(s.checked == 1);
+        return (s.workflow_status || 'Not Tested') === filters.status;
       });
     }
 
@@ -185,9 +187,9 @@ import Layout from '../layouts/Layout.astro';
         else if (sortCol === 'tech')    { av = a.tech_type;               bv = b.tech_type; }
         else if (sortCol === 'module')  { av = a.display_name;            bv = b.display_name; }
         else if (sortCol === 'status')  {
-          // sort key: '0_' (untested) < '1_' (checked, no timestamp) < '1_2026...' (tested)
-          av = `${sa.checked == 1 ? 1 : 0}_${sa.checked_at || ''}`;
-          bv = `${sb.checked == 1 ? 1 : 0}_${sb.checked_at || ''}`;
+          const ORDER = ['Not Tested', 'Tested', 'Returned', 'Approved', 'Ready for Deploy', 'Deployed'];
+          av = ORDER.indexOf(sa.workflow_status || 'Not Tested');
+          bv = ORDER.indexOf(sb.workflow_status || 'Not Tested');
         }
 
         if (av < bv) return sortDir === 'asc' ? -1 : 1;
@@ -231,11 +233,17 @@ import Layout from '../layouts/Layout.astro';
   // -----------------------------------------------------------------------
   // Row HTML
   // -----------------------------------------------------------------------
+  const WF_OPTIONS = ['Not Tested', 'Tested', 'Returned', 'Approved', 'Ready for Deploy', 'Deployed'];
+
   function rowHtml(mod) {
-    const state      = checklist[mod.module_name] || { checked: 0, tester_name: '', checked_at: '' };
-    const isChecked  = state.checked == 1;
-    const rowBg      = isChecked ? '#f0fff0' : '';
-    const statusColor = isChecked ? '#060' : '#aaa';
+    const state     = checklist[mod.module_name] || { checked: 0, tester_name: '', workflow_status: 'Not Tested' };
+    const isChecked = state.checked == 1;
+    const rowBg     = isChecked ? '#f0fff0' : '';
+    const wfStatus  = state.workflow_status || 'Not Tested';
+
+    const options = WF_OPTIONS.map(opt =>
+      `<option value="${opt}"${opt === wfStatus ? ' selected' : ''}>${opt}</option>`
+    ).join('');
 
     return `<tr data-module="${mod.module_name}" style="background:${rowBg}">
       <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #eee; text-align: center;">
@@ -256,17 +264,13 @@ import Layout from '../layouts/Layout.astro';
           style="width: 100%; padding: 0.3rem 0.5rem; border: 1px solid #ddd; border-radius: 3px;
                  font-size: 0.9em; box-sizing: border-box;">
       </td>
-      <td id="status-${mod.module_name}"
-          style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #eee; font-size: 0.8em; color: ${statusColor};">
-        ${statusLabel(state)}
+      <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid #eee;">
+        <select style="width: 100%; padding: 0.3rem 0.4rem; border: 1px solid #ddd; border-radius: 3px;
+                       font-size: 0.85em; cursor: pointer; box-sizing: border-box;">
+          ${options}
+        </select>
       </td>
     </tr>`;
-  }
-
-  function statusLabel(state) {
-    if (state.checked == 1 && state.checked_at) return `Tested ${state.checked_at}`;
-    if (state.checked == 1)                      return 'Checked';
-    return 'Not tested';
   }
 
   function escHtml(str) {
@@ -324,21 +328,33 @@ import Layout from '../layouts/Layout.astro';
   // -----------------------------------------------------------------------
   // Row event delegation — checkbox changes + tester name blur
   // -----------------------------------------------------------------------
+  function getRowFields(row) {
+    const checkbox  = row.querySelector('input[type="checkbox"]');
+    const nameInput = row.querySelector('input[type="text"]');
+    const wfSelect  = row.querySelector('select');
+    return {
+      checked:         checkbox.checked ? 1 : 0,
+      tester_name:     nameInput.value.trim(),
+      workflow_status: wfSelect.value,
+    };
+  }
+
   function attachRowListeners(tbody) {
     tbody.addEventListener('change', (e) => {
-      if (e.target.type !== 'checkbox') return;
       const row        = e.target.closest('tr');
-      const moduleName = row.dataset.module;
-      const nameInput  = row.querySelector('input[type="text"]');
-      upsert(moduleName, { checked: e.target.checked ? 1 : 0, tester_name: nameInput.value.trim() });
+      const moduleName = row?.dataset.module;
+      if (!moduleName) return;
+      if (e.target.type === 'checkbox' || e.target.tagName === 'SELECT') {
+        upsert(moduleName, getRowFields(row));
+      }
     });
 
     tbody.addEventListener('blur', (e) => {
       if (e.target.type !== 'text') return;
       const row        = e.target.closest('tr');
-      const moduleName = row.dataset.module;
-      const checkbox   = row.querySelector('input[type="checkbox"]');
-      upsert(moduleName, { checked: checkbox.checked ? 1 : 0, tester_name: e.target.value.trim() });
+      const moduleName = row?.dataset.module;
+      if (!moduleName) return;
+      upsert(moduleName, getRowFields(row));
     }, true);
   }
 
@@ -346,14 +362,15 @@ import Layout from '../layouts/Layout.astro';
   // Upsert — POST to API, update local state + DOM
   // -----------------------------------------------------------------------
   async function upsert(module_name, fields) {
-    const mod        = modules.find(m => m.module_name === module_name);
-    const current    = checklist[module_name] || { checked: 0, tester_name: '', checked_at: '' };
-    const payload    = { ...mod, ...current, ...fields };
-    const statusCell = document.getElementById(`status-${module_name}`);
+    const mod     = modules.find(m => m.module_name === module_name);
+    const current = checklist[module_name] || { checked: 0, tester_name: '', workflow_status: 'Not Tested' };
+    const payload = { ...mod, ...current, ...fields };
+    const row     = document.querySelector(`tr[data-module="${module_name}"]`);
+    const wfSelect = row?.querySelector('select');
 
-    if (statusCell) {
-      statusCell.textContent = 'Saving…';
-      statusCell.style.color = '#999';
+    if (wfSelect) {
+      wfSelect.disabled = true;
+      wfSelect.style.opacity = '0.5';
     }
 
     try {
@@ -367,19 +384,13 @@ import Layout from '../layouts/Layout.astro';
       const updated = await res.json();
       checklist[module_name] = updated;
 
-      const row     = document.querySelector(`tr[data-module="${module_name}"]`);
-      const checked = updated.checked == 1;
-
-      if (row) row.style.background = checked ? '#f0fff0' : '';
-
-      if (statusCell) {
-        statusCell.textContent = statusLabel(updated);
-        statusCell.style.color = checked ? '#060' : '#aaa';
-      }
+      if (row) row.style.background = updated.checked == 1 ? '#f0fff0' : '';
     } catch (err) {
-      if (statusCell) {
-        statusCell.textContent = 'Save failed';
-        statusCell.style.color = '#c00';
+      console.error('Save failed:', err);
+    } finally {
+      if (wfSelect) {
+        wfSelect.disabled = false;
+        wfSelect.style.opacity = '';
       }
     }
   }

@@ -41,10 +41,11 @@ function hudx_astro_forms___3pd_checklist_schema() {
           'length'   => 255,
           'not null' => FALSE,
         ],
-        'checked_at' => [
+        'workflow_status' => [
           'type'     => 'varchar',
           'length'   => 255,
           'not null' => FALSE,
+          'default'  => 'Not Tested',
         ],
       ],
       'primary key' => ['id'],
@@ -53,6 +54,27 @@ function hudx_astro_forms___3pd_checklist_schema() {
       ],
     ],
   ];
+}
+
+/**
+ * Rename checked_at column to workflow_status.
+ */
+function hudx_astro_forms___3pd_checklist_update_8001() {
+  $schema = \Drupal::database()->schema();
+  $table  = 'hudx_astro_forms___3pd_checklist_checklist';
+
+  if ($schema->fieldExists($table, 'checked_at') && !$schema->fieldExists($table, 'workflow_status')) {
+    $schema->addField($table, 'workflow_status', [
+      'type'     => 'varchar',
+      'length'   => 255,
+      'not null' => FALSE,
+      'default'  => 'Not Tested',
+    ]);
+    \Drupal::database()->update($table)
+      ->fields(['workflow_status' => 'Not Tested'])
+      ->execute();
+    $schema->dropField($table, 'checked_at');
+  }
 }
 
 /**

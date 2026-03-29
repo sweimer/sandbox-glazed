@@ -87,7 +87,10 @@ class ChecklistController extends ControllerBase {
     $module_name = $data['module_name'];
     $checked     = !empty($data['checked']) ? 1 : 0;
     $tester_name = $data['tester_name'] ?? '';
-    $checked_at  = ($checked && $tester_name) ? date('Y-m-d H:i:s') : '';
+    $valid_statuses = ['Not Tested', 'Tested', 'Returned', 'Approved', 'Ready for Deploy', 'Deployed'];
+    $workflow_status = in_array($data['workflow_status'] ?? '', $valid_statuses)
+      ? $data['workflow_status']
+      : 'Not Tested';
 
     $existing = $db->select('hudx_astro_forms___3pd_checklist_checklist', 'c')
       ->fields('c', ['id'])
@@ -98,11 +101,11 @@ class ChecklistController extends ControllerBase {
     if ($existing) {
       $db->update('hudx_astro_forms___3pd_checklist_checklist')
         ->fields([
-          'tech_type'    => $data['tech_type']    ?? '',
-          'display_name' => $data['display_name'] ?? '',
-          'checked'      => $checked,
-          'tester_name'  => $tester_name,
-          'checked_at'   => $checked_at,
+          'tech_type'       => $data['tech_type']    ?? '',
+          'display_name'    => $data['display_name'] ?? '',
+          'checked'         => $checked,
+          'tester_name'     => $tester_name,
+          'workflow_status' => $workflow_status,
         ])
         ->condition('module_name', $module_name)
         ->execute();
@@ -110,12 +113,12 @@ class ChecklistController extends ControllerBase {
     else {
       $db->insert('hudx_astro_forms___3pd_checklist_checklist')
         ->fields([
-          'module_name'  => $module_name,
-          'tech_type'    => $data['tech_type']    ?? '',
-          'display_name' => $data['display_name'] ?? '',
-          'checked'      => $checked,
-          'tester_name'  => $tester_name,
-          'checked_at'   => $checked_at,
+          'module_name'     => $module_name,
+          'tech_type'       => $data['tech_type']    ?? '',
+          'display_name'    => $data['display_name'] ?? '',
+          'checked'         => $checked,
+          'tester_name'     => $tester_name,
+          'workflow_status' => $workflow_status,
         ])
         ->execute();
     }

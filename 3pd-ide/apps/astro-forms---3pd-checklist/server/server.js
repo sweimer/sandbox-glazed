@@ -89,34 +89,33 @@ app.get(`/api/${APP_SLUG}/checklist`, (req, res) => {
 // POST /api/${APP_SLUG}/checklist — upsert a row by module_name
 // -----------------------------------------------------------------------
 app.post(`/api/${APP_SLUG}/checklist`, (req, res) => {
-  const { module_name, tech_type, display_name, checked, tester_name } = req.body ?? {};
+  const { module_name, tech_type, display_name, checked, tester_name, workflow_status } = req.body ?? {};
 
   if (!module_name) {
     return res.status(400).json({ error: 'module_name is required' });
   }
 
-  const db         = getDb();
-  const isChecked  = checked ? 1 : 0;
-  const checked_at = (isChecked && tester_name?.trim())
-    ? new Date().toISOString().slice(0, 19).replace('T', ' ')
-    : '';
+  const db       = getDb();
+  const isChecked = checked ? 1 : 0;
+  const VALID_STATUSES = ['Not Tested', 'Tested', 'Returned', 'Approved', 'Ready for Deploy', 'Deployed'];
+  const wfStatus = VALID_STATUSES.includes(workflow_status) ? workflow_status : 'Not Tested';
 
   db.prepare(`
-    INSERT INTO checklist (module_name, tech_type, display_name, checked, tester_name, checked_at)
+    INSERT INTO checklist (module_name, tech_type, display_name, checked, tester_name, workflow_status)
     VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(module_name) DO UPDATE SET
-      tech_type    = excluded.tech_type,
-      display_name = excluded.display_name,
-      checked      = excluded.checked,
-      tester_name  = excluded.tester_name,
-      checked_at   = excluded.checked_at
+      tech_type       = excluded.tech_type,
+      display_name    = excluded.display_name,
+      checked         = excluded.checked,
+      tester_name     = excluded.tester_name,
+      workflow_status = excluded.workflow_status
   `).run(
     module_name,
     tech_type    || '',
     display_name || '',
     isChecked,
     tester_name  || '',
-    checked_at,
+    wfStatus,
   );
 
   const row = db.prepare('SELECT * FROM checklist WHERE module_name = ?').get(module_name);
