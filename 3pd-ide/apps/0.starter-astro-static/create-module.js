@@ -132,24 +132,34 @@ Falling back to 3PD mode.
   const stableJsFile  = `${machineName}.js`;
   const stableCssFile = `${machineName}.css`;
 
-  // If no external bundles, extract inline script/style/body from dist/index.html
+  // Always extract body HTML — Astro SSG renders the page structure at build time.
+  // The JS bundle adds interactivity to existing DOM elements; without the body
+  // HTML the twig would be a bare mount div and the JS would fail silently because
+  // elements like the nodes list etc. would not exist in the DOM.
+  // Script and link tags are stripped — libraries.yml handles asset loading.
   let inlineJs  = '';
   let inlineCss = '';
   let bodyHtml  = '';
 
-  if (jsFiles.length === 0) {
-    const htmlPath = path.join(distDir, 'index.html');
-    if (fs.existsSync(htmlPath)) {
-      const html = fs.readFileSync(htmlPath, 'utf8');
+  const distHtmlPath = path.join(distDir, 'index.html');
+  if (fs.existsSync(distHtmlPath)) {
+    const html = fs.readFileSync(distHtmlPath, 'utf8');
 
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/);
+    if (bodyMatch) {
+      bodyHtml = bodyMatch[1]
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<link[^>]*\/?>/gi, '')
+        .trim();
+    }
+
+    // For inline bundles (no external JS file), also extract JS + CSS for assets
+    if (jsFiles.length === 0) {
       const scriptMatch = html.match(/<script type="module">([\s\S]*?)<\/script>/);
       if (scriptMatch) inlineJs = scriptMatch[1].trim();
 
       const styleMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/);
       if (styleMatch) inlineCss = styleMatch[1].trim();
-
-      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/);
-      if (bodyMatch) bodyHtml = bodyMatch[1].trim();
     }
   }
 
@@ -303,11 +313,7 @@ class ${className} extends BlockBase {
   const templatesDir = path.join(moduleDir, 'templates');
   fs.mkdirSync(templatesDir);
 
-  // Case A (external bundle): mount div for client-side hydration
-  // Case B (inline script): full body HTML from the Astro build
-  const twig = (jsFiles.length > 0 || !bodyHtml)
-    ? `<div id="${mountId}"></div>\n`
-    : `${bodyHtml}\n`;
+  const twig = bodyHtml ? `${bodyHtml}\n` : `<div id="${mountId}"></div>\n`;
   fs.writeFileSync(path.join(templatesDir, twigFilename), twig);
 
   // ---------------------------------------------------------
@@ -397,10 +403,16 @@ ${machineName}.test_page:
   if (!enabled) console.log(`  ⚠  Could not enable automatically. Run: lando drush php:eval "\\Drupal::service('module_installer')->install(['${machineName}']);"`)
 
   console.log('\n🧹 Clearing caches...');
-  const cleared = tryExec([
-    `lando crx`,
-  ]);
+  const cleared = tryExec([`lando crx`]);
   if (!cleared) console.log('  ⚠  Could not clear caches automatically. Run: lando crx');
+
+  console.log('\n🔀 Rebuilding router...');
+  try {
+    const repoRoot = path.dirname(drupalWebRoot);
+    execSync(`lando drush php:eval "\\Drupal::service('router.builder')->rebuild();"`, { stdio: 'inherit', cwd: repoRoot });
+  } catch {
+    console.log('  ⚠  Could not rebuild router automatically. Run: lando drush php:eval "\\Drupal::service(\'router.builder\')->rebuild();"');
+  }
 
   // Resolve test page URL from Drupal site URI
   let siteUri = '';

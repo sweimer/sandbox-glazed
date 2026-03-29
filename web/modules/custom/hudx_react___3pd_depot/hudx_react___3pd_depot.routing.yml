@@ -1,0 +1,7 @@
+hudx_react___3pd_depot.test_page:
+  path: '/hudx-test/react---3pd-depot'
+  defaults:
+    _controller: '\Drupal\hudx_react___3pd_depot\Controller\HudxTestController::page'
+    _title: 'HUDX Test: react---3pd-depot'
+  requirements:
+    _permission: 'access content'

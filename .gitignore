@@ -1,6 +1,9 @@
 # OS
 .DS_Store
 
+# DB pull temp files
+/tmp/
+
 # IDE
 .idea/
 .vscode/

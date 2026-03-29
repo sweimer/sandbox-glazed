@@ -53,8 +53,8 @@ export default async function doctor({ ideRoot, internal }) {
   check('IDE root',         ideRoot);
   check('apps/',            path.join(ideRoot, 'apps'));
   check('react template',   path.join(ideRoot, 'apps', '0.starter-react', 'starter-template'));
-  check('astro template',   path.join(ideRoot, 'apps', '0.starter-astro', 'starter-template'));
-  check('astro create-mod', path.join(ideRoot, 'apps', '0.starter-astro', 'create-module.js'));
+  check('astro template',   path.join(ideRoot, 'apps', '0.starter-astro-static', 'starter-template'));
+  check('astro create-mod', path.join(ideRoot, 'apps', '0.starter-astro-static', 'create-module.js'));
 
   // NEW: Drupal root detection (correct architecture)
   const drupalRoot = path.join(ideRoot, '..', 'web');

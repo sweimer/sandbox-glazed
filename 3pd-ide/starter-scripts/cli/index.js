@@ -93,11 +93,13 @@ ${chalk.cyan('3pd astro module --install')}           Package + install in Drupa
 ${chalk.cyan('3pd astro-forms app <name>')}           Create Astro + Express + SQLite app
 ${chalk.cyan('3pd astro-forms module')}               Package as Drupal module (3PD)
 ${chalk.cyan('3pd astro-forms module --install')}     Package + install in Drupal (HUDX)
+${chalk.cyan('3pd astro-forms db pull')}              Pull live data from Drupal/Pantheon into local SQLite
 
 ${chalk.green('3pd react app <name>')}                 Create React + Express + SQLite app
 ${chalk.green('3pd react module')}                     Package as Drupal module (3PD)
 ${chalk.green('3pd react module --install')}           Package + install in Drupal (HUDX)
 
+${chalk.magenta('3pd db pull')}                          Pull full Pantheon DB into local Lando (HUDX internal)
 ${chalk.magenta('3pd list')}                             List apps + installed modules + test route URLs
 ${chalk.magenta('3pd remove <module>')}                  Uninstall module from Drupal + delete files
 ${chalk.magenta('3pd remove <module> --delete-app')}     Also delete the app source folder
@@ -247,6 +249,33 @@ astroForms
     const cmd = await import('./commands/astro-forms-module.js');
     const internal = options.install || options.internal || isInternal;
     cmd.default({ ideRoot, internal });
+  });
+
+const astroFormsDb = astroForms
+  .command('db')
+  .description('Database utilities for Astro Forms apps');
+
+astroFormsDb
+  .command('pull')
+  .description('Pull live data from Drupal/Pantheon into local SQLite')
+  .action(async () => {
+    const cmd = await import('./commands/astro-forms-db-pull.js');
+    cmd.default({ ideRoot });
+  });
+
+// ------------------------------------------------------------
+// DB NAMESPACE (internal utilities)
+// ------------------------------------------------------------
+const db = program
+  .command('db')
+  .description('Database utilities');
+
+db
+  .command('pull')
+  .description('Pull full Pantheon DB into local Lando (HUDX internal only)')
+  .action(async () => {
+    const cmd = await import('./commands/db-pull.js');
+    cmd.default({ ideRoot });
   });
 
 // ------------------------------------------------------------

@@ -682,8 +682,151 @@ Address this BEFORE applying the same pattern to the React starter.
    - Drupal content loads ✓ (expected — same as poc-05)
    - GET /api/submissions returns seed row
    - POST /api/submissions works
-4. Resolve /api/submissions route conflict (namespace per app before React work)
+4. ✓ Route conflict resolved (see SESSION 2026-03-29 continued below)
 5. Apply lessons to 0.starter-react:
    - Same 3pd.config.json auto-config (VITE_ prefix not PUBLIC_)
    - Same .install + seed.json pattern for form persistence
-   - Same namespaced route solution
+   - Same namespaced route solution (APP_SLUG)
+
+
+## SESSION: 2026-03-29 (continued) — Route namespacing, Twig fix, 3PD Checklist app
+
+### Route conflict fix — APP_SLUG namespacing (✓ DONE)
+
+All astro-forms routes are now namespaced per app: /api/{APP_SLUG}/{table}
+  e.g. /api/astro-forms---3pd-checklist/checklist
+
+Changes made:
+  - starter-template/.env.example: added APP_SLUG=YOUR_APP_SLUG and PUBLIC_APP_SLUG=YOUR_APP_SLUG
+  - starter-template/server/server.js: APP_SLUG from env, routes use /api/${APP_SLUG}/submissions
+  - starter-template/src/pages/index.astro: fetch URLs use /api/${APP_SLUG}/submissions
+  - cli/commands/astro-forms-app.js: replaces APP_SLUG placeholder with actual folder name on app creation
+  - create-module.js (starter): routes in routing.yml use /api/${appName}/${tableName}
+    table name detected dynamically from sqlite_master (not hardcoded to 'submissions')
+    readSqlite() returns { rows, cols, tableName } — tableName used throughout
+
+### Twig fix — Astro SSG body HTML (✓ DONE, critical)
+
+Problem: Astro builds with interactivity produce an external JS bundle (hoisted.*.js).
+Old logic only extracted body HTML from dist/index.html when NO external bundle existed.
+If a bundle existed, the twig was a bare mount div → JS ran but found no DOM elements.
+Result: white page on Pantheon even though module was enabled.
+
+Fix applied to BOTH starter create-module.js AND checklist create-module.js:
+  Always extract body HTML from dist/index.html. Strip <script> and <link> tags.
+  Use bodyHtml as twig content regardless of whether external JS files exist.
+  JS/CSS loaded via libraries.yml, not inline in twig.
+
+  const twig = bodyHtml ? `${bodyHtml}\n` : `<div id="${mountId}"></div>\n`;
+
+### Local create-module.js override (✓ DONE)
+
+astro-forms-module.js now checks for a create-module.js in the current app directory
+before falling back to the starter kit's generic one:
+
+  const localCreateModulePath = path.join(cwd, 'create-module.js');
+  const starterCreateModulePath = path.join(ideRoot, 'apps', '0.starter-astro-forms', 'create-module.js');
+  const createModulePath = fs.existsSync(localCreateModulePath) ? localCreateModulePath : starterCreateModulePath;
+
+This allows per-app customization (different schema, routes, controller logic) without
+forking the starter kit.
+
+### 3PD Module Checklist app — astro-forms---3pd-checklist (✓ DONE)
+
+Interactive table tracking all installed hudx_* modules and their test status.
+Uses custom create-module.js (local override) and custom server.js.
+
+Architecture:
+  - GET  /api/astro-forms---3pd-checklist/modules   — scans apps/ dir (local) or Drupal installed modules (prod)
+  - GET  /api/astro-forms---3pd-checklist/checklist — all checklist rows
+  - POST /api/astro-forms---3pd-checklist/checklist — upsert by module_name
+
+ChecklistController.php (Drupal):
+  - modules(): queries extension.list.module, filters hudx_* prefixes
+    Reconstructs folder names: strip 'hudx_', replace _ with -
+    Maps tech prefixes: hudx_astro_forms___ → 'Astro Forms', hudx_react___ → 'React', etc.
+  - list(): SELECT * FROM checklist ORDER BY id
+  - upsert(): SELECT-then-UPDATE-or-INSERT (Drupal DB API, no native upsert)
+
+SQLite schema (local): server/db/schema.sql
+Drupal schema: hudx_astro_forms___3pd_checklist_checklist table
+
+UI features:
+  - Sort on all columns except Tester Name (click column header, ↕/▲/▼)
+  - Filters: checked state, tech type (dynamic), module name text, workflow status
+  - Module name links to /hudx-test/{module_name} in new tab
+  - Inline tester name text field, auto-save on blur
+  - Workflow dropdown: auto-save on change (see below)
+
+### Workflow column — replacing Status text (✓ DONE)
+
+Column 5 changed from auto-generated text ("Tested / Not tested") to a live
+workflow_status dropdown with 6 options:
+  Not Tested / Tested / Returned / Approved / Ready for Deploy / Deployed
+
+Schema change: replaced checked_at (VARCHAR) with workflow_status (VARCHAR, default 'Not Tested')
+  in schema.sql, server.js, create-module.js, ChecklistController.php, and .install
+
+Migration for Pantheon (existing DB has checked_at column):
+  hook_update_8001() in .install — adds workflow_status, sets all to 'Not Tested', drops checked_at
+  Run `drush updb` on Pantheon after pushing this code.
+
+Sort key for workflow column uses ordinal order of the option list.
+Filter dropdown matches all 6 workflow options exactly.
+Row listener handles both checkbox change and select change via shared getRowFields() helper.
+Dropdown disabled (opacity 0.5) during save, re-enabled after response.
+
+### DB management strategy — discussed, deferred
+
+Two paths discussed:
+  Path 1: 3PD dev pull — `3pd astro-forms db pull` — downloads Pantheon SQLite to local
+    Scenario A: original dev updating — just pulls latest data
+    Scenario B: new dev cloning — first-time DB pull, no push needed
+    No push path needed (Pantheon data flows into Drupal DB via --install seed)
+  Path 2: Internal dev — `3pd db pull` — terminus db:get → import to local Drupal
+    Uses terminus, requires full stack locally
+
+Not yet built. Deferred until checklist work is complete and pushed.
+
+## SESSION: 2026-03-29 (continued) — DB pull commands + astro-static cleanup
+
+### ✓ hook_update_8001 applied to Pantheon (2026-03-29)
+terminus remote:drush 3-pd-ide.dev -- updb -y
+Renamed checked_at → workflow_status. No further updates pending.
+
+### ✓ 3pd astro-forms db pull — DONE + TESTED (Path 1)
+Pulls live data from Drupal API endpoint → local app SQLite.
+  - Run from inside an astro-forms app folder
+  - Reads APP_SLUG + PUBLIC_DRUPAL_BASE_URL from .env
+  - Detects table name from server/db/schema.sql
+  - Fetches GET {drupalUrl}/api/{appSlug}/{tableName}
+  - Always wipes app.sqlite + stale WAL/SHM before recreating (avoids SQLITE_IOERR_SHORT_READ)
+  - Runs better-sqlite3 via temp script from app's own node_modules
+  - After pull: must restart dev server (kill port 3001 first if already running)
+    lsof -ti:3001 | xargs kill -9 && npm run dev
+  - Success message updated to include restart instructions
+
+### ✓ 3pd db pull — DONE + TESTED (Path 2)
+Pulls full Pantheon DB → local Lando Drupal instance.
+  - Run from SANDBOX-glazed root (anywhere in project)
+  - terminus backup:create → terminus backup:get → lando db-import → lando crx
+  - File must be inside project dir (not /tmp) — lando db-import only sees mounted project
+  - Uses SANDBOX-glazed/tmp/ as staging dir, cleaned up before download and after import
+  - /tmp/ added to .gitignore
+  - Relative path passed to lando db-import: tmp/pantheon-db.sql.gz
+
+### ✓ 0.starter-astro → 0.starter-astro-static rename (2026-03-29)
+  - Renamed folder: apps/0.starter-astro → apps/0.starter-astro-static
+  - Fixed twig extraction bug in create-module.js (always extract bodyHtml, strip
+    script/link tags — bare mount div is now the fallback, not the default)
+  - Added router rebuild step after lando crx in internal mode
+  - Updated all CLI path references: astro-app.js, astro-module.js, doctor.js, list.js
+  - Updated PROMPT.txt: title, folder path, twig description, Case A/B table
+
+### WHERE WE LEFT OFF
+
+→ Next: apply lessons to 0.starter-react
+   - 3pd.config.json auto-config (VITE_ prefix not PUBLIC_)
+   - .install + seed.json pattern for form persistence
+   - APP_SLUG namespacing for routes
+   - Confirm drush path fix is already applied (lando drush not lando ssh)

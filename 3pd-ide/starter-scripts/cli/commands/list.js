@@ -28,7 +28,7 @@ export default async function list({ ideRoot }) {
   // ── Apps ──────────────────────────────────────────────────────────
   log.header('Apps');
 
-  const starters = new Set(['0.starter-astro', '0.starter-astro-forms', '0.starter-react']);
+  const starters = new Set(['0.starter-astro-static', '0.starter-astro-forms', '0.starter-react']);
 
   const apps = fs.existsSync(appsDir)
     ? fs.readdirSync(appsDir, { withFileTypes: true })

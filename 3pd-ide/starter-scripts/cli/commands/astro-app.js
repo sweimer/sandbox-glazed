@@ -2,7 +2,7 @@
  * 3pd astro app <name>
  * File: commands/astro-app.js
  *
- * Copies /3pd-ide/apps/0.starter-astro/starter-template → /3pd-ide/apps/astro---<name>
+ * Copies /3pd-ide/apps/0.starter-astro-static/starter-template → /3pd-ide/apps/astro---<name>
  * then creates .env from .env.example and runs `npm install`.
  *
  * No Lando service. No Express. No database setup.
@@ -105,7 +105,7 @@ export default async function astroApp(name, { ideRoot }) {
   }
 
   const folderName  = FRAMEWORK_PREFIXES.astro + slug;
-  const templateDir = path.join(ideRoot, 'apps', '0.starter-astro', 'starter-template');
+  const templateDir = path.join(ideRoot, 'apps', '0.starter-astro-static', 'starter-template');
   const appDir      = path.join(ideRoot, 'apps', folderName);
 
   if (!fs.existsSync(templateDir)) {

@@ -1,4 +1,4 @@
-# 3PD IDE — Astro Starter Kit: AI Guide
+# 3PD IDE — Astro Static Starter Kit: AI Guide
 # =========================================================
 # Read this file before building a new framework starter or
 # modifying the Astro pipeline. Documents exactly how this
@@ -18,7 +18,7 @@ No Express. No separate database. No Lando service.
 
 ## DIRECTORY STRUCTURE
 
-3pd-ide/apps/0.starter-astro/
+3pd-ide/apps/0.starter-astro-static/
 ├── PROMPT.txt                  ← this file
 ├── create-module.js            ← Drupal module generator (called by CLI)
 └── starter-template/           ← copied verbatim when `3pd astro app <name>` runs
@@ -72,17 +72,21 @@ Steps:
 2. Checks dist/_astro/ for external JS/CSS bundles (Astro produces these
    when the page contains a <script> tag with dynamic imports or env vars)
 
-3. If external bundles found (Case A):
+3. Always extracts body HTML from dist/index.html.
+   - Strips <script> and <link> tags from body HTML (assets are loaded via libraries.yml).
+   - Twig template: full body HTML from dist/index.html.
+   - This ensures DOM elements (lists, forms, etc.) exist before JS runs.
+   - If body HTML extraction fails, falls back to a bare mount div.
+
+4. If external bundles found (Case A — page has <script> with import.meta.env):
    - Renames hashed bundles to stable filenames:
      dist/_astro/index-[hash].js  → dist/_astro/hudx_astro___my_app.js
      dist/_astro/index-[hash].css → dist/_astro/hudx_astro___my_app.css
-   - Twig template: <div id="hudx-astro---my-app-root"></div>
    - libraries.yml: references dist/assets/[name].js with type: module
 
-4. If NO external bundles (Case B — pure static Astro, no client scripts):
-   - Extracts <script>, <style>, and <body> HTML from dist/index.html
+5. If NO external bundles (Case B — pure static Astro, no client scripts):
+   - Extracts inline <script> and <style> from dist/index.html
    - Writes extracted JS/CSS to dist/assets/[name].js and .css
-   - Twig template: full body HTML from dist/index.html
 
 5. Creates module directory at: 3pd-ide/apps/astro---my-app/hudx_astro___my_app/
 
@@ -156,7 +160,7 @@ frontmatter (--- block). This bakes data into HTML at build time:
 | Aspect             | React                          | Astro                           |
 |--------------------|--------------------------------|---------------------------------|
 | Build output       | External JS bundle (dist/assets/)| External JS (dist/_astro/) OR inline |
-| Twig template      | Always <div id="..."> mount    | Mount div OR full body HTML     |
+| Twig template      | Always <div id="..."> mount    | Always full body HTML from dist |
 | Data backend       | Express + PostgreSQL (host)    | Drupal JSON:API (no Express)    |
 | DB setup           | createdb + psql on host        | None                            |
 | Lando service      | None                           | None                            |
@@ -218,9 +222,10 @@ See .lando.yml for the full crx command definition.
    container when cache_container is empty, deadlocking each other.
    See SANDBOX-glazed/LOG.txt for full explanation.
 
-4. The Twig template for Case B (inline/static) uses full body HTML, not a
-   mount div. This means the block renders pure HTML with no JS dependency.
-   Styles are inlined or loaded via libraries.yml.
+4. The Twig template always uses the full body HTML extracted from dist/index.html,
+   not a bare mount div. <script> and <link> tags are stripped from the body —
+   assets are loaded via libraries.yml. This ensures DOM elements exist before JS
+   runs regardless of whether Astro produced an external bundle or inline scripts.
 
 5. astro.config.mjs @hudx / @hudxjs aliases use monorepo-relative paths.
    The aliases resolve via `../../starter-scripts/hudx-global/` which works

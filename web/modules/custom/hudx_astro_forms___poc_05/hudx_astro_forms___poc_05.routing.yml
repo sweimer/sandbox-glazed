@@ -1,7 +1,0 @@
-hudx_astro_forms___poc_05.test_page:
-  path: '/hudx-test/astro-forms---poc-05'
-  defaults:
-    _controller: '\Drupal\hudx_astro_forms___poc_05\Controller\HudxTestController::page'
-    _title: 'HUDX Test: astro-forms---poc-05'
-  requirements:
-    _permission: 'access content'

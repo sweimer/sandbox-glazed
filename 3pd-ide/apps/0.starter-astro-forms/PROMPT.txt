@@ -149,19 +149,22 @@ If npm install fails with a gyp error, check Node version compatibility.
 9. Reports test URL: /hudx-test/<appname>
 
 
-## ⚠ KNOWN ISSUE: /api/submissions ROUTE CONFLICT
+## ROUTE NAMESPACING — APP_SLUG
 
-Every astro-forms module registers /api/submissions routes.
-Installing TWO astro-forms apps on the same Drupal will cause a routing conflict.
+All API routes are namespaced per app using APP_SLUG:
+  /api/{APP_SLUG}/submissions
+  e.g. /api/astro-forms---my-app/submissions
 
-FIX NEEDED before going beyond one active forms app:
-  Option 1 (recommended): Namespace route per app: /api/{machineName}/submissions
-    - Update routing.yml generator in create-module.js
-    - Update the fetch URLs in index.astro starter template
-  Option 2: One shared submissions module dispatching by app name
-  Option 3: Keep one forms app per site (acceptable for POC)
+APP_SLUG is set automatically when `3pd astro-forms app <name>` runs.
+  - .env: APP_SLUG=astro-forms---my-app (used by Express)
+  - .env: PUBLIC_APP_SLUG=astro-forms---my-app (used by Astro/Vite build)
 
-Address this BEFORE applying the same pattern to the React starter.
+The route collision between multiple forms apps on the same Drupal is resolved.
+Multiple astro-forms modules can coexist.
+
+The table name is also detected dynamically from sqlite_master (not hardcoded).
+readSqlite() returns { rows, cols, tableName } — used throughout create-module.js.
+Routes in routing.yml: /api/${appName}/${tableName}
 
 
 ## DEV WORKFLOW
@@ -205,8 +208,8 @@ server.js binds to 127.0.0.1 (not 0.0.0.0):
 CORS is configured for the Astro dev server origin (localhost:4321).
 
 Routes (local dev only):
-  GET  /api/submissions   → SELECT * ORDER BY created_at DESC → JSON array
-  POST /api/submissions   → INSERT, return saved row as JSON (201)
+  GET  /api/{APP_SLUG}/submissions   → SELECT * ORDER BY created_at DESC → JSON array
+  POST /api/{APP_SLUG}/submissions   → INSERT, return saved row as JSON (201)
 
 
 ## SQLITE DESIGN
@@ -227,13 +230,42 @@ snapshot of local data at --install time.
 
 Location: web/modules/custom/{machineName}/src/Controller/SubmissionsController.php
 
-  list()   → GET  /api/submissions → SELECT * FROM {tableName} ORDER BY id DESC
-  submit() → POST /api/submissions → INSERT name + message + created_at
+  list()   → GET  /api/{appName}/submissions → SELECT * FROM {tableName} ORDER BY id DESC
+  submit() → POST /api/{appName}/submissions → INSERT name + message + created_at
 
-Table name: {machineName}_submissions (e.g. hudx_astro_forms___app_12_submissions)
+Table name: {machineName}_{tableName} where tableName is auto-detected from sqlite_master.
+  e.g. hudx_astro_forms___app_12_submissions
 
 IMPORTANT: Do NOT name the POST method `create()` — ControllerBase has a static
 create() factory method. Use `submit()` to avoid the PHP fatal error.
+
+
+## LOCAL create-module.js OVERRIDE
+
+astro-forms-module.js checks the current app directory for a create-module.js
+before falling back to the starter kit's generic one.
+
+Use this for apps that need a custom controller, schema, or route structure
+without forking the starter kit. Place create-module.js in the app root.
+Example: astro-forms---3pd-checklist has its own create-module.js that generates
+ChecklistController.php with 3 routes instead of SubmissionsController.php.
+
+The twig fix (always use body HTML from dist/index.html) is applied in BOTH
+the starter create-module.js AND should be replicated in any custom override.
+
+
+## TWIG GENERATION (critical for Astro SSG)
+
+Astro apps with interactive JS produce an external bundle (hoisted.*.js in _astro/).
+The twig template MUST contain the full body HTML from dist/index.html — not a bare
+mount div. Without it, the JS runs but finds none of its target elements (white page).
+
+Rule: always extract body HTML from dist/index.html. Strip <script> and <link> tags.
+Libraries.yml handles asset loading — inline tags are not needed in twig.
+
+  const twig = bodyHtml ? `${bodyHtml}\n` : `<div id="${mountId}"></div>\n`;
+
+Symptoms of wrong twig: white page on Pantheon, JS in browser network tab loads fine.
 
 
 ## ENV VARS REFERENCE
@@ -241,6 +273,9 @@ create() factory method. Use `submit()` to avoid the PHP fatal error.
 PUBLIC_DRUPAL_BASE_URL  Drupal site URL for JSON:API reads. Auto-set from 3pd.config.json.
                         Empty in production (.env.production).
 PUBLIC_API_BASE_URL     Express server URL for dev. Empty in production (same-origin).
+APP_SLUG                App folder name. Used by Express for route namespacing.
+                        Set automatically by `3pd astro-forms app <name>`.
+PUBLIC_APP_SLUG         Same as APP_SLUG — Vite-exposed for Astro fetch URLs.
 PORT                    Express port. Default: 3001.
 DB_PATH                 SQLite file path. Default: ./server/db/app.sqlite.
 CORS_ORIGIN             Astro dev server URL. Default: http://localhost:4321.
@@ -280,8 +315,8 @@ Test URL on Pantheon: https://dev-3-pd-ide.pantheonsite.io/hudx-test/<appname>
    create-module.js now runs `lando drush php:eval router.builder->rebuild()`
    from the repo root (requires cwd: path.dirname(drupalWebRoot)).
 
-6. /api/submissions route conflict: two astro-forms modules on the same Drupal
-   will collide. See "KNOWN ISSUE" section above.
+6. /api/submissions route conflict: RESOLVED (2026-03-29). Routes are now namespaced
+   per app using APP_SLUG: /api/{APP_SLUG}/{table}. Multiple forms apps can coexist.
 
 7. astro.config.mjs @hudx / @hudxjs aliases use monorepo-relative paths.
    Will break in standalone repo. Fix when implementing standalone repos.
@@ -301,11 +336,16 @@ Test URL on Pantheon: https://dev-3-pd-ide.pantheonsite.io/hudx-test/<appname>
   [x] better-sqlite3 pinned to ^11.0.0
   [x] concurrently in devDependencies — npm run dev starts both servers
   [x] .env.production exists — both PUBLIC_* vars blank for same-origin build
+  [x] APP_SLUG + PUBLIC_APP_SLUG set in .env by `3pd astro-forms app` CLI
+  [x] Routes namespaced as /api/${APP_SLUG}/${tableName} in both Express + routing.yml
+  [x] Table name auto-detected from sqlite_master in readSqlite() — not hardcoded
+  [x] Twig uses body HTML from dist/index.html (not bare mount div) — critical for Astro SSG
   [x] data/seed.json generated from SQLite at --install time
   [x] hook_schema() + hook_install() + _import_seed() in .install file
   [x] SubmissionsController.php: POST method named submit() not create()
-  [x] POST /api/submissions route in routing.yml uses submit() not create()
+  [x] POST /api/{APP_SLUG}/submissions route in routing.yml uses submit() not create()
   [x] --install does pm:uninstall before pm:enable (ensures table recreated)
+  [x] Custom create-module.js in app dir takes precedence over starter kit version
 
 
 ## HOW TO BUILD A NEW FORMS STARTER FOR A DIFFERENT FRAMEWORK

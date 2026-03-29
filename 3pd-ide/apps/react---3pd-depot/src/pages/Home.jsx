@@ -41,10 +41,15 @@ export default function ThreePDLandingPage() {
 
       {/* BLUEPRINT DIVIDER */}
       <div className="text-center my-4 dxpr-animate dxpr-fade-in">
-        <span className="text-primary fw-bold">
+        <div className="text-primary fw-bold">
           <i className="bi bi-gear me-2"></i>
           Choose Your Build Path
-        </span>
+        </div>
+        <div className="text-primary fw-bold">
+          <a href="/hudx-test/astro-forms---3pd-checklist" className="btn btn-primary">
+            Manage 3PD Modules
+          </a>
+        </div>
       </div>
 
       {/* CARD GRID */}
@@ -61,7 +66,7 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Build and assemble pages directly inside Drupal using Layout Builder and HUDX SDC components.
               </p>
-              <a href="#" className="btn btn-primary">
+              <a href="/node/add/basic_page_layout_builder" className="btn btn-primary">
                 Create Layout Builder Page
               </a>
             </div>
@@ -79,9 +84,13 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Drag‑and‑drop React builder with AI assistance for creating more advanced HUDX features.
               </p>
-              <span className="text-uppercase display-6 align-center">
-                Coming Soon!!
-              </span>
+              <a href="/node/add/basic_page_layout_builder" className="btn btn-primary">
+                Option 1 - COMING SOON
+              </a>
+            <br/><br/>
+              <a href="/node/add/basic_page_layout_builder" className="btn btn-primary">
+                Option 2 - COMING SOON
+              </a>
             </div>
           </div>
         </div>
@@ -108,10 +117,14 @@ export default function ThreePDLandingPage() {
 
               {showProCodeRepos && (
                 <ul className="list-unstyled small mt-2 mb-0">
-                  <li><a href="#" className="link-success">React Starter Kit</a></li>
-                  <li><a href="#" className="link-success">Angular Starter Kit</a></li>
-                  <li><a href="#" className="link-success">Astro Starter Kit</a></li>
-                  <li><a href="#" className="link-success">Fuse Starter Kit</a></li>
+                  <li><a href="#" className="link-success">Angular-Static Starter Kit</a></li>
+                  <li><a href="#" className="link-success">Angular-Form Starter Kit</a></li>
+                  <li><a href="#" className="link-success">Astro-Static Starter Kit</a></li>
+                  <li><a href="#" className="link-success">Astro-Form Starter Kit</a></li>
+                  <li><a href="#" className="link-success">React-Static Starter Kit</a></li>
+                  <li><a href="#" className="link-success">Reach-Form Starter Kit</a></li>
+                  <li><a href="#" className="link-success">VanillaJS-Static Starter Kit</a></li>
+                  <li><a href="#" className="link-success">VanillaJS-Form Starter Kit</a></li>
                   <li><a href="#" className="link-success">Drupal Module Starter Kit</a></li>
                 </ul>
               )}

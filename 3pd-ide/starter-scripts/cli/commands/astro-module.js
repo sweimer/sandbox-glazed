@@ -49,7 +49,7 @@ export default async function astroModule({ ideRoot, internal }) {
   const createModulePath = path.join(
     ideRoot,
     'apps',
-    '0.starter-astro',
+    '0.starter-astro-static',
     'create-module.js'
   );
 
