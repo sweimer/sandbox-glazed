@@ -62,7 +62,9 @@ ${chalk.white('Step 3 — Package')}  3pd <framework> module
 
 ${chalk.white('Step 4 — Install')}  3pd <framework> module --install   ${chalk.gray('(HUDX internal only)')}
                    Builds, packages, copies to /web/modules/custom/,
-                   enables the module, and clears Drupal cache (lando crx).
+                   uninstalls + reinstalls module, seeds DB from SQLite,
+                   clears cache, rebuilds router.
+                   Test URL: /hudx-test/<app-name>
                    Requires access to the Drupal repo (/web directory).
 
 ${chalk.bold('STARTER KITS')}
@@ -72,8 +74,9 @@ ${chalk.cyan('astro')}        Read-only. Displays content from Drupal JSON:API.
              Use when: the app only needs to show CMS content.
 
 ${chalk.cyan('astro-forms')} Adds a data layer. Drupal content + form submissions.
-             Backend: Express API. Database: SQLite (app-owned, not Drupal).
-             Dev: npm run dev starts both Astro and Express together.
+             Dev: Express + SQLite (local, app-owned). npm run dev starts both.
+             Deployed: form submissions route to Drupal's DB via a generated
+             REST controller. No separate server needed on Pantheon/prod.
              Use when: the app needs to collect or store data.
 
 ${chalk.yellow('react')}        Full SPA. React + Vite + Express + SQLite.

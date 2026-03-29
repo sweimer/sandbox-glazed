@@ -56,8 +56,10 @@ jobs:
 
       - name: Wait for Pantheon sync and enable new modules
         run: |
-          # Wait for Quicksilver post-deploy to finish (updb + router + cr runs automatically)
-          sleep 30
+          # Wait for Quicksilver post-deploy to finish (updb + seed import + router + cr)
+          sleep 60
+          # Clear cache so Drupal discovers any newly added module files
+          terminus remote:drush 3-pd-ide.dev -- cr
           # Enable any custom modules present in code but not yet enabled in DB
           terminus remote:drush 3-pd-ide.dev -- pm:list --type=module --status=disabled --no-core --field=name 2>/dev/null \
             | grep '^hudx_' \

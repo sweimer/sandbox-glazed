@@ -654,10 +654,15 @@ For each found, calls _import_seed() via drush php:eval.
 Result: every Pantheon push re-syncs seed data for all hudx forms modules.
 Pattern: update local SQLite → run --install → push → Pantheon auto-seeds.
 
-### Status: TESTING IN PROGRESS
-Test with: `3pd astro-forms module --install` from astro-forms---app-12.
-Verifies: SQLite read, seed.json written, .install generated, SubmissionsController
-working, GET + POST /api/submissions functional, Lando test route working.
+### Status: ✓ WORKING (2026-03-29)
+Full cycle confirmed on Lando:
+  - `3pd astro-forms app APP 10/11/12` → auto-sets Pantheon URL + content type, works immediately
+  - `3pd astro-forms module --install` → builds, seeds, installs, rebuilds router
+  - GET /api/submissions → returns seeded rows from Drupal MySQL
+  - POST /api/submissions → inserts new row, appears in list
+  - Test route: http://sandbox-glazed.lndo.site/hudx-test/astro-forms---app-12
+
+Pushed to GitHub 2026-03-29. Pantheon deploy pending verification.
 
 ### ⚠ KNOWN ISSUE: /api/submissions route conflict
 Every astro-forms module registers /api/submissions.
@@ -670,18 +675,15 @@ FIX NEEDED before going beyond one active forms app:
 Route must also be updated in the Astro app's JS fetch calls to match.
 Address this BEFORE applying the same pattern to the React starter.
 
-### TODO — after form persistence testing passes
-1. Update 3pd help command output to reflect new workflow
-   (apps now auto-configure from 3pd.config.json, form submissions go to Drupal DB)
-2. Update 0.starter-astro-forms/PROMPT.txt:
-   - Document 3pd.config.json as the config source of truth
-   - Document form persistence architecture (Option A: Drupal DB via .install)
-   - Document seed.json pattern (local SQLite → committed JSON → Drupal import)
-   - Document /api/submissions route conflict issue + chosen fix
-   - Update dev vs prod behavior section
-3. End-to-end test: create new app → --install → push to Pantheon → verify
-   form submit + list work on https://dev-3-pd-ide.pantheonsite.io
-4. Apply lessons to 0.starter-react:
+### TODO — next session
+1. ✓ 3pd help updated
+2. ✓ 0.starter-astro-forms/PROMPT.txt updated
+3. Verify Pantheon deploy: https://dev-3-pd-ide.pantheonsite.io/hudx-test/astro-forms---app-12
+   - Drupal content loads ✓ (expected — same as poc-05)
+   - GET /api/submissions returns seed row
+   - POST /api/submissions works
+4. Resolve /api/submissions route conflict (namespace per app before React work)
+5. Apply lessons to 0.starter-react:
    - Same 3pd.config.json auto-config (VITE_ prefix not PUBLIC_)
    - Same .install + seed.json pattern for form persistence
-   - Same route conflict solution (decided in step 2 above)
+   - Same namespaced route solution
