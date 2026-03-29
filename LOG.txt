@@ -33,7 +33,7 @@ Astro apps: No Express. No Lando service. Static build + Drupal JSON:API.
 
 ## STARTER KITS
 
-3pd-ide/apps/0.starter-react/        → React + Vite + Express + PostgreSQL [NEEDS CLEANUP]
+3pd-ide/apps/0.starter-react/        → React + Vite + Express + SQLite ✓ DONE
 3pd-ide/apps/0.starter-astro/        → Astro SSG + Drupal JSON:API (read-only) ✓ DONE
 3pd-ide/apps/0.starter-astro-forms/  → Astro SSG + Express + SQLite ✓ DONE
 
@@ -823,10 +823,71 @@ Pulls full Pantheon DB → local Lando Drupal instance.
   - Updated all CLI path references: astro-app.js, astro-module.js, doctor.js, list.js
   - Updated PROMPT.txt: title, folder path, twig description, Case A/B table
 
+### WHERE WE LEFT OFF (2026-03-29 continued)
+
+→ React starter refactoring COMPLETE. See SESSION 2026-03-29 (continued) below.
+
+
+## SESSION: 2026-03-29 (continued) — React starter refactoring
+
+### ✓ 0.starter-react — FULLY REFACTORED (2026-03-29)
+
+Applied all lessons from 0.starter-astro-forms to the React starter:
+
+#### starter-template changes
+  - schema.sql: renamed table test_entries → submissions, column text_value → message
+  - .env.example: added APP_SLUG=YOUR_APP_SLUG and VITE_APP_SLUG=YOUR_APP_SLUG
+  - server/server.js: reads APP_SLUG from env, routes namespaced /api/${APP_SLUG}/submissions
+  - server/routes/testRoutes.js: DELETED. Replaced by server/routes/submissions.js
+  - server/routes/submissions.js: GET /submissions + POST /submissions (returns 201 + row)
+  - server/db/schema.sql: submissions(id, message, created_at)
+  - src/pages/Home.jsx: reads VITE_APP_SLUG, API calls use /api/${APP_SLUG}/submissions
+  - README.md: 3PD dev guide (prerequisites, setup, db pull step, dev workflow, packaging,
+    data flow table, project structure, notes on VITE_ prefix + MemoryRouter)
+  - Stray files deleted: react-module.js (root), server/.env.example
+
+#### create-module.js — rewritten (same pattern as astro-forms)
+  - readSqlite(): temp .mjs script → reads submissions table via better-sqlite3
+  - data/seed.json: {table, columns, rows} from SQLite
+  - {machineName}.install: hook_schema(), hook_install(), _import_seed()
+    drupalTableName = ${machineName}_${tableName} (e.g. hudx_react___my_app_submissions)
+  - SubmissionsController.php: list() GET + submit() POST for /api/{appName}/{table}
+  - HudxTestController.php: test page (unchanged)
+  - routing.yml: test route + namespaced GET/POST API routes
+  - Twig: bare <div id="${mountId}"></div> (React always needs external bundles — no body HTML extraction)
+  - --install mode: router rebuild after lando crx
+
+#### CLI — react-app.js
+  - loadProjectConfig() reads 3pd.config.json
+  - setupEnvFile() injects APP_SLUG and VITE_APP_SLUG from folder name
+
+#### CLI — react-db-pull.js (new)
+  - Parallel to astro-forms-db-pull.js
+  - Reads APP_SLUG + VITE_DRUPAL_BASE_URL (or VITE_API_BASE_URL) from .env,
+    falls back to pantheonUrl in 3pd.config.json
+  - Detects table from server/db/schema.sql regex
+  - Fetches GET {drupalUrl}/api/{appSlug}/{table}
+  - Always wipes app.sqlite + WAL/SHM before recreating
+  - After pull restart hint: lsof -ti:4000 | xargs kill -9 && npm run dev
+  - Wired as: 3pd react db pull
+
+#### PROMPT.txt — updated
+  - Directory structure updated (new files, deleted files)
+  - CLI integration: added 3pd react db pull
+  - How react app works: 3pd.config.json auto-config documented
+  - How react module works: seed.json, .install, SubmissionsController, drupalTableName
+  - Express routes: APP_SLUG namespacing documented
+  - ENV vars: APP_SLUG, VITE_APP_SLUG documented
+  - Known issues: 8 new entries (APP_SLUG, drupalTableName, db pull, seed pattern)
+  - Mandatory checklist: 5 new items (router rebuild, APP_SLUG routes, seed, controller, drupalTableName)
+
+#### 3pd help — updated
+  - Added: 3pd react db pull   Pull live data from Drupal/Pantheon into local SQLite
+
 ### WHERE WE LEFT OFF
 
-→ Next: apply lessons to 0.starter-react
-   - 3pd.config.json auto-config (VITE_ prefix not PUBLIC_)
-   - .install + seed.json pattern for form persistence
-   - APP_SLUG namespacing for routes
-   - Confirm drush path fix is already applied (lando drush not lando ssh)
+→ React starter refactoring complete. Next up (when resuming):
+   - Test 3pd react app + 3pd react module --install end-to-end
+   - Verify seed.json generation + hook_install() seeds Drupal table correctly
+   - Update .env in remaining 3pd-ide/apps/react---* to use Pantheon URL
+   - Standalone repo extraction: create 3pd-react/ as independent repo

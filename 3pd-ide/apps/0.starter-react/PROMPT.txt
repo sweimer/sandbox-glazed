@@ -26,25 +26,26 @@ for the full reasoning (portability, FedRAMP compliance).
 ├── PROMPT.txt                  ← this file
 ├── create-module.js            ← Drupal module generator (called by CLI)
 └── starter-template/
-    ├── .env.example            ← VITE_API_BASE_URL, PORT, HOST, DB_PATH, CORS_ORIGIN
+    ├── .env.example            ← APP_SLUG, VITE_APP_SLUG, VITE_API_BASE_URL, PORT, HOST, DB_PATH, CORS_ORIGIN
     ├── .env.production         ← blank VITE_API_BASE_URL for production builds
     ├── .gitignore              ← node_modules/, dist/, .env, server/db/*.sqlite
     ├── index.html              ← Vite entry HTML, has <div id="root">
     ├── package.json            ← React + Vite + Express + better-sqlite3
     ├── vite.config.js          ← Vite config with lib/bundle output settings
     ├── eslint.config.js
+    ├── README.md               ← 3PD dev guide (setup, db pull, dev workflow, packaging)
     ├── src/
     │   ├── main.jsx            ← React entry point (REWRITTEN by module generator)
     │   ├── App.jsx             ← Root component (BrowserRouter → MemoryRouter on build)
     │   └── pages/
-    │       ├── Home.jsx        ← form + entries (uses VITE_API_BASE_URL)
-    │       ├── ApiReference.jsx
-    │       └── StyleGuide.jsx
+    │       └── Home.jsx        ← form + submissions list (uses VITE_APP_SLUG + VITE_API_BASE_URL)
     └── server/
-        ├── server.js           ← Express API, 127.0.0.1 bind, explicit CORS
+        ├── server.js           ← Express API, APP_SLUG-namespaced routes, 127.0.0.1 bind, explicit CORS
         ├── db/
         │   ├── database.js     ← better-sqlite3 singleton, WAL mode, auto-schema
-        │   └── schema.sql      ← test_entries table
+        │   └── schema.sql      ← submissions table (message TEXT, created_at TEXT)
+        └── routes/
+            └── submissions.js  ← GET + POST /submissions handlers
 
 
 ## CLI INTEGRATION
@@ -53,6 +54,7 @@ Commands:
   3pd react app <name>          → commands/react-app.js
   3pd react module              → commands/react-module.js
   3pd react module --install    → internal mode (copies to /web + enables)
+  3pd react db pull             → commands/react-db-pull.js (pulls Pantheon data → local SQLite)
 
 Framework prefix (shared/frameworks.js):
   FRAMEWORK_PREFIXES.react = 'react---'
@@ -64,6 +66,8 @@ Framework prefix (shared/frameworks.js):
 1. Slugifies name → prefixes with 'react---'
 2. Copies starter-template/ skipping node_modules
 3. Creates .env from .env.example (root level, not server/)
+   - Injects APP_SLUG and VITE_APP_SLUG from the folder name
+   - Reads 3pd.config.json (pantheonUrl) if present — can be used to pre-populate Drupal URL
 4. Patches package.json "name" field
 5. Runs npm install
    NOTE: better-sqlite3 compiles a native binary. Requires Python + Xcode CLI tools.
@@ -75,11 +79,12 @@ No database setup step. SQLite file is created automatically on first server sta
 ## HOW `3pd react module` WORKS (create-module.js)
 
 Naming conventions (derived from app folder name):
-  appName:      react---my-app
-  machineName:  hudx_react___my_app       (hudx_ prefix, hyphens→underscores)
-  hyphenName:   hudx-react---my-app       (underscores→hyphens)
-  mountId:      hudx-react---my-app-root  (used as the DOM element id)
-  className:    HudxReact3pdMyAppBlock    (PascalCase for PHP class)
+  appName:         react---my-app
+  machineName:     hudx_react___my_app         (hudx_ prefix, hyphens→underscores)
+  hyphenName:      hudx-react---my-app          (underscores→hyphens)
+  mountId:         hudx-react---my-app-root     (used as the DOM element id)
+  className:       HudxReact3pdMyAppBlock       (PascalCase for PHP class)
+  drupalTableName: hudx_react___my_app_submissions  (machineName + _ + tableName)
 
 Steps:
 1. REWRITES src/main.jsx with a Drupal-safe mount pattern:
@@ -101,22 +106,36 @@ Steps:
    dist/assets/index-[hash].js  → dist/assets/hudx_react___my_app.js
    dist/assets/index-[hash].css → dist/assets/hudx_react___my_app.css
 
-6. Creates module directory at: apps/react---my-app/hudx_react___my_app/
+6. Reads SQLite via temp .mjs script (readSqlite):
+   - Reads submissions table columns + rows via PRAGMA table_info + SELECT *
+   - Returns { rows, cols, tableName } — empty gracefully if DB doesn't exist
 
-7. Generates Drupal module files:
+7. Generates data/seed.json — {table, columns, rows} from SQLite.
+   Baked into the module for Drupal to import on install.
+
+8. Creates module directory at: apps/react---my-app/hudx_react___my_app/
+
+9. Generates Drupal module files:
    - hudx_react___my_app.info.yml
-   - hudx_react___my_app.module      (implements hook_theme)
-   - hudx_react___my_app.libraries.yml  (version: Date.now(), external bundles)
-   - hudx_react___my_app.routing.yml    (test route: /hudx-test/<appName>)
+   - hudx_react___my_app.module       (implements hook_theme)
+   - hudx_react___my_app.libraries.yml   (version: Date.now(), external bundles)
+   - hudx_react___my_app.routing.yml     (test route + GET/POST /api/{appName}/{table})
+   - hudx_react___my_app.install         (hook_schema, hook_install, _import_seed)
    - src/Plugin/Block/...Block.php
    - src/Controller/HudxTestController.php
+   - src/Controller/SubmissionsController.php  (list + submit, mirrors Express routes)
    - templates/hudx-react---my-app-block.html.twig  → <div id="${mountId}"></div>
 
-8. In --install mode:
-   - Copies module to web/modules/custom/hudx_react___my_app/
-   - Enables via: lando drush en / lando drush php:eval fallback
-   - Clears caches: lando crx
-   - Prints test page URL
+API routes in routing.yml (namespaced by appName to prevent conflicts):
+   GET  /api/{appName}/{table}   → SubmissionsController::list()
+   POST /api/{appName}/{table}   → SubmissionsController::submit()
+
+10. In --install mode:
+    - Copies module to web/modules/custom/hudx_react___my_app/
+    - Enables via: lando drush en / lando drush php:eval fallback
+    - Clears caches: lando crx
+    - Rebuilds router: lando drush php:eval "\Drupal::service('router.builder')->rebuild();"
+    - Prints test page URL
 
 
 ## DEV WORKFLOW
@@ -142,9 +161,12 @@ server.js binds to 127.0.0.1 (not 0.0.0.0):
 
 CORS is configured for the Vite dev server origin (localhost:5173).
 
-Routes:
-  POST /api/test/add   → INSERT test_entries, return saved row (201)
-  GET  /api/test/all   → SELECT * ORDER BY created_at DESC → JSON array
+Routes use APP_SLUG from .env for namespacing (prevents conflicts when multiple apps installed):
+  GET  /api/{APP_SLUG}/submissions  → SELECT * FROM submissions ORDER BY id DESC → JSON array
+  POST /api/{APP_SLUG}/submissions  → INSERT message, return saved row (201)
+
+In the generated Drupal module, SubmissionsController.php mirrors these routes.
+The JS fetch URL uses the same /api/{APP_SLUG}/submissions path — works in both dev and prod.
 
 
 ## SQLITE DESIGN
@@ -154,6 +176,7 @@ Key differences for React:
   - DB_PATH env var read via dotenv.config() (no path arg — reads root .env)
   - Schema: INTEGER PRIMARY KEY AUTOINCREMENT (not SERIAL — SQLite syntax)
   - created_at: TEXT DEFAULT (datetime('now')) (not TIMESTAMP DEFAULT NOW())
+  - Table: submissions with columns: id, message, created_at
 
 
 ## ENV VAR PATTERN
@@ -161,6 +184,8 @@ Key differences for React:
 React/Vite uses VITE_ prefix (not PUBLIC_) for client-exposed vars.
 
 .env (dev):
+  APP_SLUG=react---my-app             ← injected by react-app.js on app creation
+  VITE_APP_SLUG=react---my-app        ← same, VITE_ prefix so Vite exposes to browser
   VITE_API_BASE_URL=http://localhost:4000   ← baked into Vite dev build
   PORT=4000
   HOST=127.0.0.1
@@ -172,6 +197,8 @@ React/Vite uses VITE_ prefix (not PUBLIC_) for client-exposed vars.
 
 In Home.jsx:
   const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+  const APP_SLUG = import.meta.env.VITE_APP_SLUG     || '';
+  // fetch calls use: ${API_BASE}/api/${APP_SLUG}/submissions
 
 
 ## PRODUCTION DEPLOYMENT
@@ -188,7 +215,8 @@ Key difference: Vite dev server default port is 5173 (not 4321).
 2. better-sqlite3 requires ^11.0.0 for Node 23. v9.x fails to compile.
 
 3. Vite always produces external bundles for React (dist/assets/*.js + *.css).
-   No need to handle the inline script case (Astro-specific).
+   No need to handle the inline script case (Astro-specific). Twig template is always
+   a bare <div id="${mountId}"></div> — no body HTML extraction needed.
 
 4. version in libraries.yml uses Date.now() — never a static string.
 
@@ -200,12 +228,29 @@ Key difference: Vite dev server default port is 5173 (not 4321).
 
 7. No square brackets in any fetch URLs — HAProxy strips them.
 
+8. APP_SLUG namespacing: all API routes use /api/{APP_SLUG}/submissions to prevent
+   conflicts when multiple React apps are installed in the same Drupal.
+   APP_SLUG is injected by react-app.js into .env on app creation.
+   Never hardcode the route path — always read from VITE_APP_SLUG.
+
+9. Drupal table naming: drupalTableName = ${machineName}_${tableName}
+   e.g. hudx_react___my_app_submissions
+   Avoids conflicts across modules in Drupal's shared database.
+
+10. `3pd react db pull` pulls live data from /api/{APP_SLUG}/{table} on Pantheon.
+    Uses VITE_DRUPAL_BASE_URL or VITE_API_BASE_URL from .env, or pantheonUrl from 3pd.config.json.
+    After pull, must restart dev server: lsof -ti:4000 | xargs kill -9 && npm run dev
+
+11. seed.json / hook_install() / SubmissionsController.php follow the same pattern as
+    0.starter-astro-forms. See that PROMPT.txt for full implementation details.
+
 
 ## MANDATORY CHECKLIST FOR ALL MODULE GENERATORS
 
   [x] version in libraries.yml = Date.now()
   [x] No square brackets in fetch URLs
   [x] lando crx for cache clear (never lando drush cr)
+  [x] Router rebuild after lando crx: lando drush php:eval "\Drupal::service('router.builder')->rebuild();"
   [x] node_modules skipped during template copy
   [x] Express binds to 127.0.0.1 only
   [x] DB_PATH configurable via env var
@@ -214,3 +259,7 @@ Key difference: Vite dev server default port is 5173 (not 4321).
   [x] .env.production with blank VITE_API_BASE_URL (Vite reads automatically on build)
   [x] Test route generated (routing.yml + HudxTestController.php)
   [x] lando drush en → lando drush php:eval fallback for canvas-like issues
+  [x] APP_SLUG namespaced routes: /api/{APP_SLUG}/{table}
+  [x] seed.json + hook_schema() + hook_install() + _import_seed() in .install
+  [x] SubmissionsController.php: GET list() + POST submit() mirroring Express routes
+  [x] drupalTableName = ${machineName}_${tableName} (no conflicts in shared DB)

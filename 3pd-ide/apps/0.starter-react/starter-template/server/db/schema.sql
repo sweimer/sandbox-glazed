@@ -1,5 +1,5 @@
-CREATE TABLE IF NOT EXISTS test_entries (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  text_value  TEXT    NOT NULL,
-  created_at  TEXT    DEFAULT (datetime('now'))
+CREATE TABLE IF NOT EXISTS submissions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  message    TEXT    NOT NULL,
+  created_at TEXT    DEFAULT (datetime('now'))
 );

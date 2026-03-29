@@ -5,3 +5,21 @@ hudx_react___3pd_depot.test_page:
     _title: 'HUDX Test: react---3pd-depot'
   requirements:
     _permission: 'access content'
+
+hudx_react___3pd_depot.api_submissions_list:
+  path: '/api/react---3pd-depot/submissions'
+  defaults:
+    _controller: '\Drupal\hudx_react___3pd_depot\Controller\SubmissionsController::list'
+    _title: 'Submissions'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
+
+hudx_react___3pd_depot.api_submissions_create:
+  path: '/api/react---3pd-depot/submissions'
+  defaults:
+    _controller: '\Drupal\hudx_react___3pd_depot\Controller\SubmissionsController::submit'
+    _title: 'Submit'
+  requirements:
+    _permission: 'access content'
+  methods: [POST]

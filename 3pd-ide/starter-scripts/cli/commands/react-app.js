@@ -33,10 +33,15 @@ function copyRecursive(src, dest) {
   }
 }
 
-/**
- * Create .env from .env.example
- */
-function setupEnvFile(appDir) {
+function loadProjectConfig(appDir) {
+  const configPath = path.join(appDir, '..', '..', '..', '3pd.config.json');
+  if (fs.existsSync(configPath)) {
+    try { return JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch {}
+  }
+  return {};
+}
+
+function setupEnvFile(appDir, folderName, config = {}) {
   const envExample = path.join(appDir, '.env.example');
   const envFile    = path.join(appDir, '.env');
 
@@ -45,8 +50,14 @@ function setupEnvFile(appDir) {
     return;
   }
 
-  fs.copyFileSync(envExample, envFile);
-  log.success('.env created from .env.example');
+  let envContent = fs.readFileSync(envExample, 'utf8');
+
+  // Inject APP_SLUG from folder name
+  envContent = envContent.replace(/APP_SLUG=YOUR_APP_SLUG/g, `APP_SLUG=${folderName}`);
+  envContent = envContent.replace(/VITE_APP_SLUG=YOUR_APP_SLUG/g, `VITE_APP_SLUG=${folderName}`);
+
+  fs.writeFileSync(envFile, envContent);
+  log.success(`.env created — APP_SLUG: ${folderName}`);
 }
 
 /**
@@ -108,7 +119,8 @@ export default async function reactApp(name, { ideRoot }) {
 
   // Create .env from .env.example
   log.header("Configuring Environment");
-  setupEnvFile(appDir);
+  const config = loadProjectConfig(appDir);
+  setupEnvFile(appDir, folderName, config);
 
   // Patch package.json name
   const pkgPath = path.join(appDir, 'package.json');

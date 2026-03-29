@@ -1,0 +1,60 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function hudx_react___3pd_depot_schema() {
+  $schema['hudx_react___3pd_depot_submissions'] = [
+    'description' => 'Submissions table for the 3PD IDE - React   3pd Depot React app.',
+    'fields' => [
+        'id' => [
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ],
+        'message' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'created_at' => [
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+        ],
+    ],
+    'primary key' => ['id'],
+  ];
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function hudx_react___3pd_depot_install() {
+  _hudx_react___3pd_depot_import_seed();
+}
+
+/**
+ * Import seed data from data/seed.json into the Drupal submissions table.
+ * Called on install and by post_deploy.php on every Pantheon push.
+ */
+function _hudx_react___3pd_depot_import_seed() {
+  $seed_path = \Drupal::service('extension.list.module')->getPath('hudx_react___3pd_depot') . '/data/seed.json';
+  if (!file_exists($seed_path)) {
+    return;
+  }
+
+  $seed = json_decode(file_get_contents($seed_path), TRUE);
+  if (empty($seed['rows'])) {
+    return;
+  }
+
+  $db = \Drupal::database();
+  $db->truncate('hudx_react___3pd_depot_submissions')->execute();
+
+  foreach ($seed['rows'] as $row) {
+    unset($row['id']);
+    $db->insert('hudx_react___3pd_depot_submissions')->fields($row)->execute();
+  }
+}

@@ -98,6 +98,7 @@ ${chalk.cyan('3pd astro-forms db pull')}              Pull live data from Drupal
 ${chalk.green('3pd react app <name>')}                 Create React + Express + SQLite app
 ${chalk.green('3pd react module')}                     Package as Drupal module (3PD)
 ${chalk.green('3pd react module --install')}           Package + install in Drupal (HUDX)
+${chalk.green('3pd react db pull')}                    Pull live data from Drupal/Pantheon into local SQLite
 
 ${chalk.magenta('3pd db pull')}                          Pull full Pantheon DB into local Lando (HUDX internal)
 ${chalk.magenta('3pd list')}                             List apps + installed modules + test route URLs
@@ -149,10 +150,12 @@ ${chalk.bold('Commands:')}
   ${chalk.green('app <name>')}                 Create a new 3PD IDE React application
   ${chalk.green('module')}                     Generate a Drupal module (3PD mode)
   ${chalk.green('module --install')}           Generate AND install the module (internal HUDX mode)
+  ${chalk.green('db pull')}                    Pull live data from Drupal/Pantheon into local SQLite
 
 ${chalk.bold('Examples:')}
   3pd react app my-app
   cd apps/my-app
+  3pd react db pull
   3pd react module
   3pd react module --install
 `;
@@ -196,6 +199,18 @@ ${chalk.bold('Examples:')}
   3pd react module --install
 `;
 };
+
+const reactDb = react
+  .command('db')
+  .description('Database utilities for React apps');
+
+reactDb
+  .command('pull')
+  .description('Pull live data from Drupal/Pantheon into local SQLite')
+  .action(async () => {
+    const cmd = await import('./commands/react-db-pull.js');
+    cmd.default({ ideRoot });
+  });
 
 // ------------------------------------------------------------
 // ASTRO NAMESPACE
