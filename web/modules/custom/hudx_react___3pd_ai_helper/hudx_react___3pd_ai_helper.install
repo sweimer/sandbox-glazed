@@ -27,6 +27,16 @@ function hudx_react___3pd_ai_helper_schema() {
           'size' => 'big',
           'not null' => FALSE,
         ],
+        'title' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'node_url' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
     ],
     'primary key' => ['id'],
   ];

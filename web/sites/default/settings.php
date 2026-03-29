@@ -856,9 +856,9 @@ $settings['migrate_node_migrate_type_classic'] = FALSE;
  * Keep this code block at the end of this file to take full effect.
  */
 #
-# if (file_exists($app_root . '/' . $site_path . '/settings.local.php')) {
-#   include $app_root . '/' . $site_path . '/settings.local.php';
-# }
+if (file_exists($app_root . '/' . $site_path . '/settings.local.php')) {
+  include $app_root . '/' . $site_path . '/settings.local.php';
+}
 $settings['config_sync_directory'] = 'sites/default/files/config_3_8ANiOh2HfzojodfDtWBlewEGLL05mRklcROksgH9W3GlAY9Ma1bPx9Qdgs9uvP-Mv6ppGcIQ/sync';
 
 $settings['extension_discovery_scan_tests'] = TRUE;
