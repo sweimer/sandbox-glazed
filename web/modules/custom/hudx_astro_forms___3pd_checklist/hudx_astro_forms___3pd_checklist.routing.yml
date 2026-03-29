@@ -1,0 +1,34 @@
+hudx_astro_forms___3pd_checklist.test_page:
+  path: '/hudx-test/astro-forms---3pd-checklist'
+  defaults:
+    _controller: '\Drupal\hudx_astro_forms___3pd_checklist\Controller\HudxTestController::page'
+    _title: 'HUDX Test: astro-forms---3pd-checklist'
+  requirements:
+    _permission: 'access content'
+
+hudx_astro_forms___3pd_checklist.api_modules:
+  path: '/api/astro-forms---3pd-checklist/modules'
+  defaults:
+    _controller: '\Drupal\hudx_astro_forms___3pd_checklist\Controller\ChecklistController::modules'
+    _title: '3PD Modules'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+hudx_astro_forms___3pd_checklist.api_checklist_list:
+  path: '/api/astro-forms---3pd-checklist/checklist'
+  defaults:
+    _controller: '\Drupal\hudx_astro_forms___3pd_checklist\Controller\ChecklistController::list'
+    _title: 'Checklist'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+hudx_astro_forms___3pd_checklist.api_checklist_upsert:
+  path: '/api/astro-forms---3pd-checklist/checklist'
+  defaults:
+    _controller: '\Drupal\hudx_astro_forms___3pd_checklist\Controller\ChecklistController::upsert'
+    _title: 'Upsert Checklist Row'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'

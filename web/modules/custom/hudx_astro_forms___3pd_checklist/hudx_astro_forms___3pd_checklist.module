@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function hudx_astro_forms___3pd_checklist_theme($existing, $type, $theme, $path) {
+  return [
+    'hudx_astro_forms___3pd_checklist_block' => [
+      'variables' => [],
+      'template' => 'hudx-astro-forms---3pd-checklist-block',
+      'path' => \Drupal::service('extension.list.module')->getPath('hudx_astro_forms___3pd_checklist') . '/templates',
+    ],
+  ];
+}

@@ -1,0 +1,10 @@
+hudx_astro_forms___3pd_checklist:
+  version: 1774790508525
+  js:
+    dist/assets/hudx_astro_forms___3pd_checklist.js:
+      header: true
+      attributes:
+        type: module
+
+  dependencies:
+    - core/drupal

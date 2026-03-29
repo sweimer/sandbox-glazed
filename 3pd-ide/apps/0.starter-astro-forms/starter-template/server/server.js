@@ -9,9 +9,12 @@
  *       Reverse proxy routes /api/<appname>/ → this server.
  *       Listens on 127.0.0.1 only — not publicly accessible.
  *
+ * Routes are namespaced by APP_SLUG so multiple apps can coexist on the
+ * same Drupal install without routing conflicts.
+ *
  * Routes:
- *   GET  /api/submissions     → list all submissions (newest first)
- *   POST /api/submissions     → create a new submission
+ *   GET  /api/${APP_SLUG}/submissions     → list all submissions (newest first)
+ *   POST /api/${APP_SLUG}/submissions     → create a new submission
  */
 
 import 'dotenv/config';
@@ -19,13 +22,14 @@ import express from 'express';
 import cors from 'cors';
 import { getDb } from './db/database.js';
 
-const app  = express();
-const PORT = process.env.PORT || 3001;
+const app     = express();
+const PORT    = process.env.PORT     || 3001;
+const HOST    = process.env.HOST     || '127.0.0.1';
+const APP_SLUG = process.env.APP_SLUG || 'app';
 
 // In production this server listens on 127.0.0.1 only — it is not a public
 // service. The reverse proxy (nginx/Apache) routes /api/ paths to it.
 // In dev, 127.0.0.1 also works fine since Astro dev server is on the same machine.
-const HOST = process.env.HOST || '127.0.0.1';
 
 // CORS — in dev the Astro dev server (port 4321) is a different origin.
 // In production both run behind the same proxy on the same domain, so CORS
@@ -39,9 +43,9 @@ app.use(cors({
 app.use(express.json());
 
 // -----------------------------------------------------------------------
-// GET /api/submissions — return all submissions, newest first
+// GET /api/${APP_SLUG}/submissions — return all submissions, newest first
 // -----------------------------------------------------------------------
-app.get('/api/submissions', (req, res) => {
+app.get(`/api/${APP_SLUG}/submissions`, (req, res) => {
   const rows = getDb()
     .prepare('SELECT * FROM submissions ORDER BY created_at DESC')
     .all();
@@ -49,9 +53,9 @@ app.get('/api/submissions', (req, res) => {
 });
 
 // -----------------------------------------------------------------------
-// POST /api/submissions — save a new submission
+// POST /api/${APP_SLUG}/submissions — save a new submission
 // -----------------------------------------------------------------------
-app.post('/api/submissions', (req, res) => {
+app.post(`/api/${APP_SLUG}/submissions`, (req, res) => {
   const { name, message } = req.body ?? {};
 
   if (!name?.trim() || !message?.trim()) {
@@ -75,6 +79,6 @@ app.post('/api/submissions', (req, res) => {
 // -----------------------------------------------------------------------
 app.listen(PORT, HOST, () => {
   console.log(`API server running at http://${HOST}:${PORT}`);
-  console.log(`  GET  http://${HOST}:${PORT}/api/submissions`);
-  console.log(`  POST http://${HOST}:${PORT}/api/submissions`);
+  console.log(`  GET  http://${HOST}:${PORT}/api/${APP_SLUG}/submissions`);
+  console.log(`  POST http://${HOST}:${PORT}/api/${APP_SLUG}/submissions`);
 });

@@ -40,13 +40,18 @@ export default async function astroFormsModule({ ideRoot, internal }) {
   log.dim(`Directory: ${cwd}`);
   log.nl();
 
-  // Delegate to the shared create-module.js in the starter kit
-  const createModulePath = path.join(
-    ideRoot,
-    'apps',
-    '0.starter-astro-forms',
-    'create-module.js'
-  );
+  // Check for a local create-module.js in the app directory first (override).
+  // This lets individual apps customize their Drupal module generation without
+  // modifying the shared starter kit.
+  const localCreateModulePath  = path.join(cwd, 'create-module.js');
+  const starterCreateModulePath = path.join(ideRoot, 'apps', '0.starter-astro-forms', 'create-module.js');
+  const createModulePath = fs.existsSync(localCreateModulePath)
+    ? localCreateModulePath
+    : starterCreateModulePath;
+
+  if (fs.existsSync(localCreateModulePath)) {
+    log.info('Using local create-module.js override.');
+  }
 
   if (!fs.existsSync(createModulePath)) {
     log.error('create-module.js not found.');

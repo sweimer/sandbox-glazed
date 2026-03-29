@@ -105,7 +105,11 @@ export default async function astroFormsApp(name, { ideRoot }) {
       log.success('.env created from .env.example');
       log.warn('Could not resolve Drupal URL. Update PUBLIC_DRUPAL_BASE_URL in .env manually.');
     }
+    envContent = envContent
+      .replace('APP_SLUG=YOUR_APP_SLUG', `APP_SLUG=${folderName}`)
+      .replace('PUBLIC_APP_SLUG=YOUR_APP_SLUG', `PUBLIC_APP_SLUG=${folderName}`);
     fs.writeFileSync(path.join(appDir, '.env'), envContent);
+    log.success(`APP_SLUG set to: ${folderName}`);
   }
 
   // Replace YOUR_CONTENT_TYPE placeholder in index.astro

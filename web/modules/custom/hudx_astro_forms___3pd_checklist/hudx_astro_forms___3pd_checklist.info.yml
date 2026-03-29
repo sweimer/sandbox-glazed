@@ -1,0 +1,5 @@
+name: 3PD IDE - 3PD Module Checklist
+type: module
+description: '3PD module test checklist — tracks which 3PD modules have been verified.'
+core_version_requirement: ^10 || ^11
+package: 3PD IDE Apps
