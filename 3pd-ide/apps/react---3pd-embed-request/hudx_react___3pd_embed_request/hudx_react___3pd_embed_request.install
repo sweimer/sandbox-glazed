@@ -1,0 +1,133 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function hudx_react___3pd_embed_request_schema() {
+  $schema['hudx_react___3pd_embed_request_submissions'] = [
+    'description' => 'Submissions table for the 3PD IDE - React   3pd Embed Request React app.',
+    'fields' => [
+        'id' => [
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ],
+        'submitter_name' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'submitter_email' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'submitter_dept' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'type' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'title' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'description' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'justification' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'url' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'code_snippet' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'requested_placement' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'data_sensitivity' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'collects_user_data' => [
+          'type' => 'int',
+          'not null' => FALSE,
+        ],
+        'requires_auth' => [
+          'type' => 'int',
+          'not null' => FALSE,
+        ],
+        'go_live_date' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'status' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'admin_notes' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'created_at' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+    ],
+    'primary key' => ['id'],
+  ];
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function hudx_react___3pd_embed_request_install() {
+  _hudx_react___3pd_embed_request_import_seed();
+}
+
+/**
+ * Import seed data from data/seed.json into the Drupal submissions table.
+ * Called on install and by post_deploy.php on every Pantheon push.
+ */
+function _hudx_react___3pd_embed_request_import_seed() {
+  $seed_path = \Drupal::service('extension.list.module')->getPath('hudx_react___3pd_embed_request') . '/data/seed.json';
+  if (!file_exists($seed_path)) {
+    return;
+  }
+
+  $seed = json_decode(file_get_contents($seed_path), TRUE);
+  if (empty($seed['rows'])) {
+    return;
+  }
+
+  $db = \Drupal::database();
+  $db->truncate('hudx_react___3pd_embed_request_submissions')->execute();
+
+  foreach ($seed['rows'] as $row) {
+    unset($row['id']);
+    $db->insert('hudx_react___3pd_embed_request_submissions')->fields($row)->execute();
+  }
+}

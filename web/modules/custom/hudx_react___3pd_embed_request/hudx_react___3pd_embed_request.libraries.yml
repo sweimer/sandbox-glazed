@@ -1,0 +1,12 @@
+hudx_react___3pd_embed_request:
+  version: 1774825566300
+  js:
+    dist/assets/hudx_react___3pd_embed_request.js:
+      header: true
+      attributes:
+        type: module
+  css:
+    theme:
+      dist/assets/hudx_react___3pd_embed_request.css: {}
+  dependencies:
+    - core/drupal

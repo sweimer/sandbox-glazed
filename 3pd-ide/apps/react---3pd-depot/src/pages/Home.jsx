@@ -142,7 +142,7 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Submit external tools such as Tableau, Salesforce, or legacy apps for governed Smart Embed integration.
               </p>
-              <a href="#" className="btn btn-primary">
+              <a href="/hudx-test/react---3pd-embed-request" className="btn btn-primary">
                 Submit Smart Embed Request
               </a>
             </div>
@@ -160,7 +160,7 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Submit standalone external sites or applications for linking consideration within HUDX.
               </p>
-              <a href="#" className="btn btn-primary">
+              <a href="/hudx-test/react---3pd-embed-request" className="btn btn-primary">
                 Submit External Link
               </a>
             </div>
