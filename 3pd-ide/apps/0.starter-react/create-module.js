@@ -349,8 +349,10 @@ if (typeof window !== "undefined" && window.Drupal && window.Drupal.behaviors) {
   const stableJsFile  = `${machineName}.js`;
   const stableCssFile = `${machineName}.css`;
 
-  fs.renameSync(path.join(assetsDir, jsFiles[0]),  path.join(assetsDir, stableJsFile));
-  fs.renameSync(path.join(assetsDir, cssFiles[0]), path.join(assetsDir, stableCssFile));
+  fs.renameSync(path.join(assetsDir, jsFiles[0]), path.join(assetsDir, stableJsFile));
+  if (cssFiles.length > 0) {
+    fs.renameSync(path.join(assetsDir, cssFiles[0]), path.join(assetsDir, stableCssFile));
+  }
 
   // ---------------------------------------------------------
   // Create module directory and copy assets
@@ -492,6 +494,10 @@ function _${machineName}_import_seed() {
   // ---------------------------------------------------------
   const buildVersion = Date.now();
 
+  const cssEntry = cssFiles.length > 0
+    ? `  css:\n    theme:\n      dist/assets/${stableCssFile}: {}\n`
+    : '';
+
   const librariesYml = `
 ${machineName}:
   version: ${buildVersion}
@@ -500,10 +506,7 @@ ${machineName}:
       header: true
       attributes:
         type: module
-  css:
-    theme:
-      dist/assets/${stableCssFile}: {}
-  dependencies:
+${cssEntry}  dependencies:
     - core/drupal
 `.trim() + '\n';
 

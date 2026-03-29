@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function hudx_react___3pd_ai_helper_theme($existing, $type, $theme, $path) {
+  return [
+    'hudx_react___3pd_ai_helper_block' => [
+      'variables' => [],
+      'template' => 'hudx-react---3pd-ai-helper-block',
+      'path' => \Drupal::service('extension.list.module')->getPath('hudx_react___3pd_ai_helper') . '/templates',
+    ],
+  ];
+}

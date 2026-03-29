@@ -16,6 +16,21 @@ Data source: Drupal JSON:API (same-origin when embedded in Drupal).
 No Express. No separate database. No Lando service.
 
 
+## CONTENT UPDATE MODEL
+
+Content in this starter is fetched from Drupal at runtime — it is NOT baked
+into the module at build time.
+
+  CONTENT LIVES IN DRUPAL → editors update nodes/entities in the CMS.
+  The app reflects changes immediately on next page load. No redeployment needed.
+
+  APP STRUCTURE (layout, labels, logic) lives in src/ → changing these
+  requires a new `3pd astro module` build and redeployment of the module.
+
+Use this starter when: content changes frequently and editors need control,
+or when the app is primarily a display layer over existing Drupal content.
+
+
 ## DIRECTORY STRUCTURE
 
 3pd-ide/apps/0.starter-astro-static/

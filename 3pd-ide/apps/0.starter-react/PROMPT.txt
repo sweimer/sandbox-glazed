@@ -20,6 +20,28 @@ Same data persistence rationale as 0.starter-astro-forms. See that PROMPT.txt
 for the full reasoning (portability, FedRAMP compliance).
 
 
+## CONTENT UPDATE MODEL
+
+This starter does NOT fetch content from Drupal at runtime. All content
+(copy, labels, layout, UI logic) lives in the React source code.
+
+  APP CONTENT (text, labels, UI structure in src/)
+  → Lives in source code. Any content change — even copy edits — requires
+     a new `3pd react module` build and redeployment of the module.
+  → Editors cannot update content without a developer and a deployment.
+
+  FORM SUBMISSIONS (rows in the submissions table)
+  → Written by end users at runtime. Stored in Drupal's MySQL DB (prod)
+     or SQLite (local dev). No redeployment needed.
+
+Use this starter when: the app requires complex client-side state, routing,
+or interactivity that Astro cannot provide, AND content changes are infrequent
+or are managed by developers rather than editors.
+
+If content needs to be editable by non-developers, consider 0.starter-astro-forms
+instead — it fetches CMS content at runtime while still supporting form submissions.
+
+
 ## DIRECTORY STRUCTURE
 
 3pd-ide/apps/0.starter-react/

@@ -1,0 +1,45 @@
+{
+  "table": "history",
+  "columns": [
+    {
+      "cid": 0,
+      "name": "id",
+      "type": "INTEGER",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 1
+    },
+    {
+      "cid": 1,
+      "name": "prompt",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 2,
+      "name": "markup",
+      "type": "TEXT",
+      "notnull": 1,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 3,
+      "name": "created_at",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": "datetime('now')",
+      "pk": 0
+    }
+  ],
+  "rows": [
+    {
+      "id": 1,
+      "prompt": "i need a bootstrap card group with 3 cards col-4 each a title body and button all using lorem ipsum and the button linking to google.com",
+      "markup": "<style>\n  :root {\n    --card-bg: #ffffff;\n    --card-border: #e0e0e0;\n    --btn-bg: #007bff;\n    --btn-hover: #0056b3;\n    --text-dark: #333333;\n    --text-muted: #666666;\n  }\n\n  .card-group-container {\n    display: grid;\n    grid-template-columns: repeat(3, 1fr);\n    gap: 20px;\n    padding: 20px;\n  }\n\n  .card {\n    background-color: var(--card-bg);\n    border: 1px solid var(--card-border);\n    border-radius: 4px;\n    display: flex;\n    flex-direction: column;\n    overflow: hidden;\n    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);\n  }\n\n  .card-body {\n    padding: 20px;\n    flex-grow: 1;\n    display: flex;\n    flex-direction: column;\n  }\n\n  .card-title {\n    font-size: 20px;\n    font-weight: 600;\n    margin: 0 0 15px 0;\n    color: var(--text-dark);\n  }\n\n  .card-text {\n    font-size: 14px;\n    color: var(--text-muted);\n    margin: 0 0 20px 0;\n    line-height: 1.6;\n    flex-grow: 1;\n  }\n\n  .card-link {\n    display: inline-block;\n    padding: 10px 20px;\n    background-color: var(--btn-bg);\n    color: white;\n    text-decoration: none;\n    border-radius: 4px;\n    font-weight: 500;\n    transition: background-color 0.3s ease;\n    align-self: flex-start;\n  }\n\n  .card-link:hover {\n    background-color: var(--btn-hover);\n  }\n\n  @media (max-width: 768px) {\n    .card-group-container {\n      grid-template-columns: 1fr;\n    }\n  }\n</style>\n\n<section class=\"card-group-container\">\n  <article class=\"card\">\n    <div class=\"card-body\">\n      <h2 class=\"card-title\">Lorem Ipsum Dolor</h2>\n      <p class=\"card-text\">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>\n      <a href=\"https://google.com\" class=\"card-link\">Learn More</a>\n    </div>\n  </article>\n\n  <article class=\"card\">\n    <div class=\"card-body\">\n      <h2 class=\"card-title\">Consectetur Adipiscing</h2>\n      <p class=\"card-text\">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>\n      <a href=\"https://google.com\" class=\"card-link\">Learn More</a>\n    </div>\n  </article>\n\n  <article class=\"card\">\n    <div class=\"card-body\">\n      <h2 class=\"card-title\">Duis Aute Irure</h2>\n      <p class=\"card-text\">Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>\n      <a href=\"https://google.com\" class=\"card-link\">Learn More</a>\n    </div>\n  </article>\n</section>",
+      "created_at": "2026-03-29 18:57:37"
+    }
+  ]
+}

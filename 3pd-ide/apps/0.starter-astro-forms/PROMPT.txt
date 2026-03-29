@@ -19,6 +19,26 @@ The Drupal module contains the static build (HTML/CSS/JS) AND a PHP REST
 controller that handles /api/submissions. No separate server needed in production.
 
 
+## CONTENT UPDATE MODEL
+
+This starter has three distinct layers, each with a different update path:
+
+  DRUPAL CONTENT (nodes, entities fetched via JSON:API)
+  → Updated by editors in the CMS. Reflected immediately on next page load.
+  → No redeployment needed.
+
+  FORM SUBMISSIONS (rows in the submissions table)
+  → Written by end users at runtime. Stored in Drupal's MySQL DB (prod)
+     or SQLite (local dev). No redeployment needed.
+
+  APP STRUCTURE (form fields, labels, layout, logic in src/)
+  → Lives in source code. Changes require a new `3pd astro-forms module` build
+     and redeployment of the module.
+
+Use this starter when: the app needs both CMS-driven content AND the ability
+to collect/store user data, and editors need control over the content side.
+
+
 ## DUAL PERSISTENCE MODEL
 
 ### Local dev (3PD developer)
