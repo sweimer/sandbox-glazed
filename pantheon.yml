@@ -5,3 +5,10 @@ build_step: false
 php_version: 8.3
 database:
   version: 10.6
+
+workflows:
+  sync_code:
+    after:
+      - type: webphp
+        description: "Post-deploy: updb, router rebuild, cache clear"
+        script: private/scripts/post_deploy.php
