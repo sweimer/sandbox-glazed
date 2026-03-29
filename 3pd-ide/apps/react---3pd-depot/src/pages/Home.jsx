@@ -42,16 +42,9 @@ export default function ThreePDLandingPage() {
       {/* BLUEPRINT DIVIDER */}
       <div className="text-center my-4 dxpr-animate dxpr-fade-in">
         <div className="text-primary fw-bold">
-          <a href="/hudx-test/astro-forms---3pd-checklist" className="btn btn-primary">
-            Manage 3PD Modules
-          </a>
-        </div>
-        <br/>
-        <div className="text-primary fw-bold">
           <i className="bi bi-gear me-2"></i>
           Choose Your Build Path
         </div>
-
       </div>
 
       {/* CARD GRID */}
@@ -151,7 +144,7 @@ export default function ThreePDLandingPage() {
 
         {/* 3PD STAND-ALONE PROPERTIES */}
         <div className="col-md-6 col-lg-4">
-          <div className="card h-100 border-secondary shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-5">
+          <div className="card h-100 border-secondary shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-6">
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
                 <i className="bi bi-hammer text-primary me-3" style={{ fontSize: "2rem" }}></i>
@@ -162,6 +155,24 @@ export default function ThreePDLandingPage() {
               </p>
               <a href="/hudx-test/react---3pd-embed-request" className="btn btn-primary">
                 Submit External Link
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* 3PD MODULE MANAGER */}
+        <div className="col-md-6 col-lg-4">
+          <div className="card h-100 border-dark shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-6">
+            <div className="card-body d-flex flex-column">
+              <div className="d-flex align-items-center mb-3">
+                <i className="bi bi-grid text-primary me-3" style={{ fontSize: "2rem" }}></i>
+                <h2 className="h3 mb-0">3PD Module Manager</h2>
+              </div>
+              <p className="card-text text-muted mb-4">
+                Review and manage content submitted by third-party developers across all active 3PD modules.
+              </p>
+              <a href="/hudx-test/astro-forms---3pd-checklist" className="btn btn-primary mt-auto">
+                Manage 3PD Modules
               </a>
             </div>
           </div>
