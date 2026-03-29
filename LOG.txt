@@ -546,12 +546,46 @@ that clears the router, run manually:
 OR just refresh the browser — Drupal rebuilds the router on the first web request
 if the router table is empty (may show "no route" on first load, reload fixes it).
 
-### AFTER PANTHEON IS UP
+### SESSION: 2026-03-28 (continued) — Full deploy pipeline complete
 
-- Update .env in all 3pd-ide/apps/* to use Pantheon URL instead of lando URL
-  for PUBLIC_DRUPAL_BASE_URL (so apps can be tested without Lando running)
-- Update astro-app.js and astro-forms-app.js auto-detect fallback to suggest
-  Pantheon URL if lando is not running
+#### Pantheon deploy pipeline — FULLY AUTOMATED
+
+Every push to main now:
+  1. GH Actions: composer install --no-dev → git add -f vendor/ → push to Pantheon
+  2. Pantheon Quicksilver (post-deploy, auto): drush updb -y → router rebuild → drush cr
+  3. GH Actions (terminus): enables any hudx_* modules present in code but not in DB
+
+Components:
+  - pantheon.yml: workflows.sync_code.after → private/scripts/post_deploy.php
+  - private/scripts/post_deploy.php: Quicksilver script (drush updb + router + cr)
+  - .github/workflows/deploy-pantheon.yml: terminus install + auth + pm:enable hudx_*
+  - GitHub secrets: PANTHEON_MACHINE_TOKEN added (machine token, not session token)
+  - ~/.ssh/config: *.drush.in block with IdentityFile + RSA algorithm flags (local only)
+
+Content on Pantheon persists across code deploys. New hudx_* modules auto-enable.
+No manual terminus commands needed after pushes.
+
+#### astro-forms---poc-05 — deployed to Pantheon (2026-03-28)
+  - Built with `3pd astro-forms module --install` from app directory
+  - Fetches basic_page_layout_builder from Pantheon JSON:API (same-origin in prod)
+  - Form submissions require Express backend — work in npm run dev, not in Drupal module
+  - Module enabled on Pantheon: hudx_astro_forms___poc_05
+  - Block available to place in Layout Builder on Pantheon
+  - Test route: https://dev-3-pd-ide.pantheonsite.io/hudx-test/astro-forms---poc-05
+
+#### Dev workflow for apps (confirmed working 2026-03-28)
+  - PUBLIC_DRUPAL_BASE_URL=https://dev-3-pd-ide.pantheonsite.io in app .env
+  - npm run dev: Astro at localhost:4321 fetches from Pantheon JSON:API
+  - Content changes on Pantheon appear immediately in dev app on refresh
+  - Form submissions: Express at localhost:3001 (dev only)
+
+#### IMPORTANT: next lando rebuild still required
+.lando.yml crx improvements (router truncate + rebuild) need `lando rebuild -y`.
+Until then: after lando crx, reload browser once if "No route found" appears.
+
+### AFTER PANTHEON IS UP (remaining tasks)
+
+- Update .env in remaining 3pd-ide/apps/* to use Pantheon URL
 - Standalone repo extraction: create 3pd-astro/, 3pd-astro-forms/, 3pd-react/
   as independent repos alongside 3pd-ide/ at the SANDBOX-glazed root
 - CI/CD discussion: test route gating, --install → git commit+push for Pantheon
