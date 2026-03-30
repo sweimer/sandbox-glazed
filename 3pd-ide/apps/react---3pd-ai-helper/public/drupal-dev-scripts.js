@@ -1,6 +1,6 @@
 // ============================================================ 
 // HUDX Drupal Dev JS                                       
-// Generated: 2026-03-30T13:22:51.162Z                    
+// Generated: 2026-03-30T17:30:44.694Z                    
 // Run `3pd styles sync` to refresh after theme changes.     
 // This file is gitignored — do not commit.                   
 // ============================================================ 

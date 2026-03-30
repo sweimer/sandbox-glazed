@@ -5,4 +5,5 @@ export const FRAMEWORK_PREFIXES = {
   astroForms: 'astro-forms---',
   angular:    'angular---',
   vanillajs:  'vanillajs---',
+  embed:      'embed---',
 };

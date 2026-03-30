@@ -282,6 +282,7 @@ type: module
 description: '3PD IDE Astro application module for ${displayName}.'
 core_version_requirement: ^10 || ^11
 package: 3PD IDE Apps
+configure: ${machineName}.test_page
 `.trim() + '\n';
 
   fs.writeFileSync(path.join(moduleDir, `${machineName}.info.yml`), infoYml);

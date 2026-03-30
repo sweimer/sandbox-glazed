@@ -1161,3 +1161,239 @@ Pending (carried forward):
   - Build Angular starter (deferred)
   - Option 2 Page Builder POC (deferred)
   - Gate /hudx-test/* routes before production deployment
+
+
+## SESSION: 2026-03-30 (continued) — Smart Embed starter + SC Training POC
+
+### 0.starter-smart-embed — BUILT (2026-03-30)
+
+New starter kit for embedding external or legacy apps into Drupal via a
+resizable iframe using postMessage. No React, no build step, no npm.
+
+Architecture:
+  - Two modes set in embed.config.json:
+      embedUrl   → iframes an external live URL (Option A)
+      staticDir  → copies local static files to web/embeds/<slug>/, iframes internally (Option B)
+  - Child-side snippet (snippet/hudx-resize.js): drop into any app, sends scrollHeight on
+    load/resize/popstate/hashchange via window.parent.postMessage({ type: 'hudx-resize', height })
+  - Parent-side Drupal block: Drupal.behaviors listener, sets iframe.style.height
+  - Fallback height (px) shown until first postMessage received
+
+New files:
+  apps/0.starter-smart-embed/create-module.js
+  apps/0.starter-smart-embed/snippet/hudx-resize.js
+  apps/0.starter-smart-embed/PROMPT.txt
+  starter-scripts/cli/commands/embed-create.js
+  starter-scripts/cli/commands/embed-module.js
+
+Modified files:
+  starter-scripts/cli/index.js   — added embed namespace + help
+  starter-scripts/cli/shared/frameworks.js — added embed: 'embed---'
+
+CLI commands:
+  3pd embed create <name>              Create embed app folder + snippet
+  3pd embed create <name> --url <url>  Pre-fill the embed URL
+  3pd embed module                     Generate Drupal block module (3PD)
+  3pd embed module --install           Generate + install (HUDX)
+
+Generated Drupal module:
+  Block plugin using Markup::create() — IMPORTANT: plain #markup strips iframes
+  via Drupal XSS filter. Must use Markup::create() for any block rendering iframes.
+  JS listener uses Drupal.behaviors + once() — attaches only once per element.
+
+### Cloudflare X-Frame-Options — why static hosting is needed
+  apps like the SC training tool are hosted on AWS S3 + Cloudflare which sets
+  X-Frame-Options blocking iframes. Option A (external URL) is blocked.
+  Option B (static files self-hosted) works because same-domain iframes bypass
+  all X-Frame-Options restrictions.
+
+### staticDir mode (Option B)
+  create-module.js gains staticDir support:
+  - Resolves path relative to 3pd-ide/ root (ideRoot)
+  - Copies files to web/embeds/<slug>/ (served directly by Apache, bypasses PHP)
+  - Copies hudx-resize.js into deployed root
+  - Injects <script src="hudx-resize.js"></script> before </body> in all .html files
+  - Sets iframe src to /embeds/<slug>/
+
+  Static files in web/embeds/ are NOT gitignored (needed for Pantheon).
+  Source files in 3pd-ide/smart-embeds/ are the version-controlled copy.
+
+### embed---sc-training POC — WORKING (2026-03-30)
+
+Source: /Users/29457/Documents/Sites/0.apps/sc-training-tool/app (Adobe Muse export)
+        Copied to: 3pd-ide/smart-embeds/sc-training/ (380 files, 36MB)
+Deployed: web/embeds/sc-training/ (written by --install)
+Module: web/modules/custom/hudx_embed___sc_training/
+Test route: http://sandbox-glazed.lndo.site/hudx-test/embed---sc-training
+
+#### Critical fix: Adobe Muse verticalspacer infinite loop
+Muse pages use <div class="verticalspacer" style="height: calc(-1359px + 100vh)">
+to pin the footer to the viewport bottom. Inside an iframe, 100vh = iframe height.
+This creates a circular loop: spacer expands → scrollHeight grows → iframe grows → repeat.
+Result: iframe is always ~8770px regardless of page content.
+
+Fix applied to hudx-resize.js:
+  When inside an iframe, inject CSS: .verticalspacer { display: none !important; }
+  This removes the spacer from layout before measuring scrollHeight.
+  Footer flows naturally after main content. Height reflects real content per page.
+
+#### Critical fix: Drupal XSS filter strips iframe from #markup
+  Drupal's #markup runs through Xss::filter() which removes <iframe> tags.
+  Fix: use Markup::create() to mark the HTML as trusted.
+  Applied to both the live module and create-module.js template.
+
+#### lando drush breakage (2026-03-30)
+  lando drush pm:enable / pm:uninstall failing with:
+    "exec: vendor/bin/drush: no such file or directory"
+  Workaround: lando php /app/vendor/bin/drush.php pm:enable <module> -y
+  Root cause unknown — affects all starters' create-module.js tryExec calls.
+  TODO: investigate and fix lando drush path resolution.
+
+### WHERE WE LEFT OFF (end of 2026-03-30 session)
+
+In progress:
+  - embed---sc-training POC working locally, user testing per-page resize behavior
+
+Pending:
+  - Verify per-page resize (contents → module 2.1 → 2.2 etc.)
+  - Verify quiz page resize after accordion/answer interactions
+  - Fix lando drush path breakage in create-module.js tryExec (affects all starters)
+  - web/embeds/ Pantheon deploy strategy (same as vendor/ — commit in GH Actions push)
+  - Deploy react---3pd-embed-request to Pantheon
+  - Deploy react---3pd-depot to Pantheon
+  - Gate /hudx-test/* routes before production deployment
+
+
+## SESSION: 2026-03-30 (continued) — 3PD Checklist polish + module UX
+
+### ✓ 3PD Checklist — Module column now shows full display name
+
+  Previously: Module column showed stripped slug (e.g. "app-12")
+  Now: pulls $info['name'] directly from the module's .info.yml
+       (e.g. "3PD IDE - Astro Forms App 12")
+
+  Changed:
+    web/modules/custom/hudx_astro_forms___3pd_checklist/src/Controller/ChecklistController.php
+    3pd-ide/apps/astro-forms---3pd-checklist/create-module.js (source template)
+
+  Removed the slug_prefix stripping logic. $display_name = $info['name'] ?? $app_name.
+
+### ✓ 3PD Checklist — Default sort changed to Tech A→Z
+
+  sortCol initialised to 'tech' (was empty string = no sort).
+  Changed in: 3pd-ide/apps/astro-forms---3pd-checklist/src/pages/index.astro
+  Rebuilt and redeployed via create-module.js --install.
+
+### ✓ Drupal Extend page — "Configure" button relabeled to "View" for hudx_* modules
+
+  The configure: key in .info.yml always renders as "Configure" in Drupal core —
+  this is hardcoded in ModulesListForm.php and cannot be overridden via info.yml.
+
+  Fix: hook_form_system_modules_alter() in the checklist .module file.
+  Targets only modules whose machine name starts with hudx_.
+  All other modules on the Extend page retain the standard "Configure" label.
+
+  Changed: web/modules/custom/hudx_astro_forms___3pd_checklist/hudx_astro_forms___3pd_checklist.module
+
+### ✓ configure: key added to all installed modules and all starter templates
+
+  Added configure: <machineName>.test_page to .info.yml for 6 live modules:
+    hudx_astro_forms___3pd_checklist, hudx_astro_forms___app_12,
+    hudx_react___3pd_depot, hudx_react___3pd_embed_request,
+    hudx_react___3pd_poc, hudx_react___stracat
+
+  Added to all 3 starter create-module.js templates (generates for future modules):
+    0.starter-react, 0.starter-astro-static, 0.starter-astro-forms
+
+### ✓ Smart Embed — own repo decision
+
+  Decision: 0.starter-smart-embed does NOT need its own git repo.
+  Reason: React/Astro starters need repos because developers clone a full npm
+  project scaffold. Smart embed has no build step, no package.json, no npm.
+  The CLI generates everything on the fly and copies only hudx-resize.js from the
+  starter. A separate repo would add overhead with nothing to gain.
+
+### WHERE WE LEFT OFF (end of 2026-03-30 session 2)
+
+Completed this session:
+  - 3PD Checklist: Module column shows full name from .info.yml
+  - 3PD Checklist: Default sort Tech A→Z
+  - Drupal Extend: "View" button for all hudx_* modules
+  - configure: key on all live modules + all starter templates
+
+Pending:
+  - Discuss web/embeds/ Pantheon deploy strategy (next conversation)
+  - Verify per-page resize on embed---sc-training (user still testing)
+  - Fix lando drush path breakage in create-module.js tryExec (affects all starters)
+  - Deploy react---3pd-embed-request to Pantheon
+  - Deploy react---3pd-depot to Pantheon
+  - Gate /hudx-test/* routes before production deployment
+
+
+## SESSION: 2026-03-30 (continued) — CloudFront POC for smart embed
+
+### Context: why CloudFront instead of static hosting in Drupal repo
+
+  The trainings apps on hudexchange.info are hosted on S3 + CloudFront.
+  The prod CloudFront distribution sets X-Frame-Options blocking iframes.
+  The HUDX team cannot change this now due to resourcing constraints.
+  Goal: test the embedUrl mode (no files in Drupal repo) using a POC CloudFront
+  distribution we control, without touching prod.
+
+### ✓ S3 POC prefix created
+
+  Copied trainings/ prefix within the same bucket:
+    s3://sites.hudexchange.info/trainings/ → s3://sites.hudexchange.info/trainings-poc/
+
+  Note: the copy nested the directory one level deeper than intended:
+    trainings-poc/trainings/service-coordinators.../   (not trainings-poc/service-coordinators.../)
+  Acceptable for POC. Re-copy with correct structure if moving to prod.
+
+  Bucket already had a public read policy (/* wildcard) — no ACL changes needed.
+
+### ✓ CloudFront POC distribution created
+
+  Distribution ID: E34CQM3GCYZN5R
+  Domain:          https://d1xzjd7z8lcp8a.cloudfront.net
+  Origin:          sites.hudexchange.info.s3.amazonaws.com
+  Origin path:     /trainings-poc
+  Headers policy:  SecurityHeadersPolicy (preset)
+
+  App confirmed loading at:
+    https://d1xzjd7z8lcp8a.cloudfront.net/trainings/service-coordinators-in-multifamily-housing-online-learning-tool/index.html
+
+### ✓ embed---sc-training switched from staticDir to embedUrl mode
+
+  embed.config.json updated:
+    was: { "staticDir": "smart-embeds/sc-training" }
+    now: { "embedUrl": "https://d1xzjd7z8lcp8a.cloudfront.net/trainings/service-coordinators-in-multifamily-housing-online-learning-tool/index.html" }
+
+  Module regenerated + reinstalled. App confirmed loading inside Drupal.
+  Drupal repo no longer needs web/embeds/sc-training/ — static files not committed.
+  This resolves the Pantheon repo bloat concern entirely for this approach.
+
+### ✗ hudx-resize.js not yet injected into POC bucket
+
+  The iframe loads but sits at fallback height (800px) — verticalspacer loop present.
+  POC HTML files in S3 do not yet have the snippet injected.
+
+  Plan:
+    1. Write inject + S3 sync script
+    2. Run against 3pd-ide/smart-embeds/sc-training/ locally (inject into source)
+    3. Sync injected files to s3://sites.hudexchange.info/trainings-poc/ via AWS CLI
+
+### WHERE WE LEFT OFF (end of 2026-03-30 session 3)
+
+Completed this session:
+  - CloudFront POC distribution live and serving the sc-training app
+  - embed---sc-training switched to embedUrl mode (no files in Drupal repo)
+  - Confirmed app loads inside Drupal via CloudFront
+
+Pending:
+  - Write inject + S3 sync script, run against POC bucket
+  - Verify resize works after injection (verticalspacer fix + postMessage)
+  - Fix lando drush path breakage in create-module.js tryExec (affects all starters)
+  - Deploy react---3pd-embed-request to Pantheon
+  - Deploy react---3pd-depot to Pantheon
+  - Gate /hudx-test/* routes before production deployment
+  - Other starters (react, astro, astro-forms) still need their own git repos

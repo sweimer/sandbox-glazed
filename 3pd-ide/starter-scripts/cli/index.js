@@ -82,6 +82,10 @@ ${chalk.cyan('astro-forms')} Adds a data layer. Drupal content + form submission
 ${chalk.yellow('react')}        Full SPA. React + Vite + Express + SQLite.
              Use when: the app needs client-side routing or complex state.
 
+${chalk.magenta('embed')}        Smart iframe wrapper. No build step. No framework.
+             Iframes any URL into a Drupal block. Auto-resizes via postMessage.
+             Use when: embedding an external or legacy app you don't want to rebuild.
+
 ${chalk.yellow('angular')}      (coming soon)
 
 ${chalk.bold('COMMANDS')}
@@ -99,6 +103,11 @@ ${chalk.green('3pd react app <name>')}                 Create React + Express + 
 ${chalk.green('3pd react module')}                     Package as Drupal module (3PD)
 ${chalk.green('3pd react module --install')}           Package + install in Drupal (HUDX)
 ${chalk.green('3pd react db pull')}                    Pull live data from Drupal/Pantheon into local SQLite
+
+${chalk.magenta('3pd embed create <name>')}               Create a new smart embed app (configure URL, get snippet)
+${chalk.magenta('3pd embed create <name> --url <url>')}   Create and pre-fill the embed URL
+${chalk.magenta('3pd embed module')}                      Generate the Drupal block module (3PD)
+${chalk.magenta('3pd embed module --install')}            Generate + install in Drupal (HUDX)
 
 ${chalk.magenta('3pd styles sync')}                       Generate drupal-dev-styles.css in all apps (dev theme CSS)
 ${chalk.magenta('3pd styles refresh')}                    Refresh dev CSS/JS for the current app only (run from app dir)
@@ -293,6 +302,61 @@ db
   .action(async () => {
     const cmd = await import('./commands/db-pull.js');
     cmd.default({ ideRoot });
+  });
+
+// ------------------------------------------------------------
+// EMBED NAMESPACE
+// ------------------------------------------------------------
+const embed = program
+  .command('embed')
+  .description('Smart embed commands — iframe any URL as a resizable Drupal block');
+
+embed.helpInformation = function () {
+  return `
+${chalk.bold('Smart Embed Commands')}
+${chalk.gray('--------------------')}
+
+${chalk.bold('Usage:')}
+  3pd embed <command> [options]
+
+${chalk.bold('Commands:')}
+  ${chalk.magenta('create <name>')}              Create a new smart embed app folder
+  ${chalk.magenta('create <name> --url <url>')}  Create and pre-fill the embed URL
+  ${chalk.magenta('module')}                     Generate a Drupal block module (3PD mode)
+  ${chalk.magenta('module --install')}           Generate AND install the module (HUDX internal)
+
+${chalk.bold('How it works:')}
+  1. create  → makes embed---<name>/ with embed.config.json + snippet/hudx-resize.js
+  2. Edit embed.config.json to set the URL (or pass --url at create time)
+  3. Share snippet/hudx-resize.js with the embedded app owner (they add it to their pages)
+  4. module --install → generates the Drupal block module and installs it
+
+${chalk.bold('Examples:')}
+  3pd embed create sc-training --url https://www.hudexchange.info/trainings/sc-tool/
+  cd apps/embed---sc-training
+  3pd embed module --install
+`;
+};
+
+embed
+  .command('create <name...>')
+  .description('Create a new smart embed app')
+  .option('--url <url>', 'URL to embed (can also be set in embed.config.json later)')
+  .action(async (name, options) => {
+    const cmd = await import('./commands/embed-create.js');
+    const folderName = Array.isArray(name) ? name.join(' ') : name;
+    cmd.default(folderName, { ideRoot, url: options.url });
+  });
+
+embed
+  .command('module')
+  .description('Generate a Drupal block module from the current embed app')
+  .option('--install', 'Install the generated module into Drupal (internal HUDX use only)')
+  .option('--internal', 'Alias for --install')
+  .action(async (options) => {
+    const cmd = await import('./commands/embed-module.js');
+    const internal = options.install || options.internal || isInternal;
+    cmd.default({ ideRoot, internal });
   });
 
 // ------------------------------------------------------------

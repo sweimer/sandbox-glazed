@@ -1,0 +1,6 @@
+name: 'HUDX Smart Embed: SC Training — Service Coordinators in Multifamily Housing'
+type: module
+description: 'Smart embed block for SC Training — Service Coordinators in Multifamily Housing. Iframes the target URL and auto-resizes via postMessage.'
+core_version_requirement: ^10 || ^11
+package: HUDX
+configure: hudx_embed___sc_training.test_page

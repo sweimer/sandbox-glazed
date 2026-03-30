@@ -25,3 +25,7 @@ yarn.lock
 # Lando
 .lando.local.yml
 .lando.yml.backup
+
+# Smart embed static files (large legacy app exports — source of truth is local only)
+/3pd-ide/smart-embeds/
+/web/embeds/

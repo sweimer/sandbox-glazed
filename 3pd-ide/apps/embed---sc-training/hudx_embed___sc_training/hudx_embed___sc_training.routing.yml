@@ -1,0 +1,7 @@
+hudx_embed___sc_training.test_page:
+  path: '/hudx-test/embed---sc-training'
+  defaults:
+    _controller: '\Drupal\hudx_embed___sc_training\Controller\HudxTestController::page'
+    _title: 'SC Training — Service Coordinators in Multifamily Housing'
+  requirements:
+    _permission: 'access content'

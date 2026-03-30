@@ -1,6 +1,28 @@
 <?php
 
 /**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Relabels the "Configure" operation button to "View" for all hudx_* modules
+ * on the Extend page, since these links point to test/preview pages rather
+ * than configuration forms.
+ */
+function hudx_astro_forms___3pd_checklist_form_system_modules_alter(&$form, $form_state, $form_id) {
+  if (empty($form['modules'])) {
+    return;
+  }
+  foreach ($form['modules'] as $package_key => &$package) {
+    if (!is_array($package)) continue;
+    foreach ($package as $module_key => &$module) {
+      if (!is_array($module) || strpos($module_key, 'hudx_') !== 0) continue;
+      if (!empty($module['links']['configure']['#title'])) {
+        $module['links']['configure']['#title'] = t('View');
+      }
+    }
+  }
+}
+
+/**
  * Implements hook_theme().
  */
 function hudx_astro_forms___3pd_checklist_theme($existing, $type, $theme, $path) {

@@ -3,3 +3,4 @@ type: module
 description: '3PD IDE React application module for 3PD IDE - React   3pd Poc.'
 core_version_requirement: ^10 || ^11
 package: 3PD IDE Apps
+configure: hudx_react___3pd_poc.test_page

@@ -1,0 +1,215 @@
+# 3PD IDE — Smart Embed Starter: AI Guide
+# =========================================================
+# Read this file before building on or modifying this starter,
+# or before creating a new smart embed app.
+# Documents architecture decisions and lessons learned.
+# =========================================================
+
+
+## WHAT THIS STARTER IS
+
+A Drupal module pattern for embedding any external or legacy app into a
+Drupal Layout Builder block via an auto-resizing iframe.
+
+No rebuild of the child app required. No npm. No build step.
+The child app stays exactly as it is — you just add one snippet.
+
+Two pieces:
+  Parent (Drupal block): listens for postMessage resize events, adjusts iframe height
+  Child (embedded app):  sends its scrollHeight on load, resize, and navigation
+
+
+## WHEN TO USE THIS STARTER
+
+Use this when:
+  - You need to embed an app you don't own or can't rebuild (e.g. hudexchange.info)
+  - The embedded app is a legacy static HTML site (e.g. Adobe Muse export)
+  - You need a working embed in 1–2 days, not 8–13 days for a React rebuild
+  - The iframe target is already live and accessible
+
+Use a React or Astro starter instead when:
+  - You own the child app and want it to match the Drupal/DXPR theme
+  - The child app needs access to Drupal user sessions or data
+  - You need deep Drupal integration (JSON:API, form submissions to Drupal DB)
+
+
+## DIRECTORY STRUCTURE
+
+3pd-ide/apps/0.starter-smart-embed/
+├── PROMPT.txt                  ← this file
+├── create-module.js            ← Drupal module generator (called by CLI)
+└── snippet/
+    └── hudx-resize.js          ← child-side snippet (share with embedded app owner)
+
+Generated app folder (embed---<name>/):
+├── embed.config.json           ← configure embedUrl, title, fallbackHeight
+└── snippet/
+    └── hudx-resize.js          ← copy of snippet for sharing
+
+
+## CLI WORKFLOW
+
+Step 1 — Create:
+  3pd embed create <name>
+  3pd embed create <name> --url <url>    # pre-fill the URL
+
+  Creates: apps/embed---<name>/embed.config.json
+           apps/embed---<name>/snippet/hudx-resize.js
+
+Step 2 — Configure (if URL not passed at create time):
+  Edit apps/embed---<name>/embed.config.json.
+
+  TWO MODES — pick one:
+
+  Mode A: embedUrl (external or CloudFront-hosted URL)
+    {
+      "embedUrl": "https://example.com/my-app/",
+      "title": "My App",
+      "fallbackHeight": 600
+    }
+
+  Mode B: staticDir (self-hosted static files inside Drupal web root)
+    {
+      "staticDir": "smart-embeds/<name>",
+      "title": "My App",
+      "fallbackHeight": 800
+    }
+
+  embedUrl:       URL to iframe. Use when the child app is externally hosted
+                  and iframe-friendly (no X-Frame-Options blocking).
+  staticDir:      Path relative to 3pd-ide/ root containing the static app files.
+                  --install copies files to web/embeds/<slug>/ and serves them
+                  directly from Apache (same-domain, bypasses X-Frame-Options).
+                  Also injects hudx-resize.js into all .html files automatically.
+  title:          Displayed as iframe title attribute (accessibility).
+  fallbackHeight: Height in px shown until the child sends its real height.
+
+Step 3 — Share the snippet with the child app owner:
+  Send them: apps/embed---<name>/snippet/hudx-resize.js
+  They add to every page (or site_global.js):
+    <script src="hudx-resize.js"></script>
+
+Step 4 — Generate + install the Drupal module:
+  cd apps/embed---<name>
+  3pd embed module --install
+
+  Test at: /hudx-test/<name>
+  Block in: Layout Builder → Add Block → HUDX → <title> — Smart Embed
+
+
+## GENERATED DRUPAL MODULE
+
+hudx_embed___<name>/
+├── hudx_embed___<name>.info.yml
+├── hudx_embed___<name>.libraries.yml
+├── hudx_embed___<name>.routing.yml
+├── css/
+│   └── smart-embed.css         ← full-width iframe, no border
+├── js/
+│   └── smart-embed.js          ← Drupal.behaviors postMessage listener
+└── src/
+    ├── Plugin/Block/
+    │   └── <Name>Block.php     ← Block plugin, EMBED_URL constant
+    └── Controller/
+        └── HudxTestController.php
+
+
+## HOW THE RESIZE WORKS
+
+1. Child page includes hudx-resize.js
+2. On load / resize / navigation, it calls:
+     window.parent.postMessage({ type: 'hudx-resize', height: scrollHeight }, '*')
+3. Parent Drupal page receives the message via window.addEventListener('message')
+4. Parent sets iframe.style.height = height + 'px'
+5. Transition: height changes animate smoothly (0.2s ease in CSS)
+
+Fallback: if the child never sends a message (snippet not added),
+the iframe shows at fallbackHeight px (default 600).
+
+Manual resize (React/Astro child, after accordion opens or quiz submits):
+  window.hudxSendHeight();   // exposed by the snippet
+
+
+## HOSTING LEGACY APPS — DECISION GUIDE
+
+The main blocker for iframing external apps is X-Frame-Options or
+Content-Security-Policy: frame-ancestors set by the host's CDN.
+
+### Option A — Ask the external team to allow iframes (ideal long-term)
+  - Remove X-Frame-Options from their CDN response headers, OR
+  - Add Content-Security-Policy: frame-ancestors <your-domain>
+  - CloudFront: add a Response Headers Policy to the distribution
+  - Cloudflare: add a Transform Rule modifying response headers
+  - Also ask them to add hudx-resize.js to every page
+  - Then use embedUrl mode — no files in the Drupal repo
+
+### Option B — Self-host via staticDir (bridge while waiting on Option A)
+  - Copy the app files into 3pd-ide/smart-embeds/<name>/
+  - Set staticDir in embed.config.json
+  - --install copies to web/embeds/<name>/ and injects hudx-resize.js
+  - Same-domain iframe bypasses all X-Frame-Options restrictions
+  - Tradeoff: large static files committed to the Drupal repo (Pantheon bloat)
+  - web/embeds/ must be committed in GH Actions before Pantheon push (git add -f)
+
+### Option C — POC CloudFront distribution (tested 2026-03-30)
+  If you have AWS access to the host's S3 bucket:
+  1. Copy the relevant S3 prefix to a -poc prefix in the same bucket
+     aws s3 cp s3://bucket/trainings/ s3://bucket/trainings-poc/ --recursive
+  2. Create a new CloudFront distribution pointing at bucket, origin path /trainings-poc
+     (new distribution = zero risk to prod distribution)
+  3. Attach a Response Headers Policy that removes X-Frame-Options
+     (SecurityHeadersPolicy preset may work; custom policy gives more control)
+  4. Inject hudx-resize.js into the POC HTML files, re-upload to S3
+  5. Use embedUrl mode pointing at the *.cloudfront.net domain
+  - No files in Drupal repo, HTTPS works, iframe-friendly
+  - POC CloudFront URL: https://d1xzjd7z8lcp8a.cloudfront.net (sc-training POC)
+
+### Adobe Muse verticalspacer fix (CRITICAL for Muse-exported apps)
+  Muse uses: <div class="verticalspacer" style="height: calc(-Xpx + 100vh)">
+  Inside an iframe, 100vh = iframe height → circular loop → iframe always ~8770px.
+  Fix is already baked into hudx-resize.js:
+    When inside an iframe, injects CSS: .verticalspacer { display: none !important; }
+  This kills the loop before scrollHeight is measured. No manual action needed.
+
+
+## KNOWN LIMITATIONS AND GOTCHAS
+
+1. Cross-origin postMessage uses '*' as targetOrigin.
+   This is intentional — the child and parent may be on different domains
+   (e.g. hudexchange.info child, sandbox-glazed.lndo.site parent).
+   The message payload contains no sensitive data — only a height integer.
+   If both are on the same origin in production, '*' is still safe here.
+
+2. scrollHeight vs clientHeight.
+   The snippet uses Math.max(body.scrollHeight, documentElement.scrollHeight).
+   This handles edge cases where content overflow is on the html element
+   vs the body element. Works across browsers and Muse-generated HTML.
+
+3. Snippet must be added to EVERY page in the child app.
+   For multi-page static apps (like Adobe Muse), the simplest approach is
+   to add the <script> to the shared master template / site_global layout.
+   If that's not possible, add it to each HTML file's <head>.
+
+4. iframe scrolling="no" is intentional.
+   The iframe grows to match its content — no internal scrollbar needed.
+   If the child app has a fixed-height container that clips content,
+   you may need to adjust its CSS rather than enable iframe scrolling.
+
+5. EMBED_URL is hardcoded in the PHP class constant at generation time.
+   To change the URL: update embed.config.json and re-run 3pd embed module --install.
+   There is no runtime-configurable URL (no Block config form).
+   This is a deliberate simplicity tradeoff — config forms add complexity
+   and the URL is not expected to change frequently.
+
+6. Test route /hudx-test/<name> is gated by 'access content' only.
+   Gate it behind a stricter permission before production deployment.
+   See LOG.txt "REVISIT IN CI/CD DISCUSSION" section.
+
+
+## MANDATORY CHECKLIST (before every --install)
+
+  ✓ embed.config.json has a real embedUrl (not YOUR_EMBED_URL)
+  ✓ Snippet shared with child app owner (or already added to child app)
+  ✓ fallbackHeight is reasonable for the content (~500–800px typical)
+  ✓ lando crx after install if Drupal block doesn't appear in Layout Builder
+  ✓ Test at /hudx-test/<name> — verify iframe loads and resizes

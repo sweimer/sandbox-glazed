@@ -3,3 +3,4 @@ type: module
 description: '3PD module test checklist — tracks which 3PD modules have been verified.'
 core_version_requirement: ^10 || ^11
 package: 3PD IDE Apps
+configure: hudx_astro_forms___3pd_checklist.test_page

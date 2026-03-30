@@ -1,0 +1,10 @@
+smart-embed:
+  version: 1774898240734
+  css:
+    component:
+      css/smart-embed.css: {}
+  js:
+    js/smart-embed.js: { minified: false }
+  dependencies:
+    - core/drupal
+    - core/once

@@ -1,0 +1,6 @@
+name: '3PD IDE - Smart Embed   Sc Training'
+type: module
+description: '3PD IDE Smart Embed application module for 3PD IDE - Smart Embed   Sc Training.'
+core_version_requirement: ^10 || ^11
+package: 3PD IDE Apps
+configure: hudx_embed___sc_training.test_page

@@ -428,6 +428,7 @@ class ChecklistController extends ControllerBase {
       'hudx_astro_forms___' => 'Astro Forms',
       'hudx_react___'       => 'React',
       'hudx_astro___'       => 'Astro',
+      'hudx_embed___'       => 'Smart Embed',
     ];
 
     $result = [];
@@ -438,8 +439,8 @@ class ChecklistController extends ControllerBase {
         if (strpos($machine, $prefix) === 0) {
           // Recover folder name: strip 'hudx_', replace all _ with -
           $app_name     = str_replace('_', '-', substr($machine, 5));
-          $slug_prefix  = strtolower(str_replace(' ', '-', $tech_type)) . '---';
-          $display_name = substr($app_name, strlen($slug_prefix));
+          // Use the module's own name from .info.yml (e.g. "3PD IDE - Astro Forms App 12")
+          $display_name = $info['name'] ?? $app_name;
 
           $result[] = [
             'module_name'  => $app_name,
