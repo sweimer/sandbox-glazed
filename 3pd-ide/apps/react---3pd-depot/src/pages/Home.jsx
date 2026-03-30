@@ -153,7 +153,7 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Components, tokens, and patterns for building HUDX-consistent interfaces. Reference before building any 3PD application.
               </p>
-              <a href="#" className="btn btn-secondary disabled">
+              <a href="https://trussworks.github.io/react-uswds/?path=/docs/components-accordion--docs" className="btn btn-primary mt-auto">
                 Storybook — Coming Soon
               </a>
             </div>
