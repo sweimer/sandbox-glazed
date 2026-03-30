@@ -91,11 +91,11 @@ export default function ThreePDLandingPage() {
                 <li><a href="https://dev-3-pd-ide.pantheonsite.io/node/16" target="_blank" className="link-primary">David Bowie</a></li>
               </ul>
               <a href="/3pd/ai-helper" target="_blank" className="btn btn-primary">
-                Option 1 - 3PD AI Helper
+                Option 1 - 3PD AI Node Helper
               </a>
             <br/>
               <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary">
-                Option 2 - COMING SOON
+                Option 2 - 3PD AI App Helper (COMING SOON)
               </a>
             </div>
           </div>

@@ -1,3 +1,18 @@
 section.contextual-region {
   padding: 0 0 20px 0 !important;
 }
+header#secondary-header ,
+footer.dxpr-theme-footer {
+  background-color: #04344C;
+  color: #ffffff;
+  padding:20px;
+}
+footer.dxpr-theme-footer {
+  min-height: 100px;
+}
+.navbar-btn {
+  display:none;
+}
+.navbar-brand {
+  font-size: 30px;
+}
