@@ -88,6 +88,7 @@ export default function ThreePDLandingPage() {
               <p className="small text-muted mb-1">Examples:</p>
               <ul className="list-unstyled small mb-3">
                 <li><a href="https://dev-3-pd-ide.pantheonsite.io/node/14" target="_blank" className="link-primary">Three Cards</a></li>
+                <li><a href="https://dev-3-pd-ide.pantheonsite.io/node/16" target="_blank" className="link-primary">David Bowie</a></li>
               </ul>
               <a href="/3pd/ai-helper" target="_blank" className="btn btn-primary">
                 Option 1 - 3PD AI Helper
