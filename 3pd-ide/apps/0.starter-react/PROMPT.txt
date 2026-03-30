@@ -229,6 +229,20 @@ Same as 0.starter-astro-forms. See that PROMPT.txt.
 Key difference: Vite dev server default port is 5173 (not 4321).
 
 
+## LOCAL create-module.js OVERRIDE
+
+react-module.js checks the current app directory for a create-module.js before
+falling back to the starter kit's generic one:
+
+  const localCreateModulePath = path.join(cwd, 'create-module.js');
+  const starterCreateModulePath = path.join(ideRoot, 'apps', '0.starter-react', 'create-module.js');
+  const createModulePath = fs.existsSync(localCreateModulePath) ? localCreateModulePath : starterCreateModulePath;
+
+Use this for apps that need custom PHP controllers, extra routes, or different schema
+without forking the starter kit. Example: react---3pd-ai-helper has its own
+create-module.js that generates GenerateController.php + HistoryController.php.
+
+
 ## KNOWN ISSUES / LESSONS LEARNED
 
 1. BrowserRouter breaks in Drupal. The module generator enforces MemoryRouter via AST.
@@ -263,6 +277,29 @@ Key difference: Vite dev server default port is 5173 (not 4321).
     Uses VITE_DRUPAL_BASE_URL or VITE_API_BASE_URL from .env, or pantheonUrl from 3pd.config.json.
     After pull, must restart dev server: lsof -ti:4000 | xargs kill -9 && npm run dev
 
+11. `3pd react db pull` SSL bypass for Lando URLs.
+    Node.js rejects self-signed Lando certs (*.lndo.site). react-db-pull.js sets
+    NODE_TLS_REJECT_UNAUTHORIZED=0 when the URL contains 'lndo.site' or 'localhost',
+    then restores to '1' after the fetch. Do not leave this globally disabled.
+
+12. PHP template literal escaping in custom create-module.js.
+    JS only interpolates `${...}`. Bare `$variable` in a template literal is safe and
+    passes through as-is to the PHP file. Use `$variable` (not `\\$variable`) for PHP
+    variables in template strings. Keep `\\Drupal`, `\\Exception`, `\\PDO` (namespace
+    separators) as `\\` since those really do need a literal backslash in the PHP output.
+
+13. Pantheon API key delivery pattern.
+    Store secrets in Pantheon Secrets dashboard (Runtime + Web scope).
+    In settings.php:
+      if (isset($_ENV['PANTHEON_ENVIRONMENT']) && function_exists('pantheon_get_secret')) {
+        $key = pantheon_get_secret('MY_SECRET');
+        if (!empty($key)) { putenv('MY_SECRET=' . $key); }
+      }
+    For local dev: use settings.local.php (gitignored) with putenv('MY_SECRET=value').
+    Uncomment the settings.local.php include in settings.php.
+    HTTP timeout: increase $settings['http_client_config']['timeout'] to 30 or more
+    for apps that call external APIs (default 5s is too short for AI endpoints).
+
 11. seed.json / hook_install() / SubmissionsController.php follow the same pattern as
     0.starter-astro-forms. See that PROMPT.txt for full implementation details.
 
@@ -285,3 +322,7 @@ Key difference: Vite dev server default port is 5173 (not 4321).
   [x] seed.json + hook_schema() + hook_install() + _import_seed() in .install
   [x] SubmissionsController.php: GET list() + POST submit() mirroring Express routes
   [x] drupalTableName = ${machineName}_${tableName} (no conflicts in shared DB)
+  [x] Local create-module.js override: react-module.js checks app dir before starter kit
+  [x] db pull SSL bypass: NODE_TLS_REJECT_UNAUTHORIZED=0 for lndo.site / localhost URLs
+  [x] PHP templates in create-module.js: bare $variable (not \\$variable); \\Namespace OK
+  [x] configure: link in .info.yml for Extend page quick access to test route

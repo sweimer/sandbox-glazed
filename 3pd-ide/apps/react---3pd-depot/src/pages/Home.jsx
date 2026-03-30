@@ -124,37 +124,37 @@ export default function ThreePDLandingPage() {
           </div>
         </div>
 
-        {/* 3PD STAND-ALONE EMBEDS */}
+        {/* 3PD STAND-ALONE EMBEDS + PROPERTIES */}
         <div className="col-md-6 col-lg-4">
           <div className="card h-100 border-warning shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-4">
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
                 <i className="bi bi-wrench-adjustable text-primary me-3" style={{ fontSize: "2rem" }}></i>
-                <h2 className="h3 mb-0">3PD Stand‑Alone <br/>Smart Embeds</h2>
+                <h2 className="h3 mb-0">3PD Stand‑Alone/ <br/>Smart Embeds</h2>
               </div>
               <p className="card-text text-muted mb-4">
-                Submit external tools such as Tableau, Salesforce, or legacy apps for governed Smart Embed integration.
+                Submit external tools (Tableau, Salesforce, legacy apps) for Smart Embed integration, or standalone sites for linking consideration within HUDX.
               </p>
               <a href="/hudx-test/react---3pd-embed-request" className="btn btn-primary">
-                Submit Smart Embed Request
+                Submit Integration Request
               </a>
             </div>
           </div>
         </div>
 
-        {/* 3PD STAND-ALONE PROPERTIES */}
+        {/* 3PD DESIGN SYSTEM */}
         <div className="col-md-6 col-lg-4">
-          <div className="card h-100 border-secondary shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-6">
+          <div className="card h-100 border-info shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-5">
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
-                <i className="bi bi-hammer text-primary me-3" style={{ fontSize: "2rem" }}></i>
-                <h2 className="h3 mb-0">3PD Stand‑Alone <br/>Properties</h2>
+                <i className="bi bi-palette text-primary me-3" style={{ fontSize: "2rem" }}></i>
+                <h2 className="h3 mb-0">3PD Design System</h2>
               </div>
               <p className="card-text text-muted mb-4">
-                Submit standalone external sites or applications for linking consideration within HUDX.
+                Components, tokens, and patterns for building HUDX-consistent interfaces. Reference before building any 3PD application.
               </p>
-              <a href="/hudx-test/react---3pd-embed-request" className="btn btn-primary">
-                Submit External Link
+              <a href="#" className="btn btn-secondary disabled">
+                Storybook — Coming Soon
               </a>
             </div>
           </div>
