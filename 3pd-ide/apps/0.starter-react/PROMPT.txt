@@ -160,6 +160,32 @@ API routes in routing.yml (namespaced by appName to prevent conflicts):
     - Prints test page URL
 
 
+## DRUPAL DEV ASSETS (Bootstrap + DXPR theme in local dev)
+
+During local dev the app loads Bootstrap and DXPR theme CSS/JS from two generated files:
+  public/drupal-dev-styles.css   ← Bootstrap + DXPR theme CSS concatenated
+  public/drupal-dev-scripts.js   ← Bootstrap bundle JS
+
+These files are GITIGNORED and dev-only. They are injected by a Vite plugin in
+vite.config.js that runs ONLY during `vite dev` (apply: 'serve'). The plugin is
+completely skipped during `vite build`, so these files never appear in the Drupal module.
+
+The files are generated automatically when a new app is created via `3pd react app <name>`.
+If the Drupal theme changes, run from inside the app directory:
+  3pd styles refresh   ← regenerates public/drupal-dev-styles.css + public/drupal-dev-scripts.js
+  npm run dev          ← restart to pick up changes
+
+Or to regenerate for ALL apps at once (from the 3pd-ide root):
+  3pd styles sync
+
+Bootstrap Icons are loaded from CDN (jsdelivr.net) — not from the local file,
+because relative font-file paths in the npm package would break in the public/ context.
+
+DXPR theme JS is excluded on purpose: its scripts require Drupal.behaviors and
+drupalSettings globals that don't exist outside of a Drupal page context.
+Only bootstrap.bundle.min.js is included (handles dropdowns, modals, tooltips, etc.).
+
+
 ## DEV WORKFLOW
 
   cd apps/react---my-app
@@ -168,6 +194,7 @@ API routes in routing.yml (namespaced by appName to prevent conflicts):
   → API:  http://127.0.0.1:4000
   → UI:   http://localhost:5173
   → SQLite file created at server/db/app.sqlite on first request
+  → Bootstrap + DXPR theme styles injected via Vite plugin (dev only)
 
 Individual servers (debugging):
   npm run dev:server   → Express only

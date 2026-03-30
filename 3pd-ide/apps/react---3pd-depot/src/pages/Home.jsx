@@ -58,9 +58,15 @@ export default function ThreePDLandingPage() {
                 <i className="bi bi-pencil text-primary me-3" style={{ fontSize: "2rem" }}></i>
                 <h2 className="h3 mb-0">3PD Content Editors <br/>(No Code)</h2>
               </div>
-              <p className="card-text text-muted mb-4">
+              <p className="card-text text-muted mb-2">
                 Build and assemble pages directly inside Drupal using Layout Builder and HUDX SDC components.
               </p>
+              <p className="small text-muted mb-1">Examples:</p>
+              <ul className="list-unstyled small mb-3">
+                <li><a href="https://admin.dev.hudx.info/" target="_blank" className="link-primary">HUDX Home</a></li>
+                <li><a href="https://admin.dev.hudx.info/programs/public-housing/mainstream-vouchers" target="_blank" className="link-primary">Mainstream Vouchers</a></li>
+                <li><a href="https://dev-3-pd-ide.pantheonsite.io/about" target="_blank" className="link-primary">3PD IDE — About Page</a></li>
+              </ul>
               <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary mt-auto">
                 Create Layout Builder Page
               </a>
@@ -79,6 +85,10 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Drag‑and‑drop React builder with AI assistance for creating more advanced HUDX features.
               </p>
+              <p className="small text-muted mb-1">Examples:</p>
+              <ul className="list-unstyled small mb-3">
+                <li><a href="https://dev-3-pd-ide.pantheonsite.io/node/14" target="_blank" className="link-primary">Three Cards</a></li>
+              </ul>
               <a href="/3pd/ai-helper" target="_blank" className="btn btn-primary">
                 Option 1 - 3PD AI Helper
               </a>
@@ -101,7 +111,10 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-3">
                 Clone a 3PD IDE starter kit and build full‑featured HUDX applications using your preferred framework.
               </p>
-
+              <p className="small text-muted mb-1">Examples:</p>
+              <ul className="list-unstyled small mb-3">
+                <li><a href="https://dev-3-pd-ide.pantheonsite.io/node/11" target="_blank" className="link-primary">STraCAT</a></li>
+              </ul>
               <button
                 type="button"
                 className="btn btn-secondary mt-auto"
@@ -135,6 +148,10 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Submit external tools (Tableau, Salesforce, legacy apps) for Smart Embed integration, or standalone sites for linking consideration within HUDX.
               </p>
+              <p className="small text-muted mb-1">Examples:</p>
+              <ul className="list-unstyled small mb-3">
+                <li><a href="#" target="_blank" className="link-primary">COMING SOON</a></li>
+              </ul>
               <a href="/hudx-test/react---3pd-embed-request" target="_blank" className="btn btn-primary mt-auto">
                 Submit Integration Request
               </a>
@@ -154,7 +171,7 @@ export default function ThreePDLandingPage() {
                 Components, tokens, and patterns for building HUDX-consistent interfaces. Reference before building any 3PD application.
               </p>
               <a href="https://trussworks.github.io/react-uswds/?path=/docs/components-accordion--docs" target="_blank" className="btn btn-primary mt-auto">
-                Storybook — Coming Soon
+                Storybook
               </a>
             </div>
           </div>
@@ -174,7 +191,7 @@ export default function ThreePDLandingPage() {
               <a href="/hudx-test/astro-forms---3pd-checklist" target="_blank" className="btn btn-primary mt-auto">
                 Manage 3PD Modules
               </a><br/>
-              <a href="/admin/content" className="btn btn-primary mt-auto">
+              <a href="/admin/content" target="_blank" className="btn btn-primary mt-auto">
                 Content Manager
               </a>
             </div>

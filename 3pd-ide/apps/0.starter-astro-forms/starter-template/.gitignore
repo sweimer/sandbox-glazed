@@ -5,3 +5,5 @@ server/db/*.sqlite
 server/db/*.sqlite-shm
 server/db/*.sqlite-wal
 hudx_*/
+public/drupal-dev-styles.css
+public/drupal-dev-scripts.js

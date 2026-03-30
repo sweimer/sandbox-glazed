@@ -189,6 +189,32 @@ readSqlite() returns { rows, cols, tableName } — used throughout create-module
 Routes in routing.yml: /api/${appName}/${tableName}
 
 
+## DRUPAL DEV ASSETS (Bootstrap + DXPR theme in local dev)
+
+During local dev the app loads Bootstrap and DXPR theme CSS/JS from two generated files:
+  public/drupal-dev-styles.css   ← Bootstrap + DXPR theme CSS concatenated
+  public/drupal-dev-scripts.js   ← Bootstrap bundle JS
+
+These files are GITIGNORED and dev-only. They are conditionally included in Layout.astro
+using `import.meta.env.DEV` which Astro statically replaces with `false` during
+`astro build` — so these references are compiled away and never appear in the Drupal module.
+
+The files are generated automatically when a new app is created via `3pd astro-forms app <name>`.
+If the Drupal theme changes, run from inside the app directory:
+  3pd styles refresh   ← regenerates public/drupal-dev-styles.css + public/drupal-dev-scripts.js
+  npm run dev          ← restart to pick up changes
+
+Or to regenerate for ALL apps at once (from the 3pd-ide root):
+  3pd styles sync
+
+Bootstrap Icons are loaded from CDN (jsdelivr.net) — not from the local file,
+because relative font-file paths in the npm package would break in the public/ context.
+
+DXPR theme JS is excluded on purpose: its scripts require Drupal.behaviors and
+drupalSettings globals that don't exist outside of a Drupal page context.
+Only bootstrap.bundle.min.js is included (handles dropdowns, modals, tooltips, etc.).
+
+
 ## DEV WORKFLOW
 
   cd apps/astro-forms---my-app
@@ -197,6 +223,7 @@ Routes in routing.yml: /api/${appName}/${tableName}
   → API:  http://127.0.0.1:3001
   → UI:   http://localhost:4321
   → SQLite file created at server/db/app.sqlite on first request
+  → Bootstrap + DXPR theme styles injected via import.meta.env.DEV (dev only)
 
 Individual servers (if needed for debugging):
   npm run dev:server   → Express only

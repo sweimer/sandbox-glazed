@@ -14,6 +14,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { log } from '../shared/log.js';
 import { FRAMEWORK_PREFIXES } from '../shared/frameworks.js';
+import stylesSync from './styles-sync.js';
 
 function copyRecursive(src, dest) {
   if (!fs.existsSync(src)) return;
@@ -150,6 +151,9 @@ export default async function astroApp(name, { ideRoot }) {
     log.debug(err);
     process.exit(1);
   }
+
+  log.header('Syncing Drupal Dev Assets');
+  await stylesSync({ ideRoot });
 
   log.header('Summary');
   log.success(`Astro app "${folderName}" created successfully.`);

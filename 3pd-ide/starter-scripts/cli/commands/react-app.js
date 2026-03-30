@@ -11,6 +11,7 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { log } from '../shared/log.js';
 import { FRAMEWORK_PREFIXES } from '../shared/frameworks.js';
+import stylesSync from './styles-sync.js';
 
 /**
  * Recursively copy a directory
@@ -140,6 +141,10 @@ export default async function reactApp(name, { ideRoot }) {
     log.debug(err);
     process.exit(1);
   }
+
+  // Sync Drupal dev assets (CSS + JS) into the new app's public/ folder
+  log.header("Syncing Drupal Dev Assets");
+  await stylesSync({ ideRoot });
 
   // Final summary
   log.header("Summary");

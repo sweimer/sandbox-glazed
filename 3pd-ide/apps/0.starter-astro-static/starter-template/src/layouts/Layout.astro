@@ -4,6 +4,12 @@ export interface Props {
 }
 
 const { title } = Astro.props;
+
+// Drupal theme styles are loaded during local dev only.
+// import.meta.env.DEV is false during `astro build`, so these <link> tags
+// are never included in the compiled module output.
+// Generate public/drupal-dev-styles.css by running: 3pd styles sync
+const isDev = import.meta.env.DEV;
 ---
 
 <!doctype html>
@@ -12,9 +18,12 @@ const { title } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
+    {isDev && <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" />}
+    {isDev && <link rel="stylesheet" href="/drupal-dev-styles.css" />}
   </head>
   <body>
     <slot />
+    {isDev && <script is:inline src="/drupal-dev-scripts.js"></script>}
   </body>
 </html>
 

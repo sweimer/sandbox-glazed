@@ -100,6 +100,8 @@ ${chalk.green('3pd react module')}                     Package as Drupal module 
 ${chalk.green('3pd react module --install')}           Package + install in Drupal (HUDX)
 ${chalk.green('3pd react db pull')}                    Pull live data from Drupal/Pantheon into local SQLite
 
+${chalk.magenta('3pd styles sync')}                       Generate drupal-dev-styles.css in all apps (dev theme CSS)
+${chalk.magenta('3pd styles refresh')}                    Refresh dev CSS/JS for the current app only (run from app dir)
 ${chalk.magenta('3pd db pull')}                          Pull full Pantheon DB into local Lando (HUDX internal)
 ${chalk.magenta('3pd list')}                             List apps + installed modules + test route URLs
 ${chalk.magenta('3pd remove <module>')}                  Uninstall module from Drupal + delete files
@@ -379,6 +381,29 @@ program
   .action(async () => {
     const cmd = await import('./commands/validate.js');
     cmd.default();
+  });
+
+// ------------------------------------------------------------
+// STYLES NAMESPACE
+// ------------------------------------------------------------
+const styles = program
+  .command('styles')
+  .description('Theme style utilities');
+
+styles
+  .command('sync')
+  .description('Generate public/drupal-dev-styles.css in all apps from local Drupal theme (or Pantheon URL)')
+  .action(async () => {
+    const cmd = await import('./commands/styles-sync.js');
+    cmd.default({ ideRoot });
+  });
+
+styles
+  .command('refresh')
+  .description('Refresh drupal-dev-styles.css + drupal-dev-scripts.js for the current app only')
+  .action(async () => {
+    const cmd = await import('./commands/styles-refresh.js');
+    cmd.default({ ideRoot });
   });
 
 // ------------------------------------------------------------

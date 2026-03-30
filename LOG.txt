@@ -1056,3 +1056,108 @@ Pending:
     Card 4 = Smart Embeds + Stand-Alone Links combined (react---3pd-embed-request)
     Card 5 = 3PD Design System (Storybook link, coming soon)
     Card 6 = 3PD Module Manager (astro-forms---3pd-checklist) — stays last
+
+
+## SESSION: 2026-03-30 — Drupal Dev Assets + react---3pd-depot card restructure
+
+### ✓ react---3pd-depot — Cards 4/5/6 restructured
+
+  Card 4: "3PD Stand-Alone / Smart Embeds" (border-primary, bi-link-45deg)
+          merged Smart Embeds + Stand-Alone Properties into one card
+          links to react---3pd-embed-request
+  Card 5: "3PD Design System" (border-info, bi-palette)
+          new card for design guidance / Storybook
+          button currently links to USWDS Storybook (placeholder until we build ours)
+  Card 6: "3PD Module Manager" (border-dark, bi-house-heart) — unchanged
+
+### ✓ Drupal Dev Assets — Bootstrap + DXPR theme in local dev (all starters)
+
+Goal: 3PD devs building apps locally see Bootstrap + DXPR theme styles.
+      When the app is packaged as a Drupal module, those style references must
+      NOT be included — they would duplicate styles already loaded by Drupal.
+
+#### Solution
+
+Two generated files (gitignored, never committed) in each app's public/:
+  public/drupal-dev-styles.css  — Bootstrap + DXPR theme CSS concatenated
+  public/drupal-dev-scripts.js  — Bootstrap bundle JS (DXPR scripts excluded,
+                                   require Drupal.behaviors + drupalSettings globals)
+
+Bootstrap Icons loaded from CDN (jsdelivr.net) to avoid relative font path issues.
+
+#### Dev-only injection (no leakage into Drupal modules)
+
+React (Vite plugin):
+  vite.config.js has a drupalDevAssets() plugin with apply: 'serve'
+  → runs ONLY during vite dev, completely skipped during vite build
+  → injects Bootstrap Icons CDN + /drupal-dev-styles.css + /drupal-dev-scripts.js into index.html
+
+Astro (import.meta.env.DEV):
+  Layout.astro uses {isDev && <link ...>} / {isDev && <script ...>}
+  → import.meta.env.DEV is statically replaced with false during astro build
+  → dead code — tree-shaken out, never reaches the Drupal module twig template
+
+#### Files changed
+
+  apps/react---3pd-depot/vite.config.js            — added drupalDevAssets() plugin
+  apps/react---3pd-depot/index.html                — removed hardcoded CSS links
+  apps/0.starter-react/starter-template/vite.config.js   — added drupalDevAssets() plugin
+  apps/0.starter-astro-static/starter-template/src/layouts/Layout.astro — isDev conditional
+  apps/0.starter-astro-forms/starter-template/src/layouts/Layout.astro  — isDev conditional
+  All 3 starter-template .gitignore files — added drupal-dev-styles.css + drupal-dev-scripts.js
+
+#### New CLI commands
+
+  3pd styles sync     — generates dev assets in ALL apps + starter templates
+                        Monorepo: reads from web/themes/contrib/ directly (fast, offline)
+                        Standalone: fetches from PUBLIC_DRUPAL_BASE_URL / VITE_DRUPAL_BASE_URL in .env
+                        Wired into react-app.js / astro-app.js / astro-forms-app.js
+                        so new apps always get the files automatically on creation.
+
+  3pd styles refresh  — regenerates dev assets for the CURRENT app only
+                        Run from inside an app dir when the Drupal theme changes.
+                        Then restart npm run dev to pick up changes.
+
+#### New shared module
+
+  starter-scripts/cli/shared/drupalDevAssets.js
+    Exports buildDrupalDevAssets({ drupalRoot, cwd })
+    Used by both styles-sync.js (all apps) and styles-refresh.js (current app).
+    DRY — no duplicated build logic.
+
+#### Monorepo vs standalone detection
+
+  Checks: fs.existsSync(drupalRoot + '/web/themes/contrib/dxpr_theme')
+  Monorepo → reads CSS/JS from local theme files (no network, always current)
+  Standalone → fetches aggregated CSS/JS from Drupal URL in app's .env
+
+#### CSS files included (monorepo mode)
+
+  bootstrap5 bootstrap.min.css
+  dxpr_theme variables.css, bootstrap-5.css, bootstrap-theme.css,
+            layout.css, typography.css, forms.css, helper-classes.css, animations-dxpr.css
+
+#### JS files included (monorepo mode)
+
+  bootstrap5 bootstrap.bundle.min.js only
+  (DXPR JS excluded — requires Drupal.behaviors, drupalSettings, once globals)
+
+### ✓ PROMPT.txt updates (all 3 starters)
+
+Added "DRUPAL DEV ASSETS" section to:
+  0.starter-react/PROMPT.txt
+  0.starter-astro-static/PROMPT.txt
+  0.starter-astro-forms/PROMPT.txt
+
+Documents: how the files are injected, why they're dev-only, what's included/excluded,
+and the 3pd styles refresh / 3pd styles sync commands.
+
+### WHERE WE LEFT OFF (2026-03-30)
+
+Pending (carried forward):
+  - Deploy react---3pd-embed-request to Pantheon
+  - Deploy react---3pd-depot updated build (new cards + styles plugin) to Pantheon
+  - Build 0.starter-vanillajs-static and 0.starter-vanillajs-forms (deferred)
+  - Build Angular starter (deferred)
+  - Option 2 Page Builder POC (deferred)
+  - Gate /hudx-test/* routes before production deployment
