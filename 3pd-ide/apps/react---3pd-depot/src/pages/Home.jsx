@@ -113,9 +113,9 @@ export default function ThreePDLandingPage() {
               {showProCodeRepos && (
                 <ul className="list-unstyled small mt-2 mb-0">
                   <li><a href="#" className="link-success">Angular Starter Kit</a></li>
-                  <li><a href="#" className="link-success">Astro-Static Starter Kit</a></li>
-                  <li><a href="#" className="link-success">Astro-Form Starter Kit</a></li>
-                  <li><a href="#" className="link-success">React Starter Kit</a></li>
+                  <li><a href="https://github.com/sweimer/3PD---Astro-Static-Starter-Kit" className="link-success">Astro-Static Starter Kit</a></li>
+                  <li><a href="https://github.com/sweimer/3PD---Astro-Forms-Starter-Kit" className="link-success">Astro-Form Starter Kit</a></li>
+                  <li><a href="https://github.com/sweimer/3PD---React-Starter-Kit" className="link-success">React Starter Kit</a></li>
                   <li><a href="#" className="link-success">VanillaJS Starter Kit</a></li>
                   <li><a href="#" className="link-success">Drupal Module Starter Kit</a></li>
                 </ul>
@@ -165,7 +165,7 @@ export default function ThreePDLandingPage() {
           <div className="card h-100 border-dark shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-6">
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
-                <i className="bi bi-grid text-primary me-3" style={{ fontSize: "2rem" }}></i>
+                <i className="bi bi-house-heart text-primary me-3" style={{ fontSize: "2rem" }}></i>
                 <h2 className="h3 mb-0">3PD Module Manager</h2>
               </div>
               <p className="card-text text-muted mb-4">
