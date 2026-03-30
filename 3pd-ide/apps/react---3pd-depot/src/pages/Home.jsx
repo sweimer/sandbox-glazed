@@ -61,7 +61,7 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Build and assemble pages directly inside Drupal using Layout Builder and HUDX SDC components.
               </p>
-              <a href="/node/add/basic_page_layout_builder" className="btn btn-primary">
+              <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary mt-auto">
                 Create Layout Builder Page
               </a>
             </div>
@@ -79,11 +79,11 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Drag‑and‑drop React builder with AI assistance for creating more advanced HUDX features.
               </p>
-              <a href="/3pd/ai-helper" className="btn btn-primary">
+              <a href="/3pd/ai-helper" target="_blank" className="btn btn-primary">
                 Option 1 - 3PD AI Helper
               </a>
             <br/>
-              <a href="/node/add/basic_page_layout_builder" className="btn btn-primary">
+              <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary">
                 Option 2 - COMING SOON
               </a>
             </div>
@@ -104,7 +104,7 @@ export default function ThreePDLandingPage() {
 
               <button
                 type="button"
-                className="btn btn-secondary"
+                className="btn btn-secondary mt-auto"
                 onClick={() => setShowProCodeRepos(!showProCodeRepos)}
               >
                 {showProCodeRepos ? "Hide Starter Kits" : "View Starter Kits"}
@@ -112,12 +112,12 @@ export default function ThreePDLandingPage() {
 
               {showProCodeRepos && (
                 <ul className="list-unstyled small mt-2 mb-0">
-                  <li><a href="#" className="link-success">Angular Starter Kit</a></li>
-                  <li><a href="https://github.com/sweimer/3PD---Astro-Static-Starter-Kit" className="link-success">Astro-Static Starter Kit</a></li>
-                  <li><a href="https://github.com/sweimer/3PD---Astro-Forms-Starter-Kit" className="link-success">Astro-Form Starter Kit</a></li>
-                  <li><a href="https://github.com/sweimer/3PD---React-Starter-Kit" className="link-success">React Starter Kit</a></li>
-                  <li><a href="#" className="link-success">VanillaJS Starter Kit</a></li>
-                  <li><a href="#" className="link-success">Drupal Module Starter Kit</a></li>
+                  <li><a href="#" target="_blank" className="link-success">Angular Starter Kit</a></li>
+                  <li><a href="https://github.com/sweimer/3PD---Astro-Static-Starter-Kit" target="_blank" className="link-success">Astro-Static Starter Kit</a></li>
+                  <li><a href="https://github.com/sweimer/3PD---Astro-Forms-Starter-Kit" target="_blank" className="link-success">Astro-Form Starter Kit</a></li>
+                  <li><a href="https://github.com/sweimer/3PD---React-Starter-Kit" target="_blank" className="link-success">React Starter Kit</a></li>
+                  <li><a href="#" target="_blank" className="link-success">VanillaJS Starter Kit</a></li>
+                  <li><a href="#" target="_blank" className="link-success">Drupal Module Starter Kit</a></li>
                 </ul>
               )}
             </div>
@@ -135,7 +135,7 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Submit external tools (Tableau, Salesforce, legacy apps) for Smart Embed integration, or standalone sites for linking consideration within HUDX.
               </p>
-              <a href="/hudx-test/react---3pd-embed-request" className="btn btn-primary">
+              <a href="/hudx-test/react---3pd-embed-request" target="_blank" className="btn btn-primary mt-auto">
                 Submit Integration Request
               </a>
             </div>
@@ -153,7 +153,7 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Components, tokens, and patterns for building HUDX-consistent interfaces. Reference before building any 3PD application.
               </p>
-              <a href="https://trussworks.github.io/react-uswds/?path=/docs/components-accordion--docs" className="btn btn-primary mt-auto">
+              <a href="https://trussworks.github.io/react-uswds/?path=/docs/components-accordion--docs" target="_blank" className="btn btn-primary mt-auto">
                 Storybook — Coming Soon
               </a>
             </div>
@@ -171,7 +171,7 @@ export default function ThreePDLandingPage() {
               <p className="card-text text-muted mb-4">
                 Review and manage content submitted by third-party developers across all active 3PD modules.
               </p>
-              <a href="/hudx-test/astro-forms---3pd-checklist" className="btn btn-primary mt-auto">
+              <a href="/hudx-test/astro-forms---3pd-checklist" target="_blank" className="btn btn-primary mt-auto">
                 Manage 3PD Modules
               </a><br/>
               <a href="/admin/content" className="btn btn-primary mt-auto">
