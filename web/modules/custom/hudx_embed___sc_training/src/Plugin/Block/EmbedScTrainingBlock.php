@@ -19,7 +19,7 @@ class EmbedScTrainingBlock extends BlockBase {
   /**
    * The URL to embed. Set at module generation time.
    */
-  const EMBED_URL = '/embeds/sc-training/';
+  const EMBED_URL = 'https://d1xzjd7z8lcp8a.cloudfront.net/trainings/service-coordinators-in-multifamily-housing-online-learning-tool/index.html';
 
   /**
    * Human-readable title for the iframe (accessibility).

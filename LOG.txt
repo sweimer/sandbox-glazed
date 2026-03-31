@@ -1397,3 +1397,156 @@ Pending:
   - Deploy react---3pd-depot to Pantheon
   - Gate /hudx-test/* routes before production deployment
   - Other starters (react, astro, astro-forms) still need their own git repos
+
+
+## SESSION: 2026-03-31 — hudx-resize.js injection + CloudFront debugging
+
+### ✓ inject-and-sync-s3.js — script created
+
+  3pd-ide/scripts/inject-and-sync-s3.js
+  Injects hudx-resize.js into all .html files in a local source directory
+  then syncs to S3 via AWS CLI. Usage:
+    node inject-and-sync-s3.js <localDir> <s3Path>
+
+  Fixed path bug: original script injected <script src="/hudx-resize.js"> (absolute,
+  broke in CloudFront subdirectory). Corrected to <script src="hudx-resize.js"> (relative).
+
+  S3 sync requires AWS CLI credentials — user does not have these for the client account.
+  Workaround: inject locally, upload HTML files manually via S3 console.
+  33 HTML files injected and uploaded to:
+    s3://sites.hudexchange.info/trainings-poc/trainings/service-coordinators-in-multifamily-housing-online-learning-tool/
+
+### ✗ hudx-resize.js verticalspacer fix — still unresolved
+
+  Multiple fix iterations attempted:
+  1. display: none !important on .verticalspacer → removed from DOM, footer overlapped header
+  2. height: 0 !important CSS → Muse JS dynamically re-sets inline style, CSS didn't win
+  3. hideMusePageUnits() JS → hid [data-pintopage] ancestor containers — accidentally hid
+     MAIN CONTENT (pu85460 contains the app's primary nav + content, also has data-pintopage
+     children). App appeared as blue box only.
+  4. element.style.setProperty('height', '0', 'important') → JS important inline style.
+     Should reliably override Muse's JS. Not yet confirmed working.
+
+  Current hudx-resize.js state:
+    - Uses setProperty with 'important' flag on .verticalspacer elements
+    - collapseMuseSpacer() called inside sendHeight() on every event
+    - No hideMusePageUnits() — removed (too aggressive)
+
+  Current blocker: iframe shows blue box (fallback height 800px, no postMessage received).
+  Root cause unknown — need to verify:
+    1. Is hudx-resize.js loading in the iframe? (check Network tab on Drupal page)
+    2. Does window.hudxSendHeight exist in the CloudFront page console?
+    3. Is window.self !== window.top evaluating correctly?
+
+  Also discovered: create-module.js for smart embed is export default only — must be
+  invoked via CLI (node ../../starter-scripts/cli/index.js embed module --install),
+  NOT via node create-module.js directly (runs silently, does nothing).
+
+### CloudFront distribution details (POC)
+
+  Distribution ID: E34CQM3GCYZN5R
+  Domain:          https://d1xzjd7z8lcp8a.cloudfront.net
+  Origin:          sites.hudexchange.info.s3.amazonaws.com / trainings-poc
+  Headers policy:  None (SecurityHeadersPolicy was setting X-Frame-Options: sameorigin
+                   which blocked the iframe — removed)
+  Invalidations run: 2 (to clear cached old hudx-resize.js versions)
+
+### WHERE WE LEFT OFF (end of 2026-03-31 session)
+
+Completed this session:
+  - inject-and-sync-s3.js script written and fixed (relative path)
+  - 33 HTML files injected and uploaded to S3 POC bucket
+  - hudx-resize.js revised to use JS setProperty (bypasses Muse inline style override)
+  - Removed hideMusePageUnits() after it accidentally hid main page content
+  - CloudFront SecurityHeadersPolicy removed (was blocking iframes)
+  - Module regenerated via CLI (not direct node call)
+
+Pending — pick up here next session:
+  1. Verify window.hudxSendHeight exists on CloudFront page (open direct URL, check console)
+  2. If undefined → hudx-resize.js not loading → check Network tab for 403/404
+  3. If defined → postMessage not reaching parent → check Drupal console for message events
+  4. Fix lando drush path breakage in create-module.js tryExec (affects all starters)
+  5. Deploy react---3pd-embed-request to Pantheon
+  6. Deploy react---3pd-depot to Pantheon
+  7. Gate /hudx-test/* routes before production deployment
+  8. Other starters (react, astro, astro-forms) still need their own git repos
+
+
+## SESSION: 2026-03-31 (continued) — hudx-resize.js fully working
+
+### ✓ CloudFront caching workflow — understood and locked in
+
+  Every S3 file upload requires a CloudFront invalidation to propagate.
+  Without invalidation, CloudFront serves the previous cached version.
+  Workflow for every hudx-resize.js update:
+    1. Upload new file via S3 console (AWS CLI blocked by RequireMFAforUsers IAM policy)
+    2. CloudFront console → Distributions → E34CQM3GCYZN5R → Invalidations → Create → /*
+    3. Wait ~30s → hard refresh (Cmd+Shift+R) to bypass browser cache
+
+  AWS CLI credentials: scott.weimer IAM user has RequireMFAforUsers policy which blocks
+  all CLI actions without MFA session token. Use S3/CloudFront console for all operations
+  on this client account. Access keys exist but are insufficient without MFA.
+
+### ✓ hudx-resize.js — final working state (all issues resolved)
+
+  Root causes diagnosed via console.log debugging:
+    1. Height locked at 5736px on every page (doc.scrollHeight)
+       Muse sets an explicit height on the <html> element once, never updates across navigations.
+       documentElement.scrollHeight is pinned to the tallest page loaded in the session.
+       Fix: use body.scrollHeight ONLY — not Math.max(body, doc).
+       body.scrollHeight correctly reflects each page's true content height.
+
+    2. Height growing additively on each navigation (resize cascade)
+       iframe height change → resize event fires in child → Muse recalculates → our handler
+       fires immediately — order non-deterministic, can measure inflated height.
+       Fix: debounce ALL events (resize, hashchange, popstate) through a single shared timer.
+       600ms allows the postMessage → parent resize → child resize cascade to fully settle.
+
+    3. Muse navigation: not SPA routing.
+       Muse multi-page exports load separate .html files. hashchange/popstate do not fire.
+       Navigation is detected via DOMContentLoaded on each new page load.
+       resize events (from parent adjusting iframe height) are the main ongoing trigger.
+
+    4. Accordion opens not detected
+       Accordion opens change body height but don't trigger window events.
+       Fix: ResizeObserver on document.body catches all DOM-level size changes,
+       including accordion opens, without relying on window events.
+
+  Final hudx-resize.js architecture:
+    - collapseMuseSpacer(): setProperty 'important' on .verticalspacer (unchanged, works)
+    - sendHeight(): body.scrollHeight only (was Math.max(body, doc))
+    - debouncedSendHeight(): single shared 600ms debounce timer
+    - Events: DOMContentLoaded → sendHeight() immediately (no debounce)
+              resize / hashchange / popstate → debouncedSendHeight()
+              ResizeObserver(body) → debouncedSendHeight()
+    - window.hudxSendHeight exposed for manual calls
+
+  Result: sc-training app loads correctly in iframe, resizes per page, accordions
+  expand the iframe when opened. No additive extra space.
+
+### Pantheon readiness for embed---sc-training
+
+  The module uses embedUrl mode → no static files in the Drupal repo.
+  Only the Drupal module needs to be committed and pushed:
+    web/modules/custom/hudx_embed___sc_training/
+
+  web/embeds/sc-training/ (old staticDir files) should be removed from the repo
+  before the Pantheon push to avoid bloat.
+
+### WHERE WE LEFT OFF (end of 2026-03-31 session 2)
+
+Completed:
+  ✓ hudx-resize.js body.scrollHeight fix (was doc.scrollHeight — locked at 5736px)
+  ✓ Shared debounce for all events (resize cascade prevention)
+  ✓ ResizeObserver for accordion detection
+  ✓ CloudFront upload + invalidation workflow confirmed
+  ✓ sc-training fully working in Drupal sandbox (resize + accordions)
+
+Pending:
+  - Remove web/embeds/sc-training/ from repo (no longer needed — using embedUrl)
+  - Push embed---sc-training module to Pantheon
+  - Fix lando drush path breakage in create-module.js tryExec (affects all starters)
+  - Deploy react---3pd-embed-request to Pantheon
+  - Deploy react---3pd-depot to Pantheon
+  - Gate /hudx-test/* routes before production deployment
+  - Other starters (react, astro, astro-forms) still need their own git repos

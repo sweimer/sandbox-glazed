@@ -1,6 +1,6 @@
-name: 'HUDX Smart Embed: SC Training — Service Coordinators in Multifamily Housing'
+name: '3PD IDE - Smart Embed   Sc Training'
 type: module
-description: 'Smart embed block for SC Training — Service Coordinators in Multifamily Housing. Iframes the target URL and auto-resizes via postMessage.'
+description: '3PD IDE Smart Embed application module for 3PD IDE - Smart Embed   Sc Training.'
 core_version_requirement: ^10 || ^11
-package: HUDX
+package: 3PD IDE Apps
 configure: hudx_embed___sc_training.test_page

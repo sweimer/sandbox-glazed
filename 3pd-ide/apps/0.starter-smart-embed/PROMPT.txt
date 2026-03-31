@@ -117,17 +117,40 @@ hudx_embed___<name>/
 ## HOW THE RESIZE WORKS
 
 1. Child page includes hudx-resize.js
-2. On load / resize / navigation, it calls:
-     window.parent.postMessage({ type: 'hudx-resize', height: scrollHeight }, '*')
-3. Parent Drupal page receives the message via window.addEventListener('message')
-4. Parent sets iframe.style.height = height + 'px'
-5. Transition: height changes animate smoothly (0.2s ease in CSS)
+2. On DOMContentLoaded, it fires sendHeight() immediately.
+   On resize / hashchange / popstate / body size change, it fires debouncedSendHeight()
+   (600ms shared debounce — see WHY DEBOUNCE below).
+3. sendHeight() collapses .verticalspacer elements (Muse fix), measures
+   document.body.scrollHeight, and calls:
+     window.parent.postMessage({ type: 'hudx-resize', height: height }, '*')
+4. Parent Drupal page receives the message via window.addEventListener('message')
+5. Parent sets iframe.style.height = height + 'px'
+6. Transition: height changes animate smoothly (0.2s ease in CSS)
 
 Fallback: if the child never sends a message (snippet not added),
 the iframe shows at fallbackHeight px (default 600).
 
 Manual resize (React/Astro child, after accordion opens or quiz submits):
   window.hudxSendHeight();   // exposed by the snippet
+
+WHY DEBOUNCE ALL EVENTS (not just navigation):
+  When the parent sets the iframe height, it fires a resize event inside the child.
+  Muse's own resize handler also fires and re-sets the verticalspacer inline style.
+  The order is non-deterministic — calling sendHeight immediately can measure an
+  inflated scrollHeight. A shared 600ms debounce ensures we measure only after the
+  full cascade (postMessage → parent resize → child resize → Muse recalc) settles.
+
+WHY body.scrollHeight ONLY (not Math.max with documentElement):
+  Muse sets an explicit height on the <html> element once at page load and never
+  updates it across navigations (multi-page Muse exports load separate .html files).
+  documentElement.scrollHeight is pinned to the tallest page ever loaded in the
+  iframe session, causing every subsequent page to report that maximum height.
+  body.scrollHeight correctly reflects each page's actual content height.
+
+WHY ResizeObserver:
+  Accordion opens and dynamic content changes don't trigger window events (no resize,
+  no hashchange). ResizeObserver on document.body fires on any DOM-level size change,
+  catching these without polling.
 
 
 ## HOSTING LEGACY APPS — DECISION GUIDE
@@ -167,9 +190,22 @@ Content-Security-Policy: frame-ancestors set by the host's CDN.
 ### Adobe Muse verticalspacer fix (CRITICAL for Muse-exported apps)
   Muse uses: <div class="verticalspacer" style="height: calc(-Xpx + 100vh)">
   Inside an iframe, 100vh = iframe height → circular loop → iframe always ~8770px.
-  Fix is already baked into hudx-resize.js:
-    When inside an iframe, injects CSS: .verticalspacer { display: none !important; }
-  This kills the loop before scrollHeight is measured. No manual action needed.
+  Muse also sets min-height via JS dynamically, so CSS !important alone doesn't win.
+
+  Fix in hudx-resize.js:
+    Uses element.style.setProperty('height', '0', 'important') — JS important inline
+    style always beats other JS inline styles. Called inside sendHeight() on every
+    resize/navigation event to re-apply after Muse's own resize handler runs.
+
+  What NOT to do (lessons learned):
+    - display: none → removes spacer from DOM, Muse loses layout anchor, footer
+      floats up and overlaps the header
+    - CSS height: 0 !important in <style> tag → Muse's JS re-sets inline style
+      dynamically, CSS doesn't reliably win
+    - Hiding [data-pintopage] ancestor containers → too aggressive, also hides
+      main page content (pu* containers wrap BOTH content AND footer elements)
+    - Math.max(body.scrollHeight, documentElement.scrollHeight) → documentElement
+      is pinned to the tallest page ever loaded; always use body.scrollHeight only
 
 
 ## KNOWN LIMITATIONS AND GOTCHAS
@@ -180,10 +216,11 @@ Content-Security-Policy: frame-ancestors set by the host's CDN.
    The message payload contains no sensitive data — only a height integer.
    If both are on the same origin in production, '*' is still safe here.
 
-2. scrollHeight vs clientHeight.
-   The snippet uses Math.max(body.scrollHeight, documentElement.scrollHeight).
-   This handles edge cases where content overflow is on the html element
-   vs the body element. Works across browsers and Muse-generated HTML.
+2. body.scrollHeight only — do NOT use documentElement.scrollHeight.
+   For Muse multi-page exports (separate .html files per page), the <html>
+   element gets an explicit height set once at load and never updates across
+   navigations. documentElement.scrollHeight is pinned to the tallest page
+   ever loaded in the session. Use body.scrollHeight only.
 
 3. Snippet must be added to EVERY page in the child app.
    For multi-page static apps (like Adobe Muse), the simplest approach is
@@ -213,3 +250,9 @@ Content-Security-Policy: frame-ancestors set by the host's CDN.
   ✓ fallbackHeight is reasonable for the content (~500–800px typical)
   ✓ lando crx after install if Drupal block doesn't appear in Layout Builder
   ✓ Test at /hudx-test/<name> — verify iframe loads and resizes
+
+  IMPORTANT: create-module.js is export default only — it does nothing when run
+  directly with `node create-module.js`. Always use the CLI:
+    node ../../starter-scripts/cli/index.js embed module --install
+  Or via the global 3pd CLI if installed:
+    3pd embed module --install
