@@ -1396,7 +1396,7 @@ Pending:
   - Deploy react---3pd-embed-request to Pantheon
   - Deploy react---3pd-depot to Pantheon
   - Gate /hudx-test/* routes before production deployment
-  - Other starters (react, astro, astro-forms) still need their own git repos
+  ✓ Other starters (react, astro, astro-forms) standalone repos — done 2026-03-29
 
 
 ## SESSION: 2026-03-31 — hudx-resize.js injection + CloudFront debugging
@@ -1549,10 +1549,17 @@ Pending:
   - Deploy react---3pd-embed-request to Pantheon
   - Deploy react---3pd-depot to Pantheon
   - Gate /hudx-test/* routes before production deployment
-  - Other starters (react, astro, astro-forms) still need their own git repos
+  ✓ Other starters (react, astro, astro-forms) standalone repos — done 2026-03-29
 
 
 ## BACKLOG — HIGH PRIORITY
+
+### ⚠ pha-financial-management embed — resizing issues
+
+  Minor resizing inconsistencies observed in the pha-financial-management embed POC.
+  Not blocking for POC. Review after sc-training resize patterns are fully stable.
+  Test at: /hudx-test/embed---pha-financial-management
+  May need same body.scrollHeight / ResizeObserver tuning as sc-training.
 
 ### ⚠ inject-and-sync-s3.js — remove --delete flag
 
