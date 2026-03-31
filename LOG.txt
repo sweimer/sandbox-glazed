@@ -1573,7 +1573,16 @@ Pending:
 
 ## ROADMAP ITEMS (not yet scheduled)
 
-### Full-page app starter (--page mode)
+### #1 — Vanilla JS starter kit
+
+  A lightweight starter for simple interactive apps that don't need a framework.
+  No React, no Astro, no build step. Plain HTML + CSS + JS packaged as a Drupal block.
+  Follows the same CLI pattern: 3pd vanilla app <name> / 3pd vanilla module --install
+  Ideal for: simple widgets, calculators, lightweight tools, low-complexity embeds.
+  Shares the same block generation, routing, and seeding patterns as other starters.
+
+
+### #2 — Full-page app starter (--page mode)
 
   Current starters produce Block plugins that embed inside a Drupal page's chrome.
   A --page mode (or separate starter) would produce a Controller + bare page twig
