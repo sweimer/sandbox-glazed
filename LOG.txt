@@ -1578,6 +1578,12 @@ Pending:
   - Single Directory Components (SDC) — discuss architecture fit with current starter patterns
   - Bootstrap → USWDS migration — discuss approach, LOE, and phasing before starting work
 
+### DEFERRED — production prep (not needed for POC)
+
+  - Gate /hudx-test/* routes behind stricter permissions before any production deployment
+    Currently gated by 'access content' only — acceptable for POC, not for prod.
+    See REVISIT IN CI/CD DISCUSSION section.
+
 
 ### #1 — Vanilla JS starter kit
 
