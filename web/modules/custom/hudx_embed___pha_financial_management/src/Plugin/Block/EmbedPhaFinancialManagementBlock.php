@@ -19,7 +19,7 @@ class EmbedPhaFinancialManagementBlock extends BlockBase {
   /**
    * The URL to embed. Set at module generation time.
    */
-  const EMBED_URL = 'https://d1xzjd7z8lcp8a.cloudfront.net/trainings/pha-financial-management/modules-and-learning-activities.html';
+  const EMBED_URL = 'https://d1xzjd7z8lcp8a.cloudfront.net/trainings/pha-financial-management/index.html';
 
   /**
    * Human-readable title for the iframe (accessibility).
