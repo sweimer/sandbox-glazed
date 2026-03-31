@@ -1,0 +1,6 @@
+name: 3PD IDE - Director
+type: module
+description: '3PD Intake Director — AI-guided intake wizard.'
+core_version_requirement: ^10 || ^11
+package: 3PD IDE Apps
+configure: hudx_3pd_ai_director.test_page

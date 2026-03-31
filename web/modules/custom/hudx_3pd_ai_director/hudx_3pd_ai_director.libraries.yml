@@ -1,0 +1,9 @@
+hudx_3pd_ai_director:
+  version: 1774999642411
+  js:
+    dist/assets/hudx_3pd_ai_director.js:
+      header: true
+      attributes:
+        type: module
+  dependencies:
+    - core/drupal

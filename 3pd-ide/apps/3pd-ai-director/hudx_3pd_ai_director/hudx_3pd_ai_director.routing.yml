@@ -1,0 +1,34 @@
+hudx_3pd_ai_director.test_page:
+  path: '/hudx-test/3pd-ai-director'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_ai_director\Controller\HudxTestController::page'
+    _title: 'HUDX Test: 3pd-ai-director'
+  requirements:
+    _permission: 'access content'
+
+hudx_3pd_ai_director.api_chat:
+  path: '/api/3pd-ai-director/chat'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_ai_director\Controller\ChatController::chat'
+    _title: 'Director Chat'
+  requirements:
+    _permission: 'access content'
+  methods: [POST]
+
+hudx_3pd_ai_director.api_requests_list:
+  path: '/api/3pd-ai-director/requests'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_ai_director\Controller\RequestsController::list'
+    _title: 'Requests'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
+
+hudx_3pd_ai_director.api_requests_create:
+  path: '/api/3pd-ai-director/requests'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_ai_director\Controller\RequestsController::store'
+    _title: 'Create Request'
+  requirements:
+    _permission: 'access content'
+  methods: [POST]

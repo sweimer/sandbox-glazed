@@ -1,0 +1,69 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function hudx_3pd_ai_director_schema() {
+  $schema['hudx_3pd_ai_director_requests'] = [
+    'description' => 'Intake requests logged by the 3PD Director.',
+    'fields' => [
+        'id' => [
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ],
+        'name' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'email' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'summary' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'route' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'conversation' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'created_at' => [
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+        ],
+    ],
+    'primary key' => ['id'],
+  ];
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function hudx_3pd_ai_director_install() {
+  _hudx_3pd_ai_director_import_seed();
+}
+
+function _hudx_3pd_ai_director_import_seed() {
+  $seed_path = \Drupal::service('extension.list.module')->getPath('hudx_3pd_ai_director') . '/data/seed.json';
+  if (!file_exists($seed_path)) return;
+  $seed = json_decode(file_get_contents($seed_path), TRUE);
+  if (empty($seed['rows'])) return;
+  $db = \Drupal::database();
+  $db->truncate('hudx_3pd_ai_director_requests')->execute();
+  foreach ($seed['rows'] as $row) {
+    unset($row['id']);
+    $db->insert('hudx_3pd_ai_director_requests')->fields($row)->execute();
+  }
+}

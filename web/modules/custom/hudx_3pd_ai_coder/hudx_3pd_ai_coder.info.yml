@@ -1,0 +1,6 @@
+name: 3PD IDE - AI Helper
+type: module
+description: '3PD AI Helper — Claude-powered markup generator.'
+core_version_requirement: ^10 || ^11
+package: 3PD IDE Apps
+configure: hudx_3pd_ai_coder.test_page

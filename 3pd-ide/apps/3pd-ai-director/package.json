@@ -1,0 +1,37 @@
+{
+  "name": "3pd-ai-director",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "vite",
+    "dev:server": "node server/server.js",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "better-sqlite3": "^11.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "concurrently": "^8.2.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-react": "^7.34.0",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.8.1",
+    "vite": "^5.2.0"
+  }
+}

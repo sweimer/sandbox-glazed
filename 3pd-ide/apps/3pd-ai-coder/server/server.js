@@ -9,7 +9,7 @@ dotenv.config();
 const app      = express();
 const PORT     = process.env.PORT     || 4000;
 const HOST     = process.env.HOST     || '127.0.0.1';
-const APP_SLUG = process.env.APP_SLUG || 'react---3pd-ai-helper';
+const APP_SLUG = process.env.APP_SLUG || '3pd-ai-coder';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
 
 if (!process.env.ANTHROPIC_API_KEY) {

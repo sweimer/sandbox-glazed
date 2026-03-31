@@ -1,0 +1,45 @@
+hudx_3pd_ai_coder.test_page:
+  path: '/hudx-test/3pd-ai-coder'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_ai_coder\Controller\HudxTestController::page'
+    _title: 'HUDX Test: 3pd-ai-coder'
+  requirements:
+    _permission: 'access content'
+
+hudx_3pd_ai_coder.api_generate:
+  path: '/api/3pd-ai-coder/generate'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_ai_coder\Controller\GenerateController::generate'
+    _title: 'Generate Markup'
+  requirements:
+    _permission: 'access content'
+  methods: [POST]
+
+hudx_3pd_ai_coder.api_history_list:
+  path: '/api/3pd-ai-coder/history'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_ai_coder\Controller\HistoryController::list'
+    _title: 'History'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
+
+hudx_3pd_ai_coder.api_history_update:
+  path: '/api/3pd-ai-coder/history/{id}'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_ai_coder\Controller\HistoryController::update'
+    _title: 'Update History'
+  requirements:
+    _permission: 'access content'
+    id: '\d+'
+  methods: [PATCH]
+
+hudx_3pd_ai_coder.api_history_delete:
+  path: '/api/3pd-ai-coder/history/{id}'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_ai_coder\Controller\HistoryController::delete'
+    _title: 'Delete History'
+  requirements:
+    _permission: 'access content'
+    id: '\d+'
+  methods: [DELETE]

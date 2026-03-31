@@ -1,0 +1,72 @@
+{
+  "table": "requests",
+  "columns": [
+    {
+      "cid": 0,
+      "name": "id",
+      "type": "INTEGER",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 1
+    },
+    {
+      "cid": 1,
+      "name": "name",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 2,
+      "name": "email",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 3,
+      "name": "summary",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 4,
+      "name": "route",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 5,
+      "name": "conversation",
+      "type": "TEXT",
+      "notnull": 0,
+      "dflt_value": null,
+      "pk": 0
+    },
+    {
+      "cid": 6,
+      "name": "created_at",
+      "type": "DATETIME",
+      "notnull": 0,
+      "dflt_value": "CURRENT_TIMESTAMP",
+      "pk": 0
+    }
+  ],
+  "rows": [
+    {
+      "id": 1,
+      "name": "Scott Weimer",
+      "email": "s@s.com",
+      "summary": "User wants to build an interactive React app about biking as a page on HUD Exchange",
+      "route": "pro-react",
+      "conversation": "[{\"role\":\"user\",\"content\":\"i want to build a 1 page website about biking\"},{\"role\":\"assistant\",\"content\":\"Great! I'd love to help you get set up.\\n\\nAre you thinking of building this page directly on the HUD Exchange site, or do you already have a biking website or tool built elsewhere that you'd like us to help connect to HUD Exchange?\"},{\"role\":\"user\",\"content\":\"building this page directly on the HUD Exchange site\"},{\"role\":\"assistant\",\"content\":\"Perfect! To point you in the right direction, do you have experience coding, or would you prefer to build and design the page visually without writing code?\"},{\"role\":\"user\",\"content\":\"yes. i have experience with react\"},{\"role\":\"assistant\",\"content\":\"Excellent! Just to clarify — are you planning to build an interactive app with React (like something with dynamic features, user interactions, or real-time updates), or more of a static informational page about biking?\"},{\"role\":\"user\",\"content\":\"yes, i plan to build an interactive app with Reac\"},{\"role\":\"assistant\",\"content\":\"Perfect! I have what I need to get you connected with the right team.\\n\\nWhat's your name?\"},{\"role\":\"user\",\"content\":\"Scott Weimer\"},{\"role\":\"assistant\",\"content\":\"Thanks, Scott! What's the best email address for the team to reach you at?\"},{\"role\":\"user\",\"content\":\"s@s.com\"},{\"role\":\"assistant\",\"content\":\"Great, Scott! We have everything we need. The team will be in touch soon at s@s.com to help you build your interactive React app for the HUD Exchange site.\"}]",
+      "created_at": "2026-03-31 21:27:04"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function hudx_3pd_ai_director_theme($existing, $type, $theme, $path) {
+  return [
+    'hudx_3pd_ai_director_block' => [
+      'variables' => [],
+      'template' => 'hudx-3pd-ai-director-block',
+      'path' => \Drupal::service('extension.list.module')->getPath('hudx_3pd_ai_director') . '/templates',
+    ],
+  ];
+}
