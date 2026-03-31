@@ -1573,6 +1573,12 @@ Pending:
 
 ## ROADMAP ITEMS (not yet scheduled)
 
+### DISCUSSION ITEMS (talk through before building)
+
+  - Single Directory Components (SDC) — discuss architecture fit with current starter patterns
+  - Bootstrap → USWDS migration — discuss approach, LOE, and phasing before starting work
+
+
 ### #1 — Vanilla JS starter kit
 
   A lightweight starter for simple interactive apps that don't need a framework.
