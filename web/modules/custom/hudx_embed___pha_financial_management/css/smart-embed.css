@@ -1,0 +1,15 @@
+.hudx-smart-embed {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.hudx-smart-embed__iframe {
+  /* 1px + min-width trick prevents horizontal scrollbar flash */
+  width: 1px;
+  min-width: 100%;
+  border: none;
+  display: block;
+  overflow: hidden;
+  transition: height 0.2s ease;
+}

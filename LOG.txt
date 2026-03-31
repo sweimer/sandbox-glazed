@@ -1552,6 +1552,18 @@ Pending:
   - Other starters (react, astro, astro-forms) still need their own git repos
 
 
+## BACKLOG — HIGH PRIORITY
+
+### ⚠ inject-and-sync-s3.js — remove --delete flag
+
+  Current command: aws s3 sync "${resolvedDir}" "${s3Path}" --delete
+  Risk: if AWS CLI ever succeeds with only HTML files in the local dir (no css/fonts/images),
+  --delete will wipe all non-HTML assets from the S3 bucket.
+  Fix: remove --delete flag. Sync should only ADD/UPDATE files, never delete.
+  Currently safe because MFA blocks the sync step — but must fix before any CLI access is granted.
+  File: 3pd-ide/scripts/inject-and-sync-s3.js line ~105
+
+
 ## ROADMAP ITEMS (not yet scheduled)
 
 ### Full-page app starter (--page mode)

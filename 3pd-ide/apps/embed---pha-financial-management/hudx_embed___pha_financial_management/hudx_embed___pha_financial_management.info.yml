@@ -1,0 +1,6 @@
+name: '3PD IDE - Smart Embed   Pha Financial Management'
+type: module
+description: '3PD IDE Smart Embed application module for 3PD IDE - Smart Embed   Pha Financial Management.'
+core_version_requirement: ^10 || ^11
+package: 3PD IDE Apps
+configure: hudx_embed___pha_financial_management.test_page

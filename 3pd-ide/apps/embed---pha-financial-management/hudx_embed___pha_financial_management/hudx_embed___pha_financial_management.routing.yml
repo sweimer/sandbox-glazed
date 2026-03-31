@@ -1,0 +1,7 @@
+hudx_embed___pha_financial_management.test_page:
+  path: '/hudx-test/embed---pha-financial-management'
+  defaults:
+    _controller: '\Drupal\hudx_embed___pha_financial_management\Controller\HudxTestController::page'
+    _title: 'Pha Financial Management'
+  requirements:
+    _permission: 'access content'

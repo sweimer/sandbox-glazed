@@ -130,6 +130,37 @@ ${chalk.white('--install')} (HUDX internal only)
   Requires /web/modules/custom/ to exist (full Drupal repo).
   Copies module to Drupal, enables it, and clears cache automatically.
   Run from inside an app folder: cd apps/<name> && 3pd <fw> module --install
+
+${chalk.bold('SMART EMBED WORKFLOW — S3 + CLOUDFRONT APPS')}
+${chalk.gray('---------------------------------------------------------------------')}
+Use this when the child app is hosted on S3 + CloudFront and you need to
+inject hudx-resize.js into its HTML files (no AWS CLI access required).
+
+${chalk.white('Step 1 — Create + install the Drupal module')}
+  3pd embed create <name> --url <cloudfront-url>
+  cd apps/embed---<name>
+  3pd embed module --install
+  Test at: /hudx-test/embed---<name>  (loads at fallback height until snippet is injected)
+
+${chalk.white('Step 2 — Set up a temp workspace')}
+  mkdir -p 3pd-ide/smart-embeds/<name>
+  Download all .html files from the S3 bucket folder into that directory.
+
+${chalk.white('Step 3 — Inject hudx-resize.js into the HTML files')}
+  cd 3pd-ide/scripts
+  node inject-and-sync-s3.js ../smart-embeds/<name> s3://skip
+  (The S3 sync will fail — that is expected. Only the local inject step is needed.)
+
+${chalk.white('Step 4 — Upload to S3 via AWS console')}
+  Upload all injected .html files + hudx-resize.js from the workspace
+  to the correct folder in the S3 bucket.
+
+${chalk.white('Step 5 — Invalidate CloudFront')}
+  Console → CloudFront → Distributions → <ID> → Invalidations → Create → /*
+  Wait ~30s, then hard refresh (Cmd+Shift+R) the Drupal test page.
+
+${chalk.gray('POC distribution: E34CQM3GCYZN5R  (d1xzjd7z8lcp8a.cloudfront.net)')}
+${chalk.gray('S3 bucket:        sites.hudexchange.info/trainings-poc/trainings/')}
 `;
 };
 
@@ -326,13 +357,17 @@ ${chalk.bold('Commands:')}
   ${chalk.magenta('module --install')}           Generate AND install the module (HUDX internal)
 
 ${chalk.bold('How it works:')}
-  1. create  → makes embed---<name>/ with embed.config.json + snippet/hudx-resize.js
-  2. Edit embed.config.json to set the URL (or pass --url at create time)
-  3. Share snippet/hudx-resize.js with the embedded app owner (they add it to their pages)
+  1. create           → makes embed---<name>/ with embed.config.json + snippet/hudx-resize.js
+  2. cd apps/embed---<name>
+  3. Edit embed.config.json to confirm URL and fallbackHeight (or pass --url at create time)
   4. module --install → generates the Drupal block module and installs it
+  5. Test at: /hudx-test/embed---<name>
 
-${chalk.bold('Examples:')}
-  3pd embed create sc-training --url https://www.hudexchange.info/trainings/sc-tool/
+  For S3 + CloudFront apps (inject hudx-resize.js, upload, invalidate):
+  See: ${chalk.bold('3pd help')}
+
+${chalk.bold('Example:')}
+  3pd embed create sc-training --url https://example.cloudfront.net/trainings/sc-tool/
   cd apps/embed---sc-training
   3pd embed module --install
 `;
