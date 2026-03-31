@@ -152,6 +152,7 @@ export default function ThreePDLandingPage() {
               <p className="small text-muted mb-1">Examples:</p>
               <ul className="list-unstyled small mb-3">
                 <li><a href="/hudx-test/embed---sc-training" target="_blank" className="link-primary">HUD Service Coordinators</a></li>
+                <li><a href="/hudx-test/embed---pha-financial-management" target="_blank" className="link-primary">PHA Financial Mgt</a></li>
               </ul>
               <a href="/hudx-test/react---3pd-embed-request" target="_blank" className="btn btn-primary mt-auto">
                 Submit Integration Request
