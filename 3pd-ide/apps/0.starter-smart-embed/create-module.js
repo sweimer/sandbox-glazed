@@ -427,12 +427,12 @@ class HudxTestController extends ControllerBase {
     console.log(`  ✅  Module copied to: ${targetDir}`);
 
     // Uninstall first (ignore failure — module may not be installed yet)
-    tryExec([`lando drush pm:uninstall ${machineName} -y`]);
+    tryExec([`lando ssh -c "cd /app && drush pm:uninstall ${machineName} -y"`]);
 
     // Enable
     const enabled = tryExec([
-      `lando drush pm:enable ${machineName} -y`,
-      `lando drush php:eval "\\Drupal::service('module_installer')->install(['${machineName}']);"`,
+      `lando ssh -c "cd /app && drush en ${machineName} -y"`,
+      `lando ssh -c "cd /app && drush php:eval \\"\\\\Drupal::service('module_installer')->install(['${machineName}']);\\""`
     ]);
 
     if (!enabled) {
@@ -441,7 +441,7 @@ class HudxTestController extends ControllerBase {
 
     // Cache clear + router rebuild
     tryExec(['lando crx']);
-    tryExec([`lando drush php:eval "\\Drupal::service('router.builder')->rebuild();"`]);
+    tryExec([`lando ssh -c "cd /app && drush php:eval \\"\\\\Drupal::service('router.builder')->rebuild();\\""`]);
 
     console.log(`\n  ✅  Installed. Test at: /hudx-test/${appName}`);
     console.log(`      Block available in: Layout Builder → Add Block → HUDX → ${embedTitle} — Smart Embed`);

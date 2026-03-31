@@ -1543,10 +1543,83 @@ Completed:
   ✓ sc-training fully working in Drupal sandbox (resize + accordions)
 
 Pending:
-  - Remove web/embeds/sc-training/ from repo (no longer needed — using embedUrl)
-  - Push embed---sc-training module to Pantheon
+  ✓ Remove web/embeds/sc-training/ from repo — done (files were untracked, deleted from disk)
+  ✓ Push embed---sc-training module to Pantheon — pushed 2026-03-31, deploy in progress
   - Fix lando drush path breakage in create-module.js tryExec (affects all starters)
   - Deploy react---3pd-embed-request to Pantheon
   - Deploy react---3pd-depot to Pantheon
   - Gate /hudx-test/* routes before production deployment
   - Other starters (react, astro, astro-forms) still need their own git repos
+
+
+## ROADMAP ITEMS (not yet scheduled)
+
+### Full-page app starter (--page mode)
+
+  Current starters produce Block plugins that embed inside a Drupal page's chrome.
+  A --page mode (or separate starter) would produce a Controller + bare page twig
+  instead — the app owns the full page including header, footer, and nav.
+  Drupal handles routing and auth only.
+
+  Key differences from block mode:
+    - No Plugin/Block/ class — Controller + routing.yml only
+    - templates/page--hudx-[name].html.twig strips all Drupal regions
+    - App bundles its own Bootstrap/USWDS + nav/header/footer components
+    - Theme-independent by design (no drupal-dev-assets reliance in production)
+    - Can be assigned as Drupal home page via /admin/config/system/site-information
+
+  Implementation approach: --page flag on existing starters (same app code,
+  different build config + different generator output) OR a separate page starter.
+  Same CLI pattern: 3pd react module --page --install
+
+  USWDS note: for .gov projects, full-page apps should use USWDS not Bootstrap
+  (federal design standards, Section 508). This decision should be made before
+  building the page starter.
+
+
+### USWDS theme migration (Level 1 — HUDx)
+
+  This is a HUD .gov site. USWDS is the federal standard (Section 508, FISMA,
+  consistency with other HUD properties like hudexchange.info).
+  Current starters depend on Bootstrap (hard) and DXPR theme CSS (soft).
+
+  Migration scope:
+    - drupal-dev-assets.js: swap Bootstrap/DXPR source for USWDS CSS/JS
+    - Starter templates: replace Bootstrap class patterns with USWDS equivalents
+      (btn btn-primary → usa-button, form-control → usa-input, row/col-* → usa-grid, etc.)
+    - React apps: consider @trussworks/react-uswds component library (cleaner than
+      class-name swapping, provides accessible USWDS components out of the box)
+    - Existing apps (3pd-depot, checklist, ai-helper, embed-request): each needs
+      component-level markup updates — mechanical work, not architectural
+    - create-module.js files: no changes needed (don't generate UI markup)
+
+  Not a rewrite — the framework patterns stay identical. Work is systematic
+  find-and-replace of component patterns + dev assets source swap.
+
+
+### 3PD as a reusable product (Level 2 — beyond HUDx)
+
+  The 3PD framework is already generic. The HUDx implementation is one configuration.
+  Gap to close for Level 2:
+
+    Theme abstraction:
+      - drupal-dev-assets becomes theme-configurable (Bootstrap, USWDS, or custom URL)
+      - 3pd.config.json gains a themeSystem key (bootstrap | uswds | custom)
+      - Starter templates ship with minimal/no styling — just structure and mount points
+      - Theme-specific starter variants documented separately from framework docs
+
+    Naming abstraction:
+      - hudx_* prefix becomes configurable in 3pd.config.json (modulePrefix: 'hudx')
+      - All generators read modulePrefix from config instead of hardcoding 'hudx'
+
+    Documentation split:
+      - Framework docs (starter patterns, CLI, generator architecture) → project-agnostic
+      - HUDx implementation docs (PROMPT.txt files, LOG.txt) → HUDx-specific
+      - README in starter repos updated to remove HUDx references
+
+    Deployment abstraction:
+      - Pantheon-specific deploy pipeline generalized to support other hosts
+      - 3pd.config.json gains deployTarget key
+
+  The framework is already a product. This work is configuration abstraction,
+  not a rewrite. Estimated complexity: medium. No core patterns change.
