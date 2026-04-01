@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+server/db/*.sqlite
+public/drupal-dev-styles.css
+public/drupal-dev-scripts.js
+
+# AI assistant session context (auto-generated each session, never commit)
+CLAUDE.md

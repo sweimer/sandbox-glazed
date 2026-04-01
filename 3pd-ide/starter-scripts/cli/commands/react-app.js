@@ -151,7 +151,15 @@ export default async function reactApp(name, { ideRoot }) {
   log.success(`React app "${folderName}" created successfully.`);
   log.dim('Next steps:');
   log.dim(`  cd apps/${folderName}`);
+  log.dim('');
+  log.dim('  With AI assistant (recommended):');
+  log.dim('  3pd run ai           # starts dev server + opens AI session');
+  log.dim('  Requires: Claude Code CLI (any terminal or IDE) — https://claude.ai/code');
+  log.dim('');
+  log.dim('  Without AI:');
   log.dim('  npm run dev          # starts React (Vite) + Express together');
-  log.dim('  3pd react module     # when ready to generate the Drupal block module');
+  log.dim('');
+  log.dim('  When ready to ship:');
+  log.dim('  3pd react module     # generates the Drupal block module');
   log.nl();
 }

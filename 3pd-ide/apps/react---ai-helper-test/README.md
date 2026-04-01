@@ -36,9 +36,7 @@ the right place.
 repo. `CLAUDE.md` is generated each session and gitignored — it's the session briefing,
 not a repo artifact.
 
-> **Requires Claude Code CLI** — install it once on your machine and use it from any terminal or IDE.
-> Install at https://claude.ai/code, then run `3pd run ai`.
-> AI usage is billed to your own Anthropic account (Claude Pro/Max subscription or API key).
+> **Requires Claude Code CLI.** Install at https://claude.ai/code
 
 Prefer to work without AI assistance? Skip this section and go straight to
 [Setup](#setup) below — the manual workflow is fully documented there.
