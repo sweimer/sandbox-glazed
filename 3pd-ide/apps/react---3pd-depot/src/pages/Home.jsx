@@ -100,7 +100,7 @@ export default function ThreePDLandingPage() {
               <p className="small text-muted mb-1">Examples:</p>
               <ul className="list-unstyled small mb-3">
                 <li><a href="/node/17" target="_blank" className="link-primary">Three Cards</a></li>
-                <li><a href="/node/18" target="_blank" className="link-primary">David Bowie</a></li>
+                <li><a href="/node/16" target="_blank" className="link-primary">David Bowie</a></li>
               </ul>
               <a href="/hudx-test/3pd-ai-coder" target="_blank" className="btn btn-primary">
                 Option 1 - 3PD AI Node Helper
