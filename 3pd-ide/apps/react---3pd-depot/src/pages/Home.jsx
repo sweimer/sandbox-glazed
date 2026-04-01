@@ -127,6 +127,7 @@ export default function ThreePDLandingPage() {
               <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary">
                 3PD AI App Helper (COMING SOON)
               </a>
+              <br/>
               <button
                 type="button"
                 className="btn btn-secondary mt-auto"
@@ -142,7 +143,6 @@ export default function ThreePDLandingPage() {
                   <li><a href="https://github.com/sweimer/3PD---Astro-Forms-Starter-Kit" target="_blank" className="link-success">Astro-Form Starter Kit</a></li>
                   <li><a href="https://github.com/sweimer/3PD---React-Starter-Kit" target="_blank" className="link-success">React Starter Kit</a></li>
                   <li><a href="#" target="_blank" className="link-success">VanillaJS Starter Kit</a></li>
-                  <li><a href="#" target="_blank" className="link-success">Drupal Module Starter Kit</a></li>
                 </ul>
               )}
             </div>
