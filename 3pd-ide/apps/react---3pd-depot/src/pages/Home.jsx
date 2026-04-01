@@ -103,11 +103,7 @@ export default function ThreePDLandingPage() {
                 <li><a href="/node/16" target="_blank" className="link-primary">David Bowie</a></li>
               </ul>
               <a href="/hudx-test/3pd-ai-coder" target="_blank" className="btn btn-primary">
-                Option 1 - 3PD AI Node Helper
-              </a>
-            <br/>
-              <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary">
-                Option 2 - 3PD AI App Helper (COMING SOON)
+                3PD AI Code Helper
               </a>
             </div>
           </div>
@@ -128,6 +124,9 @@ export default function ThreePDLandingPage() {
               <ul className="list-unstyled small mb-3">
                 <li><a href="https://dev-3-pd-ide.pantheonsite.io/node/11" target="_blank" className="link-primary">STraCAT</a></li>
               </ul>
+              <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary">
+                3PD AI App Helper (COMING SOON)
+              </a>
               <button
                 type="button"
                 className="btn btn-secondary mt-auto"
