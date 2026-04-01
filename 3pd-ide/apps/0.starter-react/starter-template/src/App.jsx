@@ -1,106 +1,36 @@
-
-import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import Home from './pages/Home.jsx';
-import StyleGuide from './pages/StyleGuide.jsx';
+import Home         from './pages/Home.jsx';
+import StyleGuide   from './pages/StyleGuide.jsx';
 import ApiReference from './pages/ApiReference.jsx';
 
-const API_BASE = 'http://localhost:4000';
-
-function TestPanel() {
-  const [inputValue, setInputValue] = useState('');
-  const [entries, setEntries]       = useState([]);
-  const [status, setStatus]         = useState('');
-
-  async function fetchAll() {
-    try {
-      const res  = await fetch(`${API_BASE}/api/test/all`);
-      const data = await res.json();
-      setEntries(data);
-    } catch (err) {
-      setStatus('❌ Could not fetch entries: ' + err.message);
-    }
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setStatus('');
-
-    if (!inputValue.trim()) {
-      setStatus('⚠️ Please enter some text.');
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/api/test/add`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ text_value: inputValue.trim() }),
-      });
-
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-
-      setInputValue('');
-      setStatus('✅ Entry added!');
-      await fetchAll();
-    } catch (err) {
-      setStatus('❌ Error: ' + err.message);
-    }
-  }
-
+// DEV-ONLY nav — rendered only during `npm run dev`, stripped from Drupal module builds.
+// Links to starter kit reference pages (Style Guide, API Reference).
+// Replace or remove this nav when building your actual app.
+function DevNav() {
+  if (!import.meta.env.DEV) return null;
   return (
-    <div style={{ padding: '2rem', maxWidth: '600px' }}>
-      <h2>API Test Panel</h2>
-
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Enter text..."
-          style={{ flex: 1, padding: '0.5rem' }}
-        />
-        <button type="submit" style={{ padding: '0.5rem 1rem' }}>
-          Submit
-        </button>
-        <button type="button" onClick={fetchAll} style={{ padding: '0.5rem 1rem' }}>
-          Refresh
-        </button>
-      </form>
-
-      {status && <p>{status}</p>}
-
-      <h3>Entries</h3>
-      {entries.length === 0 ? (
-        <p style={{ color: '#999' }}>No entries yet. Submit one above or click Refresh.</p>
-      ) : (
-        <ul>
-          {entries.map((entry) => (
-            <li key={entry.id}>
-              <strong>#{entry.id}</strong> — {entry.text_value}{' '}
-              <small style={{ color: '#999' }}>
-                ({new Date(entry.created_at).toLocaleString()})
-              </small>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <nav
+      className="navbar navbar-expand navbar-light bg-warning-subtle border-bottom px-3 py-2"
+      aria-label="Developer navigation"
+    >
+      <span className="badge bg-warning text-dark me-3 small">DEV</span>
+      <div className="navbar-nav gap-3 small">
+        <Link className="nav-link py-0" to="/">Home</Link>
+        <Link className="nav-link py-0" to="/styleguide">Style Guide</Link>
+        <Link className="nav-link py-0" to="/api">API Reference</Link>
+      </div>
+    </nav>
   );
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <nav style={{ padding: '1rem', background: '#eee' }}>
-        <Link to="/">Home</Link> | <Link to="/styleguide">Style Guide</Link> | <Link to="/api">API Reference</Link> | <Link to="/test">API Test</Link>
-      </nav>
-
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <DevNav />
       <Routes>
         <Route path="/"          element={<Home />} />
         <Route path="/styleguide" element={<StyleGuide />} />
-        <Route path="/api"       element={<ApiReference />} />
-        <Route path="/test"      element={<TestPanel />} />
+        <Route path="/api"        element={<ApiReference />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1681,6 +1681,199 @@ Pick up next session:
   5. Push updated 3pd-depot to Pantheon
 
 
+## SESSION: 2026-04-01 (continued #2) — homepage redesign + port isolation
+
+### ✓ Default homepage redesigned (starter-template/src/pages/Home.jsx)
+
+  Replaced bare inline-style form with a 3-card Bootstrap layout demonstrating
+  the three data patterns available in the React starter kit:
+
+    Card 1 — Static Content
+      Hardcoded in source. Changes require a new `3pd react module` build + deploy.
+      Example: a static welcome message with edit instructions.
+
+    Card 2 — Content from Drupal
+      Fetches from Drupal JSON:API at runtime (VITE_DRUPAL_BASE_URL).
+      Shows a "not configured" prompt if env var is missing.
+      Graceful error state if Drupal is unreachable.
+
+    Card 3 — App Data (SQLite → Drupal DB)
+      The existing form + submissions pattern, styled with Bootstrap.
+      Accessible: visually-hidden label, aria-live on the list, aria-label on form.
+
+  Card footers document the intended use case for each pattern.
+  Heading updated to generic "Your App Title" — no HUDX branding.
+
+### ✓ App.jsx — dev nav made dev-only
+
+  DevNav component wrapped in `{import.meta.env.DEV && ...}` — renders during
+  `npm run dev`, stripped entirely from `vite build` (Drupal module output).
+  Styled with Bootstrap warning-subtle bg + DEV badge so it's visually distinct.
+  React Router v7 future flags added to silence deprecation warnings.
+  Removed stale TestPanel component and /test route from starter template.
+
+### ✓ 3pd.config.json — created at project root
+
+  New file: /3pd-ide/3pd.config.json
+  Current contents: { "drupalBaseUrl": "https://dev-3-pd-ide.pantheonsite.io" }
+  Auto-injected as VITE_DRUPAL_BASE_URL into every new app's .env at creation time.
+  One place to update when moving from POC → prod URL.
+
+### ✓ Per-app port isolation
+
+  Problem: two apps running simultaneously both try to bind PORT=4000 (Express)
+  and DEV_PORT=5173 (Vite). Express loses silently → 404 on all API calls.
+
+  Fix: react-app.js now scans all existing react---* app .env files at creation
+  time, finds the highest assigned PORT + DEV_PORT, and assigns the next available
+  pair to the new app.
+
+    App 1: PORT=4000, DEV_PORT=5173
+    App 2: PORT=4001, DEV_PORT=5174
+    App 3: PORT=4002, DEV_PORT=5175  (etc.)
+
+  Changes:
+    - react-app.js: assignPorts() scans apps/, setupEnvFile() injects all 4 port vars
+    - .env.example: added DEV_PORT=5173
+    - vite.config.js: server.port reads DEV_PORT env var, strictPort: true
+    - ai-run.js: readAppPorts() reads DEV_PORT + PORT from app .env instead of hardcoding
+
+### ✓ ai-run.js — process group kill fixed
+
+  devProcess.kill() only sent SIGTERM to npm, not to concurrently → Vite → Express.
+  Ports 4000 and 5173 would survive after the Claude session ended.
+
+  Fix: spawn with detached: true, kill with process.kill(-proc.pid, 'SIGTERM')
+  which sends the signal to the entire process group. All child processes
+  (concurrently, Vite, Express) now terminate cleanly when the session ends.
+
+### ✓ validate.js import bug fixed
+
+  Was importing from ../utils/log.js (path doesn't exist).
+  Fixed to ../shared/log.js with correct log object usage.
+
+### ✓ Style Guide page built (starter-template/src/pages/StyleGuide.jsx)
+
+  Replaced broken stub (imported non-existent @hudx/hudx.css) with a full
+  Bootstrap/DXPR reference page. 11 sections:
+    Typography, Color Palette, Buttons, Links, Alerts, Badges,
+    Cards, Form Elements, Table, Accordion (React-controlled), List Group.
+
+  Key demo point: styles are rendered from the actual Drupal theme CSS loaded
+  into the dev environment via drupal-dev-styles.css — not a mock.
+  Header copy makes this explicit: "What you see here is exactly what your app
+  will look like inside Drupal."
+
+### ✓ API Reference page built (starter-template/src/pages/ApiReference.jsx)
+
+  Replaced basic stub with a full live-demo reference page. Two sections:
+
+  App API (Express → PHP controller):
+    - Endpoint table with current APP_SLUG values interpolated live
+    - GET example: code block + "Try it" button → real JSON response from SQLite
+    - POST example: editable input + "Try it" → writes real entry, returns saved row
+    - "How it works in Drupal" explainer (Express → PHP handoff, seed.json)
+
+  Drupal JSON:API:
+    - Common endpoints table (node/page, node/article, taxonomy_term/tags, media/image)
+    - GET example with live content type dropdown + "Try it" against Pantheon URL
+    - Query params reference table (limit, offset, fields, filter, sort, include)
+    - HAProxy square-bracket warning (real production gotcha from PROMPT.txt)
+
+  Env vars section at top shows live values from .env — green if set, red if missing.
+  Copy button on all code blocks.
+
+### WHERE WE LEFT OFF (end of 2026-04-01 continued #2 session)
+
+  Starter page set complete: Home + Style Guide + API Reference.
+  All three pages are dev-only scaffolding — none ship to the Drupal module.
+
+  Still pending from earlier:
+    1. Rebuild + reinstall react---3pd-depot (Director button, updated card links)
+    2. Push 3pd-ai-director to Pantheon (add ANTHROPIC_API_KEY to Pantheon Secrets first)
+    3. Push updated 3pd-depot to Pantheon
+    4. Rotate ANTHROPIC_API_KEY (was in a local commit)
+    5. Add *.sqlite / *.sqlite-shm / *.sqlite-wal to .gitignore
+    6. Port 3pd run ai to standalone 3pd-react-starter-kit repo once satisfied locally
+
+---
+
+## SESSION: 2026-04-01 (continued) — 3pd run ai built + polished
+
+### ✓ AI assistant launcher — built and tested
+
+  New command: `3pd run ai` (commands/ai-run.js)
+
+  What it does:
+    - Checks for Claude Code CLI (exits with install prompt if missing)
+    - Finds PROMPT.txt (local app → React starter fallback)
+    - Creates .ai/LOG.md on first run (from template)
+    - Starts dev server (npm run dev) if not already running
+    - TCP port check + HTTP readiness verify (isPortInUse + isHttpReady)
+    - Builds CLAUDE.md from PROMPT.txt + .ai/LOG.md + behavioral instructions
+    - CLAUDE.md is gitignored — session artifact, never committed
+    - Spawns `claude` with 'Begin session.' so Claude speaks first
+    - Kills dev server when Claude session ends
+
+  CLAUDE.md structure:
+    - STARTER KIT IDENTITY (PROMPT.txt content)
+    - PROJECT MEMORY (.ai/LOG.md content)
+    - BEHAVIORAL INSTRUCTIONS (startup, during-session, wrap-up rules)
+    - SESSION FOOTER (injected dynamically per session)
+
+  Session footer appended to every AI reply:
+    ▎ App: http://localhost:5173          (omitted if no dev server)
+    ▎ Type Close Session when done...
+    ▎ Tip: Ask me to run 3pd lint / scan / a11y / validate
+    ▎ Tip: Ask me to run 3pd react module or 3pd react module --install
+
+  First-run behavior:
+    - Detects no LOG history → injects FIRST RUN SCAN REQUIRED block
+    - Claude scans package.json, src/, server/ before presenting summary
+    - Populates .ai/LOG.md with observations before responding
+
+  --validate flag:
+    - Opt-in quality gate at Close Session
+    - Runs 3pd validate (lint + scan + a11y + tests) before LOG update
+
+### ✓ validate.js import bug fixed
+
+  Was importing from ../utils/log.js (doesn't exist).
+  Fixed to ../shared/log.js with correct log object usage.
+
+### ✓ react-app.js summary updated
+
+  Now shows two paths after app creation:
+    With AI (recommended): 3pd run ai
+    Without AI: npm run dev
+  Includes Claude Code CLI requirement note with install URL.
+
+### ✓ Brand agnostic
+
+  Removed HUDX from CLAUDE.md title and behavioral instructions.
+  CLAUDE.md title now uses app folder name (e.g. react---ai-helper-test).
+  Role description is generic — 'this project' not 'this HUDX project'.
+
+### ✓ PROMPT.txt updated
+
+  Added 3pd run ai + 3pd run ai --validate to CLI Integration section.
+  Added AI assistant notes (CLAUDE.md, .ai/LOG.md, billing).
+
+### WHERE WE LEFT OFF (end of 2026-04-01 continued session)
+
+  Pending — carry forward:
+    1. Rebuild + reinstall react---3pd-depot (Director button, updated card links)
+    2. Push 3pd-ai-director to Pantheon (add ANTHROPIC_API_KEY to Pantheon Secrets first)
+    3. Push updated 3pd-depot to Pantheon
+    4. Rotate ANTHROPIC_API_KEY (was in a local commit)
+    5. Add *.sqlite / *.sqlite-shm / *.sqlite-wal to .gitignore
+    6. Port 3pd run ai to standalone 3pd-react-starter-kit repo once satisfied locally
+    7. pha-financial-management resize issues (backlog)
+    8. inject-and-sync-s3.js --delete flag removal (backlog)
+    9. Fix lando drush path breakage in create-module.js tryExec (affects all starters)
+
+---
+
 ## SESSION: 2026-04-01 — Renames complete, director installed, secrets fix
 
 ### ✓ PENDING RENAMES — both completed (carried from 2026-03-31)
@@ -1758,6 +1951,99 @@ Pick up next session:
     9. Discussion items: SDC, USWDS migration (deferred)
 
 
+## SESSION: 2026-04-01 (continued #3) — 3pd run ai bug fixes + 3pd stop + Drupal proxy
+
+### ✓ isPortInUse — IPv6 fix (ai-run.js)
+
+  Problem: on macOS, Vite binds to 'localhost' which resolves to ::1 (IPv6).
+  ai-run.js checked isPortInUse on 127.0.0.1 (IPv4) only — always returned false for Vite.
+  Result: 20-second timeout → dev server killed → Claude launched without devServerUrl.
+  Claude referenced wrong default ports (5173/4000) from PROMPT.txt examples, not real app ports.
+
+  Fix: checkHost() now tries both 127.0.0.1 AND ::1. Returns true if either has the port.
+  Port detection now works. devServerUrl is set correctly. Session footer shows real app URL.
+
+### ✓ VITE_API_BASE_URL — localhost → 127.0.0.1 (react-app.js + .env.example)
+
+  Problem: macOS resolves 'localhost' to ::1 (IPv6) first. Express binds to 127.0.0.1 (IPv4).
+  Browser fetch('http://localhost:PORT') tries IPv6 → connection refused. Card 3 (App Data) broke.
+
+  Fix: react-app.js setupEnvFile() now injects http://127.0.0.1:${PORT} for VITE_API_BASE_URL.
+  .env.example template updated. All new apps get the correct address.
+  Existing apps with localhost in .env need a one-line manual update.
+
+### ✓ loadProjectConfig — path bug fixed (react-app.js)
+
+  Problem: path was 3 levels up from app dir instead of 2.
+  Looking at SANDBOX-glazed/ instead of 3pd-ide/ — 3pd.config.json never found.
+  Result: VITE_DRUPAL_BASE_URL was never auto-filled from 3pd.config.json on new apps.
+
+  Fix: path.join(appDir, '..', '..', '..', ...) → path.join(appDir, '..', '..', ...)
+  New apps now get VITE_DRUPAL_BASE_URL=https://dev-3-pd-ide.pantheonsite.io automatically.
+
+### ✓ 3pd stop — new command
+
+  New command: stop the dev server(s) for the current app.
+  Run from inside any app directory. Reads PORT (Express) and DEV_PORT (Vite) from .env.
+  Kills processes on those ports via lsof + SIGTERM.
+  Safe when nothing is running — reports "Nothing on :PORT" and exits cleanly.
+
+  Use cases:
+    - AI dev who started npm run dev manually before 3pd run ai (Close Session won't kill it)
+    - Non-AI dev who wants explicit shutdown vs Ctrl+C
+    - Clearing orphaned processes from crashed or closed terminals
+
+  Wired in index.js. Added to 3pd help COMMANDS + WORKFLOW sections.
+  Close Session AI instructions updated to remind about 3pd stop.
+  Session footer in CLAUDE.md updated to include 3pd stop tip.
+
+### ✓ Drupal JSON:API CORS — Vite proxy (vite.config.js + Home.jsx)
+
+  Problem: Drupal doesn't send CORS headers for localhost origins.
+  Fetching VITE_DRUPAL_BASE_URL directly from the browser fails with "TypeError: Failed to fetch".
+  Card 2 (Content from Drupal) showed error on every new app.
+
+  Fix: vite.config.js adds a /drupal-proxy route → VITE_DRUPAL_BASE_URL (server-side, dev only).
+  Home.jsx uses '/drupal-proxy' path in DEV mode, absolute VITE_DRUPAL_BASE_URL in production.
+  In production (Drupal module), the app is same-origin — no proxy needed.
+
+### ✓ Home.jsx — "Customize your data model" (softer copy)
+
+  "Define your data model" → "Customize your data model — a working default is already set up"
+  The starter ships with a working submissions table. New devs should know it works out of the box.
+
+### ✓ PROMPT.txt — known issues updated (0.starter-react)
+
+  Added:
+    #14: Drupal CORS proxy pattern (Vite /drupal-proxy, Home.jsx DEV flag)
+    #15: VITE_API_BASE_URL must use 127.0.0.1 not localhost (macOS IPv6 issue)
+  ENV VAR PATTERN example updated: VITE_API_BASE_URL now shows 127.0.0.1
+
+### ✓ ROADMAP — item #1 complete
+
+  Default homepage redesign (React starter) is done:
+    Home.jsx: 3-card layout (Static / Drupal / App Data), dev-only orientation guide
+    StyleGuide.jsx: 11-section live Bootstrap/DXPR reference
+    ApiReference.jsx: live GET/POST demos + Drupal JSON:API section + env vars table
+    App.jsx: dev-only nav stripped from Drupal builds via import.meta.env.DEV
+
+### WHERE WE LEFT OFF
+
+  Pending — carry forward:
+    1. Rebuild + reinstall react---3pd-depot (Director button, updated card links)
+    2. Push 3pd-ai-director to Pantheon (add ANTHROPIC_API_KEY to Pantheon Secrets first)
+    3. Push updated 3pd-depot to Pantheon
+    4. Rotate ANTHROPIC_API_KEY (was in a local commit — rotate at console.anthropic.com)
+    5. Add *.sqlite / *.sqlite-shm / *.sqlite-wal to .gitignore
+    6. Port 3pd run ai to standalone 3pd-react-starter-kit repo once satisfied locally
+    7. pha-financial-management resize issues (backlog)
+    8. inject-and-sync-s3.js --delete flag removal (backlog — safety fix)
+    9. Fix lando drush path breakage in create-module.js tryExec (affects all starters)
+    10. Discussion items: SDC, USWDS migration (deferred)
+    11. Apply React starter homepage lessons to Astro starters (roadmap #3)
+
+---
+
 ## BACKLOG — HIGH PRIORITY
 
 ### ⚠ pha-financial-management embed — resizing issues
@@ -1778,6 +2064,28 @@ Pick up next session:
 
 
 ## ROADMAP ITEMS (not yet scheduled)
+
+### SCHEDULED — in priority order
+
+  ✓ #1 — Default homepage redesign (React starter) — DONE 2026-04-01
+    Home.jsx: 3-card layout (Static / Drupal / App Data) + dev-only guide + "when ready" strip
+    StyleGuide.jsx: 11-section live Bootstrap/DXPR reference
+    ApiReference.jsx: live GET/POST demos + Drupal JSON:API section + env vars table
+    App.jsx: dev-only nav, stripped from Drupal builds via import.meta.env.DEV
+    Next: apply same pattern to Astro starters (roadmap #3)
+
+  #2 — Testing review: .gov guidance and standards
+    Review current testing setup (lint, scan, a11y, validate) against .gov requirements.
+    Discuss what's missing, what standards apply (Section 508, FISMA, USWDS a11y, etc.),
+    and what we should add or tighten before any production deployment.
+
+  #3 — Apply React starter lessons to Astro starter kits
+    Port the AI assistant layer (3pd run ai, .ai/LOG.md, CLAUDE.md generation) and
+    homepage improvements to the two Astro starter kits (0.starter-astro, 0.starter-astro-forms).
+
+  #4 — AI director for smart embed starter kit
+    Discuss the value of adding an AI director (like 3pd-ai-director) to the smart embed
+    starter kit. What would it generate? What problem does it solve at that layer?
 
 ### DISCUSSION ITEMS (talk through before building)
 

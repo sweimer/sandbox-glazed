@@ -77,6 +77,14 @@ Commands:
   3pd react module              → commands/react-module.js
   3pd react module --install    → internal mode (copies to /web + enables)
   3pd react db pull             → commands/react-db-pull.js (pulls Pantheon data → local SQLite)
+  3pd run ai                    → commands/ai-run.js (starts dev server + opens AI session)
+  3pd run ai --validate         → same, but runs lint/scan/a11y/validate at Close Session
+
+AI assistant:
+  Run `3pd run ai` from inside the app directory.
+  Generates CLAUDE.md from PROMPT.txt + .ai/LOG.md — gitignored, session artifact.
+  .ai/LOG.md is committed — persists project memory across developers and sessions.
+  Requires: Claude Code CLI (https://claude.ai/code) — billed to the developer's account.
 
 Framework prefix (shared/frameworks.js):
   FRAMEWORK_PREFIXES.react = 'react---'
@@ -235,7 +243,7 @@ React/Vite uses VITE_ prefix (not PUBLIC_) for client-exposed vars.
 .env (dev):
   APP_SLUG=react---my-app             ← injected by react-app.js on app creation
   VITE_APP_SLUG=react---my-app        ← same, VITE_ prefix so Vite exposes to browser
-  VITE_API_BASE_URL=http://localhost:4000   ← baked into Vite dev build
+  VITE_API_BASE_URL=http://127.0.0.1:4000   ← baked into Vite dev build (127.0.0.1, not localhost — macOS resolves localhost to IPv6 first)
   PORT=4000
   HOST=127.0.0.1
   DB_PATH=./server/db/app.sqlite
@@ -327,7 +335,20 @@ create-module.js that generates GenerateController.php + HistoryController.php.
     HTTP timeout: increase $settings['http_client_config']['timeout'] to 30 or more
     for apps that call external APIs (default 5s is too short for AI endpoints).
 
-11. seed.json / hook_install() / SubmissionsController.php follow the same pattern as
+14. Drupal JSON:API CORS in local dev — use the Vite proxy, not the absolute URL.
+    Drupal does not send CORS headers for localhost origins. Fetching VITE_DRUPAL_BASE_URL
+    directly from the browser fails with "TypeError: Failed to fetch".
+    Fix: vite.config.js sets up a /drupal-proxy route → VITE_DRUPAL_BASE_URL (server-side,
+    no CORS). Home.jsx uses '/drupal-proxy' in DEV and the absolute URL in production.
+    In production the app runs inside Drupal (same origin) so no proxy is needed.
+
+15. VITE_API_BASE_URL must use 127.0.0.1, not localhost.
+    macOS resolves 'localhost' to IPv6 (::1) first. Express binds to 127.0.0.1 (IPv4 only).
+    The browser's fetch() does not fall back from IPv6 to IPv4, so the request is refused.
+    Always use http://127.0.0.1:{PORT} in VITE_API_BASE_URL.
+    The 3pd react app command injects this correctly — do not manually edit to 'localhost'.
+
+15. seed.json / hook_install() / SubmissionsController.php follow the same pattern as
     0.starter-astro-forms. See that PROMPT.txt for full implementation details.
 
 

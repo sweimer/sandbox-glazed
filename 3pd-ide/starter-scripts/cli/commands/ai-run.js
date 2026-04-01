@@ -19,19 +19,39 @@ import { execSync, spawn } from 'child_process';
 import chalk from 'chalk';
 import { log } from '../shared/log.js';
 
-const VITE_PORT   = 5173;
-const SERVER_PORT = 4000;
+// Default ports — overridden per-app by reading .env
+const DEFAULT_VITE_PORT   = 5173;
+const DEFAULT_SERVER_PORT = 4000;
+
+function readAppPorts(cwd) {
+  const envPath = path.join(cwd, '.env');
+  if (!fs.existsSync(envPath)) return { vitePort: DEFAULT_VITE_PORT, serverPort: DEFAULT_SERVER_PORT };
+  const env = fs.readFileSync(envPath, 'utf8');
+  const vp = env.match(/^DEV_PORT=(\d+)/m);
+  const sp = env.match(/^PORT=(\d+)/m);
+  return {
+    vitePort:   vp ? parseInt(vp[1]) : DEFAULT_VITE_PORT,
+    serverPort: sp ? parseInt(sp[1]) : DEFAULT_SERVER_PORT,
+  };
+}
 
 // ------------------------------------------------------------
 // Port utilities
 // ------------------------------------------------------------
 function isPortInUse(port) {
-  return new Promise((resolve) => {
-    const tester = net.createServer()
-      .once('error', () => resolve(true))
-      .once('listening', () => tester.close(() => resolve(false)))
-      .listen(port, '127.0.0.1');
-  });
+  // Check both IPv4 (127.0.0.1) and IPv6 (::1).
+  // On macOS, Vite binds to 'localhost' which resolves to ::1 (IPv6).
+  // Checking only 127.0.0.1 always returns false for Vite — causing a timeout.
+  function checkHost(host) {
+    return new Promise((resolve) => {
+      const tester = net.createServer()
+        .once('error', () => resolve(true))
+        .once('listening', () => tester.close(() => resolve(false)))
+        .listen(port, host);
+    });
+  }
+  return Promise.all([checkHost('127.0.0.1'), checkHost('::1')])
+    .then(([v4, v6]) => v4 || v6);
 }
 
 function waitForPort(port, timeoutMs = 15000) {
@@ -118,6 +138,8 @@ When the developer types "Close Session" (the canonical close phrase):
    - Update Roadmap: check off completed items, add new ones, reprioritize if needed.
    - Update Open Questions and Backlog if anything changed.
 4. Confirm the LOG has been updated.
+5. Remind the developer: if the dev server was started manually (not via 3pd run ai),
+   run "3pd stop" to fully shut it down and free the ports.
 
 Never skip the LOG update. It is how the next developer — or your next session —
 picks up exactly where this one left off.
@@ -169,11 +191,25 @@ App scaffolded. First session not yet started.
 `.trim();
 }
 
+// Kill the entire process group spawned by npm run dev
+// (covers npm → concurrently → Vite + Express)
+function killDevProcess(proc) {
+  if (!proc || proc.exitCode !== null) return;
+  try {
+    process.kill(-proc.pid, 'SIGTERM');
+  } catch {
+    try { proc.kill(); } catch {}
+  }
+}
+
 // ------------------------------------------------------------
 // Main
 // ------------------------------------------------------------
 export default async function runAi({ ideRoot, validate = false }) {
   const cwd = process.cwd();
+  const { vitePort, serverPort } = readAppPorts(cwd);
+  const VITE_PORT   = vitePort;
+  const SERVER_PORT = serverPort;
 
   // 1. Check claude CLI is installed
   try {
@@ -243,8 +279,8 @@ export default async function runAi({ ideRoot, validate = false }) {
       console.log('  │  Starting your dev environment (npm run dev)        │');
       console.log('  │                                                     │');
       console.log('  │  This starts two servers:                           │');
-      console.log('  │    • React (Vite)   → http://localhost:5173         │');
-      console.log('  │    • Express API    → http://127.0.0.1:4000         │');
+      console.log(`  │    • React (Vite)   → http://localhost:${VITE_PORT}         │`);
+      console.log(`  │    • Express API    → http://127.0.0.1:${SERVER_PORT}         │`);
       console.log('  │                                                     │');
       console.log('  │  This may take a minute on first run.               │');
       console.log('  │  Your AI assistant will open automatically when     │');
@@ -256,8 +292,9 @@ export default async function runAi({ ideRoot, validate = false }) {
       devProcess = spawn('npm', ['run', 'dev'], {
         cwd,
         stdio: 'ignore',
-        detached: false,
+        detached: true,  // own process group — lets us kill Vite + Express together
       });
+      devProcess.unref(); // don't keep the CLI process alive if something goes wrong
 
       devProcess.on('error', () => {
         // Non-fatal — Claude still launches, dev starts the server manually
@@ -284,12 +321,12 @@ export default async function runAi({ ideRoot, validate = false }) {
           log.warn('Dev server started but is not responding — it may have crashed.');
           log.info('Check for errors by running: npm run dev');
           log.info('Your AI session will still open. Start the server manually if needed.');
-          if (devProcess) { devProcess.kill(); devProcess = null; }
+          if (devProcess) { killDevProcess(devProcess); devProcess = null; }
         }
       } catch {
         console.log('');
         log.warn('Dev server did not start within 20s. Run npm run dev manually.');
-        if (devProcess) { devProcess.kill(); devProcess = null; }
+        if (devProcess) { killDevProcess(devProcess); devProcess = null; }
       }
     }
   }
@@ -348,6 +385,7 @@ Append the following block verbatim at the end of every reply, without exception
 ${appLine}  ▎ Type **Close Session** when you're done and I'll update the LOG with today's progress.
   ▎ Tip: Ask me to run \`3pd lint\`, \`3pd scan\`, \`3pd a11y\`, or \`3pd validate\` at any time.
   ▎ Tip: Ask me to run \`3pd react module\` or \`3pd react module --install\` when you're ready to turn this app into a Drupal Module.
+  ▎ Tip: Run \`3pd stop\` after closing to fully shut down the dev server and free the ports.
 `;
 
   const appName = path.basename(cwd);
@@ -409,7 +447,7 @@ ${sessionFooterBlock}`.trim();
   const child = spawn('claude', ['Begin session.'], { stdio: 'inherit', cwd });
 
   child.on('error', (err) => {
-    if (devProcess) devProcess.kill();
+    if (devProcess) killDevProcess(devProcess);
     if (err.code === 'ENOENT') {
       log.error('claude command not found. Install Claude Code: https://claude.ai/code');
     } else {
@@ -420,7 +458,7 @@ ${sessionFooterBlock}`.trim();
 
   child.on('exit', (code) => {
     if (devProcess) {
-      devProcess.kill();
+      killDevProcess(devProcess);
       console.log('');
       log.info('Dev server stopped. To restart: npm run dev');
     }
@@ -428,6 +466,6 @@ ${sessionFooterBlock}`.trim();
   });
 
   // Clean up dev server on unexpected termination
-  process.on('SIGINT',  () => { if (devProcess) devProcess.kill(); process.exit(0); });
-  process.on('SIGTERM', () => { if (devProcess) devProcess.kill(); process.exit(0); });
+  process.on('SIGINT',  () => { if (devProcess) killDevProcess(devProcess); process.exit(0); });
+  process.on('SIGTERM', () => { if (devProcess) killDevProcess(devProcess); process.exit(0); });
 }

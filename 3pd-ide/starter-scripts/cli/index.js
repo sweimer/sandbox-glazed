@@ -54,6 +54,7 @@ ${chalk.white('Step 1 — Create')}   3pd <framework> app <name>
 ${chalk.white('Step 2 — Develop')}  cd apps/<name> && npm run dev
                    Start the dev server(s) and build your feature.
                    Edit src/ freely — hot reload is active.
+                   Stop with: ${chalk.green('3pd stop')}  (or Ctrl+C in the npm terminal)
 
 ${chalk.white('Step 3 — Package')}  3pd <framework> module
                    Builds the app and packages it as a Drupal module folder.
@@ -112,6 +113,7 @@ ${chalk.magenta('3pd embed module --install')}            Generate + install in 
 ${chalk.magenta('3pd styles sync')}                       Generate drupal-dev-styles.css in all apps (dev theme CSS)
 ${chalk.magenta('3pd styles refresh')}                    Refresh dev CSS/JS for the current app only (run from app dir)
 ${chalk.magenta('3pd db pull')}                          Pull full Pantheon DB into local Lando (HUDX internal)
+${chalk.magenta('3pd stop')}                             Stop dev server(s) for the current app (run from app dir)
 ${chalk.magenta('3pd list')}                             List apps + installed modules + test route URLs
 ${chalk.magenta('3pd remove <module>')}                  Uninstall module from Drupal + delete files
 ${chalk.magenta('3pd remove <module> --delete-app')}     Also delete the app source folder
@@ -139,6 +141,7 @@ ${chalk.green('3pd run ai --validate')}                Also run lint, security, 
                • Check git status and note uncommitted files
                • Update .ai/LOG.md with today's progress
                • (--validate only) Run 3pd validate and log the results
+               • Remind you to run ${chalk.green('3pd stop')} if you started npm run dev manually
 
   ${chalk.gray('.ai/LOG.md  — committed to git. Project memory that travels with the repo.')}
   ${chalk.gray('CLAUDE.md   — generated each session, gitignored. Never commit it.')}
@@ -438,6 +441,14 @@ angular
 // ------------------------------------------------------------
 // UTILITY COMMANDS
 // ------------------------------------------------------------
+program
+  .command('stop')
+  .description('Stop the dev server(s) for the current app (kills processes on PORT + DEV_PORT)')
+  .action(async () => {
+    const cmd = await import('./commands/stop.js');
+    cmd.default();
+  });
+
 program
   .command('list')
   .description('List apps, installed modules, and test route URLs')

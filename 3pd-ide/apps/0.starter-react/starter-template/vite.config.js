@@ -1,5 +1,5 @@
 
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
@@ -28,7 +28,27 @@ function drupalDevAssets() {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // loadEnv reads .env (and .env.local, .env.[mode]) into a plain object.
+  // The '' prefix loads ALL vars, not just VITE_ prefixed ones — needed for DEV_PORT.
+  const env = loadEnv(mode, process.cwd(), '');
+
+  // Drupal proxy — dev only. Routes /drupal-proxy/* → VITE_DRUPAL_BASE_URL/* server-side,
+  // avoiding CORS. In production the app runs inside Drupal (same-origin) so no proxy needed.
+  const drupalProxyTarget = env.VITE_DRUPAL_BASE_URL || null;
+
+  return {
+  server: {
+    port: parseInt(env.DEV_PORT) || 5173,
+    strictPort: true, // fail loudly if port taken — don't silently use wrong port
+    proxy: drupalProxyTarget ? {
+      '/drupal-proxy': {
+        target: drupalProxyTarget,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/drupal-proxy/, ''),
+      },
+    } : {},
+  },
   plugins: [react(), drupalDevAssets()],
   resolve: {
     alias: {
@@ -41,4 +61,5 @@ export default defineConfig({
       '@hudxjs': path.resolve(__dirname, '../../starter-scripts/hudx-global/js'),
     },
   },
+  };
 });

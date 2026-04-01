@@ -1,5 +1,5 @@
 hudx_3pd_ai_director:
-  version: 1774999642411
+  version: 1775073096358
   js:
     dist/assets/hudx_3pd_ai_director.js:
       header: true
