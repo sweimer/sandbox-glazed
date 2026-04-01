@@ -77,7 +77,6 @@ export default function ThreePDLandingPage() {
               <ul className="list-unstyled small mb-3">
                 <li><a href="https://admin.dev.hudx.info/" target="_blank" className="link-primary">HUDX Home</a></li>
                 <li><a href="https://admin.dev.hudx.info/programs/public-housing/mainstream-vouchers" target="_blank" className="link-primary">Mainstream Vouchers</a></li>
-                <li><a href="https://dev-3-pd-ide.pantheonsite.io/about" target="_blank" className="link-primary">3PD IDE — About Page</a></li>
               </ul>
               <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary mt-auto">
                 Create Layout Builder Page
@@ -99,6 +98,7 @@ export default function ThreePDLandingPage() {
               </p>
               <p className="small text-muted mb-1">Examples:</p>
               <ul className="list-unstyled small mb-3">
+                <li><a href="https://dev-3-pd-ide.pantheonsite.io/about" target="_blank" className="link-primary">3PD IDE — About Page</a></li>
                 <li><a href="/node/17" target="_blank" className="link-primary">Three Cards</a></li>
                 <li><a href="/node/16" target="_blank" className="link-primary">David Bowie</a></li>
               </ul>
