@@ -8,6 +8,9 @@
  * Starts the dev server automatically (npm run dev) if not already running.
  * Kills the dev server when the Claude session ends.
  *
+ * Supports React and Astro starter kits.
+ * Framework is detected automatically from astro.config.mjs presence.
+ *
  * CLAUDE.md is gitignored — session artifact, never committed.
  * .ai/LOG.md is committed — persists project memory across developers and sessions.
  */
@@ -19,19 +22,33 @@ import { execSync, spawn } from 'child_process';
 import chalk from 'chalk';
 import { log } from '../shared/log.js';
 
-// Default ports — overridden per-app by reading .env
-const DEFAULT_VITE_PORT   = 5173;
-const DEFAULT_SERVER_PORT = 4000;
+// Framework detection — check for astro.config.mjs in the app directory
+function detectFramework(cwd) {
+  if (fs.existsSync(path.join(cwd, 'astro.config.mjs'))) return 'astro';
+  return 'react';
+}
 
-function readAppPorts(cwd) {
+// Does this app have an Express backend?
+function hasExpressServer(cwd) {
+  return fs.existsSync(path.join(cwd, 'server', 'server.js'));
+}
+
+// Default ports by framework
+const FRAMEWORK_DEFAULTS = {
+  react: { devPort: 5173, serverPort: 4000 },
+  astro: { devPort: 4321, serverPort: 3001 },
+};
+
+function readAppPorts(cwd, framework) {
+  const defaults = FRAMEWORK_DEFAULTS[framework] || FRAMEWORK_DEFAULTS.react;
   const envPath = path.join(cwd, '.env');
-  if (!fs.existsSync(envPath)) return { vitePort: DEFAULT_VITE_PORT, serverPort: DEFAULT_SERVER_PORT };
+  if (!fs.existsSync(envPath)) return { devPort: defaults.devPort, serverPort: defaults.serverPort };
   const env = fs.readFileSync(envPath, 'utf8');
-  const vp = env.match(/^DEV_PORT=(\d+)/m);
+  const dp = env.match(/^DEV_PORT=(\d+)/m);
   const sp = env.match(/^PORT=(\d+)/m);
   return {
-    vitePort:   vp ? parseInt(vp[1]) : DEFAULT_VITE_PORT,
-    serverPort: sp ? parseInt(sp[1]) : DEFAULT_SERVER_PORT,
+    devPort:    dp ? parseInt(dp[1]) : defaults.devPort,
+    serverPort: sp ? parseInt(sp[1]) : defaults.serverPort,
   };
 }
 
@@ -40,8 +57,8 @@ function readAppPorts(cwd) {
 // ------------------------------------------------------------
 function isPortInUse(port) {
   // Check both IPv4 (127.0.0.1) and IPv6 (::1).
-  // On macOS, Vite binds to 'localhost' which resolves to ::1 (IPv6).
-  // Checking only 127.0.0.1 always returns false for Vite — causing a timeout.
+  // On macOS, Vite/Astro binds to 'localhost' which resolves to ::1 (IPv6).
+  // Checking only 127.0.0.1 always returns false — causing a timeout.
   function checkHost(host) {
     return new Promise((resolve) => {
       const tester = net.createServer()
@@ -128,7 +145,7 @@ When the developer types "Close Session" (the canonical close phrase):
 1. Ask if there is anything else before closing out.
 2. Run: git status --short
    Note any uncommitted changes in the Session History entry so the next developer
-   knows what was left in-flight. Example: "Left with 3 modified files (src/pages/Home.jsx,
+   knows what was left in-flight. Example: "Left with 3 modified files (src/pages/index.astro,
    server/routes/submissions.js, .ai/LOG.md) — run git status to review."
    If the working tree is clean, note that too.
 3. Update .ai/LOG.md:
@@ -148,10 +165,18 @@ picks up exactly where this one left off.
 // ------------------------------------------------------------
 // LOG template for new apps (first run only)
 // ------------------------------------------------------------
-function buildLogTemplate(appName, date) {
+function buildLogTemplate(appName, date, framework) {
+  const isAstro    = framework === 'astro';
+  const fwLine     = isAstro ? 'Astro + Express + SQLite' : 'React + Vite + Express + SQLite';
+  const homePage   = isAstro ? 'src/pages/index.astro' : 'src/pages/Home.jsx';
+  const moduleCmd  = isAstro ? '3pd astro module' : '3pd react module';
+  const schemaLine = isAstro
+    ? '2. [ ] Build out the UI in src/pages/index.astro'
+    : '2. [ ] Build out the UI in src/pages/Home.jsx';
+
   return `# Project LOG — ${appName}
 
-Framework: React + Vite + Express + SQLite
+Framework: ${fwLine}
 Created: ${date}
 
 ---
@@ -165,9 +190,9 @@ App scaffolded. First session not yet started.
 ## Roadmap
 
 1. [ ] Define the app's purpose and data model
-2. [ ] Build out the UI in src/pages/Home.jsx
+${schemaLine}
 3. [ ] Customize Express routes in server/routes/submissions.js if needed
-4. [ ] Run \`3pd react module\` to package for Drupal
+4. [ ] Run \`${moduleCmd}\` to package for Drupal
 
 ---
 
@@ -192,7 +217,7 @@ App scaffolded. First session not yet started.
 }
 
 // Kill the entire process group spawned by npm run dev
-// (covers npm → concurrently → Vite + Express)
+// (covers npm → concurrently → Vite/Astro + Express)
 function killDevProcess(proc) {
   if (!proc || proc.exitCode !== null) return;
   try {
@@ -206,10 +231,15 @@ function killDevProcess(proc) {
 // Main
 // ------------------------------------------------------------
 export default async function runAi({ ideRoot, validate = false }) {
-  const cwd = process.cwd();
-  const { vitePort, serverPort } = readAppPorts(cwd);
-  const VITE_PORT   = vitePort;
+  const cwd       = process.cwd();
+  const framework = detectFramework(cwd);
+  const hasServer = hasExpressServer(cwd);
+  const { devPort, serverPort } = readAppPorts(cwd, framework);
+  const DEV_PORT    = devPort;
   const SERVER_PORT = serverPort;
+
+  const frameworkLabel = framework === 'astro' ? 'Astro' : 'React (Vite)';
+  const moduleCommand  = framework === 'astro' ? '3pd astro module' : '3pd react module';
 
   // 1. Check claude CLI is installed
   try {
@@ -224,14 +254,18 @@ export default async function runAi({ ideRoot, validate = false }) {
   }
 
   // 2. Find PROMPT.txt
-  //    Priority: local app PROMPT.txt → React starter PROMPT.txt
-  const localPromptPath   = path.join(cwd, 'PROMPT.txt');
-  const starterPromptPath = path.join(ideRoot, 'apps', '0.starter-react', 'PROMPT.txt');
+  //    Priority: local app PROMPT.txt → framework starter PROMPT.txt → React fallback
+  const localPromptPath = path.join(cwd, 'PROMPT.txt');
+  const starterPromptPaths = {
+    astro:  path.join(ideRoot, 'apps', '0.starter-astro-forms', 'PROMPT.txt'),
+    react:  path.join(ideRoot, 'apps', '0.starter-react',       'PROMPT.txt'),
+  };
+  const starterPromptPath = starterPromptPaths[framework] || starterPromptPaths.react;
   const promptPath = fs.existsSync(localPromptPath) ? localPromptPath : starterPromptPath;
 
   if (!fs.existsSync(promptPath)) {
     log.error('PROMPT.txt not found.');
-    log.info('Run this command from inside an app directory (e.g. apps/react---my-app).');
+    log.info('Run this command from inside an app directory (e.g. apps/astro---my-app).');
     process.exit(1);
   }
 
@@ -249,7 +283,7 @@ export default async function runAi({ ideRoot, validate = false }) {
     isFirstRun = true;
     const appName = path.basename(cwd);
     const date    = new Date().toISOString().split('T')[0];
-    fs.writeFileSync(logPath, buildLogTemplate(appName, date), 'utf8');
+    fs.writeFileSync(logPath, buildLogTemplate(appName, date, framework), 'utf8');
     console.log('');
     log.success('Created .ai/LOG.md — your project memory file.');
     log.info('Commit this file so the next developer picks up where you left off.');
@@ -259,17 +293,17 @@ export default async function runAi({ ideRoot, validate = false }) {
   const logContent = fs.readFileSync(logPath, 'utf8');
 
   // 4. Start dev server if not already running
-  let devProcess    = null;
-  let devServerUrl  = null;
-  const alreadyRunning = await isPortInUse(VITE_PORT);
+  let devProcess   = null;
+  let devServerUrl = null;
+  const alreadyRunning = await isPortInUse(DEV_PORT);
 
   if (alreadyRunning) {
-    const httpOk = await isHttpReady(`http://localhost:${VITE_PORT}`, 2000);
+    const httpOk = await isHttpReady(`http://localhost:${DEV_PORT}`, 2000);
     if (httpOk) {
-      devServerUrl = `http://localhost:${VITE_PORT}`;
+      devServerUrl = `http://localhost:${DEV_PORT}`;
       log.info(`Dev server already running → ${devServerUrl}`);
     } else {
-      log.warn(`Port ${VITE_PORT} is in use but not responding. Check your dev server.`);
+      log.warn(`Port ${DEV_PORT} is in use but not responding. Check your dev server.`);
     }
   } else {
     const hasPackageJson = fs.existsSync(path.join(cwd, 'package.json'));
@@ -278,9 +312,14 @@ export default async function runAi({ ideRoot, validate = false }) {
       console.log('  ┌─────────────────────────────────────────────────────┐');
       console.log('  │  Starting your dev environment (npm run dev)        │');
       console.log('  │                                                     │');
-      console.log('  │  This starts two servers:                           │');
-      console.log(`  │    • React (Vite)   → http://localhost:${VITE_PORT}         │`);
-      console.log(`  │    • Express API    → http://127.0.0.1:${SERVER_PORT}         │`);
+      if (hasServer) {
+        console.log('  │  This starts two servers:                           │');
+        console.log(`  │    • ${frameworkLabel.padEnd(12)} → http://localhost:${DEV_PORT}         │`);
+        console.log(`  │    • Express API    → http://127.0.0.1:${SERVER_PORT}         │`);
+      } else {
+        console.log('  │  This starts the dev server:                        │');
+        console.log(`  │    • ${frameworkLabel.padEnd(12)} → http://localhost:${DEV_PORT}         │`);
+      }
       console.log('  │                                                     │');
       console.log('  │  This may take a minute on first run.               │');
       console.log('  │  Your AI assistant will open automatically when     │');
@@ -292,12 +331,11 @@ export default async function runAi({ ideRoot, validate = false }) {
       devProcess = spawn('npm', ['run', 'dev'], {
         cwd,
         stdio: 'ignore',
-        detached: true,  // own process group — lets us kill Vite + Express together
+        detached: true,  // own process group — lets us kill Vite/Astro + Express together
       });
-      devProcess.unref(); // don't keep the CLI process alive if something goes wrong
+      devProcess.unref();
 
       devProcess.on('error', () => {
-        // Non-fatal — Claude still launches, dev starts the server manually
         console.log('');
         log.warn('Dev server failed to start. Run npm run dev manually.');
         devProcess = null;
@@ -305,15 +343,14 @@ export default async function runAi({ ideRoot, validate = false }) {
 
       try {
         const dotInterval = setInterval(() => process.stdout.write('.'), 600);
-        await waitForPort(VITE_PORT, 20000);
+        await waitForPort(DEV_PORT, 20000);
         clearInterval(dotInterval);
 
-        // TCP port is bound — verify Vite is actually serving HTTP
-        const httpOk = await isHttpReady(`http://localhost:${VITE_PORT}`);
+        const httpOk = await isHttpReady(`http://localhost:${DEV_PORT}`);
         if (httpOk) {
           console.log(' ready');
           console.log('');
-          devServerUrl = `http://localhost:${VITE_PORT}`;
+          devServerUrl = `http://localhost:${DEV_PORT}`;
           log.success(`App running at ${devServerUrl}`);
         } else {
           console.log(' failed');
@@ -345,19 +382,30 @@ The developer launched with --validate. When they type "Close Session":
 ` : '';
 
   const devServerBlock = devServerUrl
-    ? `\n## DEV SERVER\n\nThe app is running at **${devServerUrl}** (React UI).\nThe API is running at **http://127.0.0.1:${SERVER_PORT}** (Express).\nReference these URLs when discussing UI or API changes.\n`
+    ? `\n## DEV SERVER\n\nThe app is running at **${devServerUrl}** (${frameworkLabel}).\n${hasServer ? `The API is running at **http://127.0.0.1:${SERVER_PORT}** (Express).\n` : ''}Reference these URLs when discussing UI or API changes.\n`
     : '';
+
+  const isAstro = framework === 'astro';
+  const firstRunScanFiles = isAstro ? [
+    '- package.json (app name, dependencies)',
+    '- src/pages/index.astro and other .astro pages (what UI and pages exist)',
+    '- server/db/schema.sql (what data model is defined, if present)',
+    '- server/routes/*.js (what API endpoints exist, if present)',
+    '- README.md if present',
+  ].join('\n     ') : [
+    '- package.json (app name, dependencies)',
+    '- src/App.jsx and src/pages/*.jsx (what UI and routes exist)',
+    '- server/db/schema.sql (what data model is defined)',
+    '- server/routes/*.js (what API endpoints exist)',
+    '- README.md if present',
+  ].join('\n     ');
 
   const firstRunNote = isFirstRun ? `
 > **FIRST RUN — SCAN REQUIRED**
 > No LOG history exists yet. Before presenting any summary or asking any questions:
 >
 > 1. Read these files to assess what has already been built:
->    - package.json (app name, dependencies)
->    - src/App.jsx and src/pages/*.jsx (what UI and routes exist)
->    - server/db/schema.sql (what data model is defined)
->    - server/routes/*.js (what API endpoints exist)
->    - README.md if present
+>    ${firstRunScanFiles}
 >
 > 2. Make a judgment:
 >    - If the app is a CLEAN SCAFFOLD (no custom code beyond the starter template default):
@@ -384,7 +432,7 @@ Append the following block verbatim at the end of every reply, without exception
 
 ${appLine}  ▎ Type **Close Session** when you're done and I'll update the LOG with today's progress.
   ▎ Tip: Ask me to run \`3pd lint\`, \`3pd scan\`, \`3pd a11y\`, or \`3pd validate\` at any time.
-  ▎ Tip: Ask me to run \`3pd react module\` or \`3pd react module --install\` when you're ready to turn this app into a Drupal Module.
+  ▎ Tip: Ask me to run \`${moduleCommand}\` or \`${moduleCommand} --install\` when you're ready to turn this app into a Drupal Module.
   ▎ Tip: Run \`3pd stop\` after closing to fully shut down the dev server and free the ports.
 `;
 

@@ -22,6 +22,16 @@ const isDev = import.meta.env.DEV;
     {isDev && <link rel="stylesheet" href="/drupal-dev-styles.css" />}
   </head>
   <body>
+    {isDev && (
+      <nav class="navbar navbar-expand navbar-light bg-warning-subtle border-bottom px-3 py-2" aria-label="Developer navigation">
+        <span class="badge bg-warning text-dark me-3 small">DEV</span>
+        <div class="navbar-nav gap-3 small">
+          <a class="nav-link py-0" href="/">Home</a>
+          <a class="nav-link py-0" href="/styleguide">Style Guide</a>
+          <a class="nav-link py-0" href="/api-reference">API Reference</a>
+        </div>
+      </nav>
+    )}
     <slot />
     {isDev && <script is:inline src="/drupal-dev-scripts.js"></script>}
   </body>

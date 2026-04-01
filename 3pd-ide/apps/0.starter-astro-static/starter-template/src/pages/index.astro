@@ -1,56 +1,188 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const isDev = import.meta.env.DEV;
 ---
 
-<Layout title="HUDX Astro App">
-  <main style="padding: 2rem; max-width: 640px;">
-    <h1>Welcome to your HUDX Astro App</h1>
-    <p>Pages from Drupal:</p>
-    <ul id="nodes-list">
-      <li style="color: #999;">Loading…</li>
-    </ul>
-  </main>
+<Layout title="Your App Title">
+
+  <div class="container my-4">
+
+    <header class="mb-4">
+      <h1 class="h3 mb-1">Your App Title</h1>
+      <p class="text-muted mb-0">
+        Replace this page with your app. The two cards below demonstrate the
+        data patterns available in this starter kit.
+      </p>
+    </header>
+
+    {isDev && (
+      <div class="alert alert-info border-0 shadow-sm mb-4" role="note">
+        <div class="d-flex align-items-start gap-3">
+          <i class="bi bi-lightbulb-fill text-info flex-shrink-0 mt-1" style="font-size: 1.25rem" aria-hidden="true"></i>
+          <div class="w-100">
+            <p class="fw-semibold mb-2">Welcome to your 3PD Astro Static Starter Kit</p>
+            <div class="row g-3 small">
+              <div class="col-md-6">
+                <p class="fw-semibold mb-1">Getting started:</p>
+                <ol class="mb-0 ps-3">
+                  <li>Explore the two cards below — they show what this kit can do</li>
+                  <li>Edit <code>src/pages/index.astro</code> to build your app</li>
+                  <li>Run <code>3pd astro module</code> when ready to ship to Drupal</li>
+                </ol>
+              </div>
+              <div class="col-md-6">
+                <p class="fw-semibold mb-1">Key commands:</p>
+                <ul class="list-unstyled mb-0">
+                  <li><code>3pd run ai</code> — open AI dev assistant</li>
+                  <li><code>3pd astro module</code> — package app as Drupal block</li>
+                  <li><code>3pd astro module --install</code> — build + install to Drupal</li>
+                  <li><code>3pd lint</code> / <code>3pd a11y</code> / <code>3pd validate</code> — quality checks</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <div class="row g-4">
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- CARD 1 — Static content                                          -->
+      <!-- ---------------------------------------------------------------- -->
+      <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+          <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
+            <i class="bi bi-file-text" aria-hidden="true"></i>
+            <strong>Static Content</strong>
+          </div>
+          <div class="card-body d-flex flex-column">
+            <p class="card-text text-muted small mb-3">
+              Content lives in source code. Any change — even copy edits — requires
+              a new <code>3pd astro module</code> build and redeployment.
+            </p>
+            <div class="bg-light rounded p-3 mt-auto">
+              <p class="fw-semibold mb-1">Hello from your Astro app!</p>
+              <p class="small text-muted mb-0">
+                Edit <code>src/pages/index.astro</code> to replace this with your content.
+              </p>
+            </div>
+          </div>
+          <div class="card-footer text-muted small">
+            Use for: text, labels, UI structure, layout
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------------------------------------------------------------- -->
+      <!-- CARD 2 — Content from Drupal                                     -->
+      <!-- ---------------------------------------------------------------- -->
+      <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+          <div class="card-header bg-info text-white d-flex align-items-center gap-2">
+            <i class="bi bi-cloud-download" aria-hidden="true"></i>
+            <strong>Content from Drupal</strong>
+          </div>
+          <div class="card-body d-flex flex-column">
+            <p class="card-text text-muted small mb-3">
+              Fetched from Drupal's JSON:API at runtime. Content editors can update
+              it in Drupal without a redeployment.
+            </p>
+            <div class="mt-auto" id="drupal-card-content">
+              <div class="alert alert-secondary small mb-0" role="status" id="drupal-status">
+                <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                Add <code>PUBLIC_DRUPAL_BASE_URL</code> to <code>.env</code> to
+                connect to a Drupal instance and see a live example here.
+              </div>
+            </div>
+          </div>
+          <div class="card-footer text-muted small">
+            Use for: CMS-managed copy, news, announcements
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    {isDev && (
+      <div class="mt-5 pt-4 border-top">
+        <p class="small fw-semibold text-muted text-uppercase mb-3">When you're ready to build</p>
+        <div class="row g-3 small">
+          <div class="col-md-4">
+            <div class="d-flex align-items-start gap-2">
+              <span class="badge bg-primary rounded-pill">1</span>
+              <div>
+                <p class="fw-semibold mb-0">Build your UI</p>
+                <p class="text-muted mb-0">Edit <code>src/pages/index.astro</code></p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex align-items-start gap-2">
+              <span class="badge bg-primary rounded-pill">2</span>
+              <div>
+                <p class="fw-semibold mb-0">Run quality checks</p>
+                <p class="text-muted mb-0"><code>3pd validate</code></p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex align-items-start gap-2">
+              <span class="badge bg-success rounded-pill">3</span>
+              <div>
+                <p class="fw-semibold mb-0">Ship to Drupal</p>
+                <p class="text-muted mb-0"><code>3pd astro module</code></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+  </div>
+
 </Layout>
 
 <script>
-  // ---------------------------------------------------------------------
-  // Drupal JSON:API fetch — client-side, runs in the browser.
-  //
-  // SETUP: Update the content type in the URL below to match your Drupal
-  // site. Replace 'YOUR_CONTENT_TYPE' with the machine name of the content
-  // type you want to fetch (e.g. 'article', 'basic_page', 'landing_page').
-  //
-  // To find your content type machine name:
-  //   Drupal admin → Structure → Content types → hover the type name
-  //   or check: /admin/structure/types
-  //
-  // IMPORTANT — do NOT add query string parameters with square brackets:
-  //   BROKEN:  /jsonapi/node/page?fields[node--page]=title
-  //   WORKING: /jsonapi/node/page
-  // Lando's HAProxy proxy strips bracket notation from query strings,
-  // causing JSON:API to return empty results with no error.
-  //
-  // When embedded in Drupal: DRUPAL_BASE is '' (same-origin, no CORS needed).
-  // Standalone dev: set PUBLIC_DRUPAL_BASE_URL in .env → copy from .env.example.
-  // ---------------------------------------------------------------------
-  const DRUPAL_BASE = import.meta.env.PUBLIC_DRUPAL_BASE_URL || '';
+  // ---------------------------------------------------------------------------
+  // ENV — resolved at build time by Astro/Vite
+  // In dev: route Drupal fetches through the Vite proxy (/drupal-proxy) to avoid CORS.
+  // In production the app runs inside Drupal (same origin) so absolute URL works directly.
+  // ---------------------------------------------------------------------------
+  const DRUPAL_BASE = import.meta.env.PUBLIC_DRUPAL_BASE_URL
+    ? (import.meta.env.DEV ? '/drupal-proxy' : import.meta.env.PUBLIC_DRUPAL_BASE_URL)
+    : '';
 
-  async function loadNodes() {
-    const list = document.getElementById('nodes-list');
+  // ---------------------------------------------------------------------------
+  // Card 2 — Drupal content
+  // ---------------------------------------------------------------------------
+  async function loadDrupalContent() {
+    if (!DRUPAL_BASE) return; // placeholder message already shown in HTML
+    const el = document.getElementById('drupal-status');
+    el.innerHTML = '<i class="bi bi-hourglass-split me-1" aria-hidden="true"></i> Loading from Drupal…';
     try {
-      const res = await fetch(
-        `${DRUPAL_BASE}/jsonapi/node/YOUR_CONTENT_TYPE`
-      );
+      const res = await fetch(`${DRUPAL_BASE}/jsonapi/node/page?page[limit]=1&fields[node--page]=title,body`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const { data } = await res.json();
-
-      list.innerHTML = data.length
-        ? data.map((n) => `<li>${n.attributes.title}</li>`).join('')
-        : '<li style="color:#999">No content found.</li>';
+      const data = await res.json();
+      const item = data.data?.[0];
+      const container = document.getElementById('drupal-card-content');
+      if (item) {
+        container.innerHTML = `
+          <div class="bg-light rounded p-3">
+            <p class="fw-semibold small mb-1">${item.attributes?.title ?? ''}</p>
+            <p class="small text-muted mb-0">Fetched live from Drupal JSON:API</p>
+          </div>`;
+      } else {
+        el.innerHTML = '<i class="bi bi-info-circle me-1"></i> No pages found in Drupal.';
+      }
     } catch (err) {
-      list.innerHTML = `<li style="color:#c00">Could not load: ${err.message}</li>`;
+      document.getElementById('drupal-card-content').innerHTML = `
+        <div class="alert alert-warning small mb-0" role="alert">
+          Could not reach Drupal: ${err.message}
+        </div>`;
     }
   }
 
-  loadNodes();
+  loadDrupalContent();
 </script>

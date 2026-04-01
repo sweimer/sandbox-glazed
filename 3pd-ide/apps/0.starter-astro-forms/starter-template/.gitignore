@@ -7,3 +7,6 @@ server/db/*.sqlite-wal
 hudx_*/
 public/drupal-dev-styles.css
 public/drupal-dev-scripts.js
+
+# AI assistant session context (auto-generated, never commit)
+CLAUDE.md

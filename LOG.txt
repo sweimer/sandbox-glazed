@@ -2063,6 +2063,53 @@ Pick up next session:
   File: 3pd-ide/scripts/inject-and-sync-s3.js line ~105
 
 
+### smart embed starter — AI dev agent (schedule after Astro work, roadmap #2 + #3)
+
+  Add the same 3pd run ai / CLAUDE.md / LOG.md AI agent pattern to 0.starter-smart-embed.
+  Internal devs only. Different flavor than React/Astro agents — workflow guide, not coding assistant.
+  The agent can't push to S3 or invalidate CloudFront directly, but guides the dev through the
+  process and generates the exact commands for their specific app, bucket, and distribution.
+
+  AGENT CAPABILITIES TO BUILD INTO PROMPT.txt:
+
+  1. Know the app's S3 path, bucket name, and CloudFront distribution ID from .env / 3pd.config.json
+     → pre-populate all generated commands with correct values for that app
+
+  2. Generate exact aws s3 cp / aws s3 sync commands with correct source paths and bucket target
+     → no copy-paste errors, no wrong bucket
+
+  3. Generate exact aws cloudfront create-invalidation command with correct distribution ID and paths
+     → include both /* and specific file paths as needed
+
+  4. Walk through the deployment checklist in order:
+     a. Confirm source files are built / ready
+     b. Stage: confirm what will be synced (aws s3 sync --dryrun)
+     c. Sync: run the actual s3 sync
+     d. Invalidate: run cloudfront invalidation
+     e. Verify: check the live URL to confirm changes are live
+
+  5. Catch common mistakes:
+     → wrong bucket (staging vs prod)
+     → missing files (CSS/fonts/images not included)
+     → forgetting CloudFront invalidation after sync
+     → syncing before build is complete
+
+  6. Log what was deployed and when in .ai/LOG.md
+     → paper trail across sessions and developers
+     → note which files changed, which distribution was invalidated
+
+  7. Explain manual steps the script can't do:
+     → MFA authentication (aws-mfa or equivalent)
+     → S3 permissions / bucket policy issues
+     → CloudFront distribution propagation time (~30s-5min)
+
+  NOTES:
+  - Reuses same 3pd run ai / CLAUDE.md / LOG.md infrastructure as React/Astro agents
+  - PROMPT.txt focus: S3 deployment workflow, not coding
+  - The dev still runs all AWS CLI commands — agent generates and guides, does not execute
+  - Schedule after roadmap #2 (Astro starter update) and #3 (full-page Astro starter)
+
+
 ## ROADMAP ITEMS (not yet scheduled)
 
 ### SCHEDULED — in priority order
@@ -2072,18 +2119,36 @@ Pick up next session:
     StyleGuide.jsx: 11-section live Bootstrap/DXPR reference
     ApiReference.jsx: live GET/POST demos + Drupal JSON:API section + env vars table
     App.jsx: dev-only nav, stripped from Drupal builds via import.meta.env.DEV
-    Next: apply same pattern to Astro starters (roadmap #3)
 
-  #2 — Testing review: .gov guidance and standards
+  ✓ #2 — Apply React starter lessons to Astro starter kits — DONE 2026-04-01
+    Both Astro starters (0.starter-astro-forms, 0.starter-astro-static) updated:
+    - 3-card homepage (forms) / 2-card homepage (static) with Bootstrap layout + dev guide
+    - Dev nav in Layout.astro (Home / Style Guide / API Reference)
+    - styleguide.astro — live Bootstrap/DXPR component reference (both starters)
+    - api-reference.astro — live GET/POST demos + Drupal JSON:API section (forms only)
+    - Drupal CORS proxy in astro.config.mjs (loadEnv + /drupal-proxy)
+    - PUBLIC_API_BASE_URL fixed to 127.0.0.1 (IPv6/localhost fix)
+    - CLAUDE.md added to .gitignore in both starters
+    - ai-run.js now framework-aware: detects Astro vs React, uses correct ports + prompts
+
+  #3 — Full-page Astro-forms starter (--page mode)  ← NEXT
+    Astro-forms first (needed for demo). React and other frameworks are a scalable future goal.
+    Builds on #2 — use the updated 0.starter-astro-forms as the base template.
+    The Astro app code is unchanged. The difference is entirely in the module generator output:
+      Block mode (current): Plugin/Block/ class + block twig + libraries attached to block
+      Page mode (new):      Controller + routing.yml page route + full-page twig (strips all
+                            Drupal regions) + libraries attached to page
+    The finished Astro build is pushed into a Drupal twig that owns the entire page.
+    Drupal handles routing and auth only — no block chrome, no theme regions.
+    Implementation: --page flag on 3pd astro module, alternate output path in create-module.js.
+    See unscheduled entry below for additional technical notes.
+
+  #4 — Testing review: .gov guidance and standards
     Review current testing setup (lint, scan, a11y, validate) against .gov requirements.
     Discuss what's missing, what standards apply (Section 508, FISMA, USWDS a11y, etc.),
     and what we should add or tighten before any production deployment.
 
-  #3 — Apply React starter lessons to Astro starter kits
-    Port the AI assistant layer (3pd run ai, .ai/LOG.md, CLAUDE.md generation) and
-    homepage improvements to the two Astro starter kits (0.starter-astro, 0.starter-astro-forms).
-
-  #4 — AI director for smart embed starter kit
+  #5 — AI director for smart embed starter kit
     Discuss the value of adding an AI director (like 3pd-ai-director) to the smart embed
     starter kit. What would it generate? What problem does it solve at that layer?
 
