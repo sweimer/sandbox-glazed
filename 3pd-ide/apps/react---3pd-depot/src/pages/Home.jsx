@@ -28,8 +28,7 @@ export default function ThreePDLandingPage() {
           }}
         >
           <h1 className="display-5 fw-bold">
-
-            <i className="bi bi-house me-2 text-warning"></i>
+            <i className="bi bi-house me-2 text-warning" aria-hidden="true"></i>
             HUDx 3PD Depot
           </h1>
 
@@ -44,9 +43,11 @@ export default function ThreePDLandingPage() {
         <a
           href="/hudx-test/3pd-ai-director"
           target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Not sure where to start? Talk to the 3PD Director (opens in new tab)"
           className="btn btn-warning btn-lg fw-bold shadow-sm"
         >
-          <i className="bi bi-universal-access me-2"></i>
+          <i className="bi bi-universal-access me-2" aria-hidden="true"></i>
           Not sure where to start? Talk to the 3PD Director →
         </a>
       </div>
@@ -54,7 +55,7 @@ export default function ThreePDLandingPage() {
       {/* BLUEPRINT DIVIDER */}
       <div className="text-center my-4 dxpr-animate dxpr-fade-in">
         <div className="text-primary fw-bold">
-          <i className="bi bi-gear me-2"></i>
+          <i className="bi bi-gear me-2" aria-hidden="true"></i>
           Choose Your Build Path
         </div>
       </div>
@@ -67,7 +68,7 @@ export default function ThreePDLandingPage() {
           <div className="card h-100 border-primary shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-1">
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
-                <i className="bi bi-pencil text-primary me-3" style={{ fontSize: "2rem" }}></i>
+                <i className="bi bi-pencil text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
                 <h2 className="h3 mb-0">3PD Content Editors <br/>(No Code)</h2>
               </div>
               <p className="card-text text-muted mb-2">
@@ -75,10 +76,10 @@ export default function ThreePDLandingPage() {
               </p>
               <p className="small text-muted mb-1">Examples:</p>
               <ul className="list-unstyled small mb-3">
-                <li><a href="https://admin.dev.hudx.info/" target="_blank" className="link-primary">HUDX Home</a></li>
-                <li><a href="https://admin.dev.hudx.info/programs/public-housing/mainstream-vouchers" target="_blank" className="link-primary">Mainstream Vouchers</a></li>
+                <li><a href="https://admin.dev.hudx.info/" target="_blank" rel="noopener noreferrer" aria-label="HUDX Home (opens in new tab)" className="link-primary">HUDX Home</a></li>
+                <li><a href="https://admin.dev.hudx.info/programs/public-housing/mainstream-vouchers" target="_blank" rel="noopener noreferrer" aria-label="Mainstream Vouchers (opens in new tab)" className="link-primary">Mainstream Vouchers</a></li>
               </ul>
-              <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary mt-auto">
+              <a href="/node/add/basic_page_layout_builder" target="_blank" rel="noopener noreferrer" aria-label="Create Layout Builder Page (opens in new tab)" className="btn btn-primary mt-auto">
                 Create Layout Builder Page
               </a>
             </div>
@@ -90,7 +91,7 @@ export default function ThreePDLandingPage() {
           <div className="card h-100 border-info shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-2">
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
-                <i className="bi bi-brush text-primary me-3" style={{ fontSize: "2rem" }}></i>
+                <i className="bi bi-brush text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
                 <h2 className="h3 mb-0">3PD Page Builders <br/>(Low Code)</h2>
               </div>
               <p className="card-text text-muted mb-4">
@@ -98,11 +99,11 @@ export default function ThreePDLandingPage() {
               </p>
               <p className="small text-muted mb-1">Examples:</p>
               <ul className="list-unstyled small mb-3">
-                <li><a href="https://dev-3-pd-ide.pantheonsite.io/about" target="_blank" className="link-primary">3PD IDE — About Page</a></li>
-                <li><a href="/node/17" target="_blank" className="link-primary">Three Cards</a></li>
-                <li><a href="/node/16" target="_blank" className="link-primary">David Bowie</a></li>
+                <li><a href="https://dev-3-pd-ide.pantheonsite.io/about" target="_blank" rel="noopener noreferrer" aria-label="3PD IDE — About Page (opens in new tab)" className="link-primary">3PD IDE — About Page</a></li>
+                <li><a href="/node/17" target="_blank" rel="noopener noreferrer" aria-label="Three Cards (opens in new tab)" className="link-primary">Three Cards</a></li>
+                <li><a href="/node/16" target="_blank" rel="noopener noreferrer" aria-label="David Bowie (opens in new tab)" className="link-primary">David Bowie</a></li>
               </ul>
-              <a href="/hudx-test/3pd-ai-coder" target="_blank" className="btn btn-primary">
+              <a href="/hudx-test/3pd-ai-coder" target="_blank" rel="noopener noreferrer" aria-label="3PD AI Code Helper (opens in new tab)" className="btn btn-primary">
                 3PD AI Code Helper
               </a>
             </div>
@@ -114,7 +115,7 @@ export default function ThreePDLandingPage() {
           <div className="card h-100 border-success shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-3">
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
-                <i className="bi bi-tools text-primary me-3" style={{ fontSize: "2rem" }}></i>
+                <i className="bi bi-tools text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
                 <h2 className="h3 mb-0">3PD IDE Starters <br/>(Pro Code)</h2>
               </div>
               <p className="card-text text-muted mb-3">
@@ -122,7 +123,7 @@ export default function ThreePDLandingPage() {
               </p>
               <p className="small text-muted mb-1">Examples:</p>
               <ul className="list-unstyled small mb-3">
-                <li><a href="https://dev-3-pd-ide.pantheonsite.io/node/11" target="_blank" className="link-primary">STraCAT</a></li>
+                <li><a href="https://dev-3-pd-ide.pantheonsite.io/node/11" target="_blank" rel="noopener noreferrer" aria-label="STraCAT (opens in new tab)" className="link-primary">STraCAT</a></li>
               </ul>
               <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary">
                 3PD AI App Helper (COMING SOON)
@@ -131,6 +132,7 @@ export default function ThreePDLandingPage() {
               <button
                 type="button"
                 className="btn btn-secondary mt-auto"
+                aria-expanded={showProCodeRepos}
                 onClick={() => setShowProCodeRepos(!showProCodeRepos)}
               >
                 {showProCodeRepos ? "Hide Starter Kits" : "View Starter Kits"}
@@ -138,11 +140,13 @@ export default function ThreePDLandingPage() {
 
               {showProCodeRepos && (
                 <ul className="list-unstyled small mt-2 mb-0">
-                  <li><a href="#" target="_blank" className="link-success">Angular Starter Kit</a></li>
-                  <li><a href="https://github.com/sweimer/3PD---Astro-Static-Starter-Kit" target="_blank" className="link-success">Astro-Static Starter Kit</a></li>
-                  <li><a href="https://github.com/sweimer/3PD---Astro-Forms-Starter-Kit" target="_blank" className="link-success">Astro-Form Starter Kit</a></li>
-                  <li><a href="https://github.com/sweimer/3PD---React-Starter-Kit" target="_blank" className="link-success">React Starter Kit</a></li>
-                  <li><a href="#" target="_blank" className="link-success">VanillaJS Starter Kit</a></li>
+                  {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+                  <li><a href="#" className="link-success">Angular Starter Kit</a></li>
+                  <li><a href="https://github.com/sweimer/3PD---Astro-Static-Starter-Kit" target="_blank" rel="noopener noreferrer" aria-label="Astro-Static Starter Kit (opens in new tab)" className="link-success">Astro-Static Starter Kit</a></li>
+                  <li><a href="https://github.com/sweimer/3PD---Astro-Forms-Starter-Kit" target="_blank" rel="noopener noreferrer" aria-label="Astro-Form Starter Kit (opens in new tab)" className="link-success">Astro-Form Starter Kit</a></li>
+                  <li><a href="https://github.com/sweimer/3PD---React-Starter-Kit" target="_blank" rel="noopener noreferrer" aria-label="React Starter Kit (opens in new tab)" className="link-success">React Starter Kit</a></li>
+                  {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
+                  <li><a href="#" className="link-success">VanillaJS Starter Kit</a></li>
                 </ul>
               )}
             </div>
@@ -154,7 +158,7 @@ export default function ThreePDLandingPage() {
           <div className="card h-100 border-warning shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-4">
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
-                <i className="bi bi-wrench-adjustable text-primary me-3" style={{ fontSize: "2rem" }}></i>
+                <i className="bi bi-wrench-adjustable text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
                 <h2 className="h3 mb-0">3PD Stand‑Alone/ <br/>Smart Embeds</h2>
               </div>
               <p className="card-text text-muted mb-4">
@@ -162,10 +166,10 @@ export default function ThreePDLandingPage() {
               </p>
               <p className="small text-muted mb-1">Examples:</p>
               <ul className="list-unstyled small mb-3">
-                <li><a href="/hudx-test/embed---sc-training" target="_blank" className="link-primary">HUD Service Coordinators</a></li>
-                <li><a href="/hudx-test/embed---pha-financial-management" target="_blank" className="link-primary">PHA Financial Mgt</a></li>
+                <li><a href="/hudx-test/embed---sc-training" target="_blank" rel="noopener noreferrer" aria-label="HUD Service Coordinators (opens in new tab)" className="link-primary">HUD Service Coordinators</a></li>
+                <li><a href="/hudx-test/embed---pha-financial-management" target="_blank" rel="noopener noreferrer" aria-label="PHA Financial Mgt (opens in new tab)" className="link-primary">PHA Financial Mgt</a></li>
               </ul>
-              <a href="/hudx-test/react---3pd-embed-request" target="_blank" className="btn btn-primary mt-auto">
+              <a href="/hudx-test/react---3pd-embed-request" target="_blank" rel="noopener noreferrer" aria-label="Submit Integration Request (opens in new tab)" className="btn btn-primary mt-auto">
                 Submit Integration Request
               </a>
             </div>
@@ -177,13 +181,13 @@ export default function ThreePDLandingPage() {
           <div className="card h-100 border-info shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-5">
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
-                <i className="bi bi-palette text-primary me-3" style={{ fontSize: "2rem" }}></i>
+                <i className="bi bi-palette text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
                 <h2 className="h3 mb-0">3PD Design System</h2>
               </div>
               <p className="card-text text-muted mb-4">
-                Components, tokens, and patterns for building HUDX-consistent interfaces. Reference before building any 3PD application.
+                Components, tokens, and patterns for building HUDX-consistent interfaces. Reference before building any 3PD application. This design system is shared across all 3PD starter kits and shipped to 3PDs automatically.
               </p>
-              <a href="https://trussworks.github.io/react-uswds/?path=/docs/components-accordion--docs" target="_blank" className="btn btn-primary mt-auto">
+              <a href="https://trussworks.github.io/react-uswds/?path=/docs/components-accordion--docs" target="_blank" rel="noopener noreferrer" aria-label="Storybook (opens in new tab)" className="btn btn-primary mt-auto">
                 Storybook
               </a>
             </div>
@@ -195,16 +199,16 @@ export default function ThreePDLandingPage() {
           <div className="card h-100 border-dark shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-6">
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
-                <i className="bi bi-house-heart text-primary me-3" style={{ fontSize: "2rem" }}></i>
+                <i className="bi bi-house-heart text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
                 <h2 className="h3 mb-0">3PD Module Manager</h2>
               </div>
               <p className="card-text text-muted mb-4">
                 Review and manage content submitted by third-party developers across all active 3PD modules.
               </p>
-              <a href="/hudx-test/astro-forms---3pd-checklist" target="_blank" className="btn btn-primary mt-auto">
+              <a href="/hudx-test/astro-forms---3pd-checklist" target="_blank" rel="noopener noreferrer" aria-label="Manage 3PD Modules (opens in new tab)" className="btn btn-primary mt-auto">
                 Manage 3PD Modules
               </a><br/>
-              <a href="/admin/content" target="_blank" className="btn btn-primary mt-auto">
+              <a href="/admin/content" target="_blank" rel="noopener noreferrer" aria-label="Content Manager (opens in new tab)" className="btn btn-primary mt-auto">
                 Content Manager
               </a>
             </div>
@@ -216,7 +220,7 @@ export default function ThreePDLandingPage() {
       {/* FOOTER */}
       <div className="text-center mt-5 dxpr-animate dxpr-fade-in">
         <small className="text-muted">
-          <i className="fa-solid fa-house-chimney me-2"></i>
+          <i className="fa-solid fa-house-chimney me-2" aria-hidden="true"></i>
           HUDX • 3PD Depot
         </small>
       </div>

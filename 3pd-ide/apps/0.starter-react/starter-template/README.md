@@ -8,10 +8,46 @@ A React micro-frontend with a data layer, deployed as a Drupal block module.
 
 ---
 
+## AI dev assistant
+
+This starter kit includes a built-in AI assistant that acts as a senior engineer
+embedded in the repo. It knows the architecture, tracks project progress, and helps
+you build, debug, and package your app.
+
+```bash
+3pd run ai
+```
+
+Run this from inside your app directory. It will open a Claude Code session primed
+with the starter kit's rules and your project's history.
+
+**First run:** Claude will scan your app to understand what's already been built. It
+will ask permission to read a few files — approve these. This is how it builds its
+initial picture of the project. It then populates `.ai/LOG.md` with its observations
+and either walks you through setup (new app) or presents a summary of where things
+stand (existing app).
+
+**Every session after that:** Claude reads the LOG and opens with a recap of where
+you left off, the current roadmap, and a proposed starting point. Update the LOG at
+the end of each session so the next developer (or your next session) picks up in
+the right place.
+
+**`.ai/LOG.md`** is committed to git — it's the project memory that travels with the
+repo. `CLAUDE.md` is generated each session and gitignored — it's the session briefing,
+not a repo artifact.
+
+> **Requires Claude Code CLI.** Install at https://claude.ai/code
+
+Prefer to work without AI assistance? Skip this section and go straight to
+[Setup](#setup) below — the manual workflow is fully documented there.
+
+---
+
 ## Prerequisites
 
 - Node.js v20+
 - npm
+- Claude Code CLI (`claude`) — for `3pd run ai`
 
 You do **not** need Drupal, Lando, or Docker locally.
 

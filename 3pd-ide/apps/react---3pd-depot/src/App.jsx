@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Routes, Route, Link, MemoryRouter } from 'react-router-dom';
+import { Routes, Route, MemoryRouter } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import StyleGuide from './pages/StyleGuide.jsx';
 import ApiReference from './pages/ApiReference.jsx';
@@ -53,7 +53,9 @@ function TestPanel() {
       <h2>API Test Panel</h2>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+        <label htmlFor="test-input" className="visually-hidden">Enter text</label>
         <input
+          id="test-input"
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
@@ -68,7 +70,7 @@ function TestPanel() {
         </button>
       </form>
 
-      {status && <p>{status}</p>}
+      <p aria-live="polite">{status}</p>
 
       <h3>Entries</h3>
       {entries.length === 0 ?

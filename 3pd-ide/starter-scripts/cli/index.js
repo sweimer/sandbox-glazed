@@ -119,6 +119,30 @@ ${chalk.magenta('3pd doctor')}                           Check environment depen
 ${chalk.magenta('3pd validate')}                         Run lint + scan + a11y + tests
 ${chalk.magenta('3pd help')}                             Show this help message
 
+${chalk.bold('AI ASSISTANT')}
+${chalk.gray('---------------------------------------------------------------------')}
+${chalk.green('3pd run ai')}                           Start the AI dev assistant for the current app
+${chalk.green('3pd run ai --validate')}                Also run lint, security, a11y + tests at Close Session
+
+  Run from inside your app directory. Opens a Claude Code session primed with the
+  starter kit's rules and your project's history.
+
+  ${chalk.white('First run')}   Claude scans your app to understand what's been built.
+               Approve the file-read prompts — this is how it builds its initial picture.
+               It populates .ai/LOG.md with observations, then either walks you through
+               setup (new app) or summarizes where things stand (existing app).
+
+  ${chalk.white('Returning')}   Claude reads .ai/LOG.md and opens with a recap of where you left off,
+               the current roadmap, and a proposed starting point for today.
+
+  ${chalk.white('Close Session')}   Type this at any time to wrap up. Claude will:
+               • Check git status and note uncommitted files
+               • Update .ai/LOG.md with today's progress
+               • (--validate only) Run 3pd validate and log the results
+
+  ${chalk.gray('.ai/LOG.md  — committed to git. Project memory that travels with the repo.')}
+  ${chalk.gray('CLAUDE.md   — generated each session, gitignored. Never commit it.')}
+
 ${chalk.bold('3PD vs --install MODE')}
 ${chalk.gray('---------------------------------------------------------------------')}
 ${chalk.white('3PD mode')}   (default, no flag)
@@ -503,6 +527,22 @@ styles
   .action(async () => {
     const cmd = await import('./commands/styles-refresh.js');
     cmd.default({ ideRoot });
+  });
+
+// ------------------------------------------------------------
+// RUN NAMESPACE (AI assistant + future run commands)
+// ------------------------------------------------------------
+const run = program
+  .command('run')
+  .description('Run assistant and utility processes');
+
+run
+  .command('ai')
+  .description('Start the AI dev assistant for the current app')
+  .option('--validate', 'Run 3pd validate (lint, security, a11y, tests) at Close Session')
+  .action(async (options) => {
+    const cmd = await import('./commands/ai-run.js');
+    cmd.default({ ideRoot, validate: !!options.validate });
   });
 
 // ------------------------------------------------------------

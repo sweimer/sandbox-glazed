@@ -1681,6 +1681,83 @@ Pick up next session:
   5. Push updated 3pd-depot to Pantheon
 
 
+## SESSION: 2026-04-01 — Renames complete, director installed, secrets fix
+
+### ✓ PENDING RENAMES — both completed (carried from 2026-03-31)
+
+  react---3pd-director  →  3pd-ai-director
+    - Folder renamed, package.json name updated, .env APP_SLUG updated
+    - Machine name: hudx_3pd_ai_director
+    - create-module.js already had routing and controller logic from prior session
+    - Cross-references in depot + depot Home.jsx updated
+
+  react---3pd-ai-helper  →  3pd-ai-coder
+    - Folder renamed, package.json name updated, .env APP_SLUG updated
+    - Machine name: hudx_3pd_ai_coder
+    - Old hudx_react___3pd_ai_helper uninstalled on Lando before rename
+    - New hudx_3pd_ai_coder installed after rename
+    - All cross-references updated (depot, director ROUTE_DESTINATIONS)
+
+### ✓ 3pd-ai-director — installed on Lando
+
+  3pd react module --install run from 3pd-ide/apps/3pd-ai-director/
+  Test route: http://sandbox-glazed.lndo.site/hudx-test/3pd-ai-director
+
+### ✓ MemoryRouter bug in create-module.js — fixed
+
+  Root cause: enforceMemoryRouter() used a ReturnStatement visitor that wrapped
+  EVERY function's return in <MemoryRouter>, including Nav's return.
+  Result: nested MemoryRouter — Nav rendered inside App's MemoryRouter wrapped in
+  its own MemoryRouter, breaking all routing hooks.
+
+  Fix: ReturnStatement visitor now checks getFunctionParent() and bails unless
+  funcName === 'App'. Only the App component's return gets wrapped.
+
+  Also fixed App.jsx directly (Nav's return had the stray MemoryRouter removed).
+  Module rebuilt + reinstalled cleanly after fix.
+
+  File: 3pd-ide/apps/3pd-ai-director/create-module.js (ReturnStatement visitor)
+
+### ✓ GitHub push blocked — ANTHROPIC_API_KEY in .env committed
+
+  .env was accidentally staged and committed in the 'ai director' commit.
+  GitHub push protection blocked the push.
+
+  Fix applied:
+    1. Added .env, .env.local, .env.*.local to root .gitignore
+    2. git reset HEAD~1 --soft — uncommitted the blocked commit
+    3. git restore --staged '3pd-ide/apps/3pd-ai-director/.env' — unstaged .env
+    4. Recommitted without .env — push succeeded
+
+  ⚠ ROTATE THE ANTHROPIC_API_KEY — it was in a local git commit even if never
+  pushed to GitHub. Rotate at console.anthropic.com to be safe.
+  Local key was in .env → settings.local.php on Lando (gitignored).
+  Pantheon key is in Pantheon Secrets dashboard — unaffected.
+
+  Note: server/db/app.sqlite + app.sqlite-shm + app.sqlite-wal were also committed
+  in this batch. Consider adding *.sqlite, *.sqlite-shm, *.sqlite-wal to .gitignore.
+
+### WHERE WE LEFT OFF (end of 2026-04-01 session)
+
+  Completed:
+    ✓ Both renames done (3pd-ai-director, 3pd-ai-coder)
+    ✓ 3pd-ai-director installed on Lando (working at /hudx-test/3pd-ai-director)
+    ✓ MemoryRouter bug fixed in create-module.js
+    ✓ .env added to root .gitignore
+    ✓ Push to GitHub succeeded
+
+  Pending — pick up here next session:
+    1. Rebuild + reinstall react---3pd-depot (show new Director button, updated card links)
+    2. Push 3pd-ai-director to Pantheon (add ANTHROPIC_API_KEY to Pantheon Secrets first)
+    3. Push updated 3pd-depot to Pantheon
+    4. Rotate ANTHROPIC_API_KEY (was in a local commit)
+    5. Add *.sqlite / *.sqlite-shm / *.sqlite-wal to .gitignore
+    6. pha-financial-management resize issues (backlog — not blocking)
+    7. inject-and-sync-s3.js --delete flag removal (backlog — safety fix)
+    8. Fix lando drush path breakage in create-module.js tryExec (affects all starters)
+    9. Discussion items: SDC, USWDS migration (deferred)
+
+
 ## BACKLOG — HIGH PRIORITY
 
 ### ⚠ pha-financial-management embed — resizing issues

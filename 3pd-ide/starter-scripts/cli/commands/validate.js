@@ -3,10 +3,10 @@ import lint from './lint.js';
 import scan from './scan.js';
 import a11y from './a11y.js';
 import test from './test.js';
-import { logHeader, logSuccess, logError } from '../utils/log.js';
+import { log } from '../shared/log.js';
 
 export default async function validate() {
-  logHeader('3PD Full Validation');
+  log.header('3PD Full Validation');
 
   try {
     await lint();
@@ -14,9 +14,9 @@ export default async function validate() {
     await a11y();
     await test();
 
-    logSuccess('All validations passed.');
+    log.success('All validations passed.');
   } catch (err) {
-    logError(err.message);
+    log.error(err.message);
     process.exit(1);
   }
 }
