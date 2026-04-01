@@ -46,7 +46,7 @@ export default function ThreePDLandingPage() {
           target="_blank"
           className="btn btn-warning btn-lg fw-bold shadow-sm"
         >
-          <i className="bi bi-signpost-split me-2"></i>
+          <i className="bi bi-universal-access me-2"></i>
           Not sure where to start? Talk to the 3PD Director →
         </a>
       </div>
