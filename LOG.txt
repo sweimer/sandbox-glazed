@@ -2131,17 +2131,20 @@ Pick up next session:
     - CLAUDE.md added to .gitignore in both starters
     - ai-run.js now framework-aware: detects Astro vs React, uses correct ports + prompts
 
-  #3 — Full-page Astro-forms starter (--page mode)  ← NEXT
-    Astro-forms first (needed for demo). React and other frameworks are a scalable future goal.
-    Builds on #2 — use the updated 0.starter-astro-forms as the base template.
-    The Astro app code is unchanged. The difference is entirely in the module generator output:
-      Block mode (current): Plugin/Block/ class + block twig + libraries attached to block
-      Page mode (new):      Controller + routing.yml page route + full-page twig (strips all
-                            Drupal regions) + libraries attached to page
-    The finished Astro build is pushed into a Drupal twig that owns the entire page.
-    Drupal handles routing and auth only — no block chrome, no theme regions.
-    Implementation: --page flag on 3pd astro module, alternate output path in create-module.js.
-    See unscheduled entry below for additional technical notes.
+  ✓ #3 — Full-page Astro-forms starter (page mode) — DONE 2026-04-01
+    Implemented as a separate command (not a flag) for discoverability and clean separation.
+    New files:
+      apps/0.starter-astro-forms/create-page.js         — page generator (from create-module.js)
+      starter-scripts/cli/commands/astro-forms-page.js  — CLI wrapper
+      starter-scripts/cli/index.js                      — registered 3pd astro-forms page
+    Key differences from block mode:
+      - No Plugin/Block/ class
+      - Two twig files: {hyphenName}-page.html.twig (Astro body HTML) +
+                        page--{hyphenName}-page.html.twig (strips all Drupal regions)
+      - hook_theme_suggestions_page_alter() applies page template on the route
+      - PageController instead of HudxTestController
+      - Real page route (/<appName>) in routing.yml — not a test route
+    Usage: 3pd astro-forms page [--install]
 
   #4 — Testing review: .gov guidance and standards
     Review current testing setup (lint, scan, a11y, validate) against .gov requirements.

@@ -96,8 +96,10 @@ ${chalk.cyan('3pd astro module')}                     Package as Drupal module (
 ${chalk.cyan('3pd astro module --install')}           Package + install in Drupal (HUDX)
 
 ${chalk.cyan('3pd astro-forms app <name>')}           Create Astro + Express + SQLite app
-${chalk.cyan('3pd astro-forms module')}               Package as Drupal module (3PD)
-${chalk.cyan('3pd astro-forms module --install')}     Package + install in Drupal (HUDX)
+${chalk.cyan('3pd astro-forms module')}               Package as Drupal block module (3PD)
+${chalk.cyan('3pd astro-forms module --install')}     Package + install block in Drupal (HUDX)
+${chalk.cyan('3pd astro-forms page')}                 Package as Drupal full-page module (3PD)
+${chalk.cyan('3pd astro-forms page --install')}       Package + install full page in Drupal (HUDX)
 ${chalk.cyan('3pd astro-forms db pull')}              Pull live data from Drupal/Pantheon into local SQLite
 
 ${chalk.green('3pd react app <name>')}                 Create React + Express + SQLite app
@@ -326,11 +328,22 @@ astroForms
 
 astroForms
   .command('module')
-  .description('Generate a Drupal module from the current Astro Forms app')
+  .description('Generate a Drupal block module from the current Astro Forms app')
   .option('--install', 'Install the generated module into Drupal (internal HUDX use only)')
   .option('--internal', 'Alias for --install')
   .action(async (options) => {
     const cmd = await import('./commands/astro-forms-module.js');
+    const internal = options.install || options.internal || isInternal;
+    cmd.default({ ideRoot, internal });
+  });
+
+astroForms
+  .command('page')
+  .description('Generate a full-page Drupal module from the current Astro Forms app')
+  .option('--install', 'Install the generated module into Drupal (internal HUDX use only)')
+  .option('--internal', 'Alias for --install')
+  .action(async (options) => {
+    const cmd = await import('./commands/astro-forms-page.js');
     const internal = options.install || options.internal || isInternal;
     cmd.default({ ideRoot, internal });
   });
