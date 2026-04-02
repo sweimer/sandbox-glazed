@@ -80,12 +80,16 @@ export default async function astroFormsApp(name, { ideRoot }) {
   // Load 3pd.config.json at repo root
   let drupalUrl = '';
   let defaultContentType = '';
+  let assetsUrl = '';
+  let themeSystem = '';
   const configPath = path.join(ideRoot, '..', '3pd.config.json');
   if (fs.existsSync(configPath)) {
     try {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      if (config.pantheonUrl) drupalUrl = config.pantheonUrl;
+      if (config.pantheonUrl)        drupalUrl          = config.pantheonUrl;
       if (config.defaultContentType) defaultContentType = config.defaultContentType;
+      if (config.assetsUrl)          assetsUrl          = config.assetsUrl;
+      if (config.themeSystem)        themeSystem        = config.themeSystem;
     } catch {}
   }
 
@@ -109,6 +113,10 @@ export default async function astroFormsApp(name, { ideRoot }) {
     envContent = envContent
       .replace('APP_SLUG=YOUR_APP_SLUG', `APP_SLUG=${folderName}`)
       .replace('PUBLIC_APP_SLUG=YOUR_APP_SLUG', `PUBLIC_APP_SLUG=${folderName}`);
+    if (assetsUrl) {
+      envContent = envContent.replace('PUBLIC_ASSETS_URL=', `PUBLIC_ASSETS_URL=${assetsUrl}`);
+      log.success(`PUBLIC_ASSETS_URL set to: ${assetsUrl}`);
+    }
     fs.writeFileSync(path.join(appDir, '.env'), envContent);
     log.success(`APP_SLUG set to: ${folderName}`);
   }
@@ -142,7 +150,13 @@ export default async function astroFormsApp(name, { ideRoot }) {
   }
 
   log.header('Syncing Drupal Dev Assets');
-  await stylesSync({ ideRoot });
+  if (assetsUrl) {
+    log.info(`Using remote theme assets from: ${assetsUrl}`);
+    log.dim('Skipping local drupal-dev-styles.css generation — PUBLIC_ASSETS_URL is set.');
+    log.dim('Layout.astro will load styles from assetsUrl in dev mode.');
+  } else {
+    await stylesSync({ ideRoot });
+  }
 
   log.header('Summary');
   log.success(`Astro Forms app "${folderName}" created successfully.`);

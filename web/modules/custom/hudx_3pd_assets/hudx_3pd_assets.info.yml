@@ -1,0 +1,5 @@
+name: '3PD Assets Bridge'
+type: module
+description: 'Serves compiled theme CSS/JS and project config at public URLs for 3PD starter kit apps. Install once per project.'
+core_version_requirement: ^10 || ^11
+package: 3PD IDE

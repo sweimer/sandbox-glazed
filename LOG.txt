@@ -2199,7 +2199,7 @@ Pick up next session:
     Start with: MCP server setup (~10 min) + draft CLAUDE.md from PROMPT.txt + LOG.
     Then validate with one real ticket before building `3pd jira create`.
 
-  #5 — Theme bridge module + 3PD portability (AlexRenew POC)
+  ✓ #5 — Theme bridge module + 3PD portability — DONE 2026-04-01 (continued)
     POC target: AlexRenew as first external client using astro-forms starter kit.
     Discussed 2026-04-02. Plan documented below.
 
@@ -2352,3 +2352,83 @@ Pick up next session:
 
   The framework is already a product. This work is configuration abstraction,
   not a rewrite. Estimated complexity: medium. No core patterns change.
+
+
+## SESSION: 2026-04-01 (continued #4) — Theme bridge infrastructure complete
+
+### ✓ hudx_3pd_assets Drupal module — BUILT
+
+  web/modules/custom/hudx_3pd_assets/
+  Generic module, install once per client Drupal project.
+
+  Routes (all public, CORS *):
+    GET /3pd-assets/styles.css   → concatenated CSS from active theme's libraries.yml
+    GET /3pd-assets/scripts.js   → concatenated JS (skips CDN + minified vendor files)
+    GET /3pd-assets/config.json  → { themeSystem, themeName, version }
+
+  AssetsController.php:
+    detectThemeSystem() — checks theme name + base_theme for bootstrap/uswds signals → 'custom'
+    Cache-Control: max-age=300 for assets, no-store for config
+
+### ✓ create-page.js — themeSystem-aware CDN injection
+
+  readProjectConfig() walks up dir tree from app root looking for 3pd.config.json.
+  themeSystem read from config (default: 'bootstrap').
+  assetsUrl read from config.
+
+  CDN injected at <head> open (not </head>) to prevent FOUC:
+    bootstrap → Bootstrap 5.3 CSS + Icons CDN
+    uswds     → USWDS 3.8 CSS CDN
+    custom    → assetsUrl/styles.css
+
+  Theme JS injected before </body>:
+    bootstrap → Bootstrap bundle JS CDN
+    uswds     → USWDS JS CDN
+    custom    → assetsUrl/scripts.js
+
+  @3pd-demo marker check added:
+    - Warns in 3PD mode (module/page without --install)
+    - Hard-stops in --install mode — prevents Bootstrap demo on non-Bootstrap sites
+
+### ✓ starter-template updates
+
+  .env.example: added PUBLIC_ASSETS_URL= with documentation
+  Layout.astro: reads PUBLIC_ASSETS_URL → loads styles from assetsUrl/styles.css (dev)
+                Falls back to drupal-dev-styles.css when not set
+                Same pattern for scripts.js
+  index.astro: @3pd-demo marker added to frontmatter
+
+### ✓ astro-forms-app.js CLI — assetsUrl support
+
+  Reads assetsUrl + themeSystem from 3pd.config.json.
+  Writes PUBLIC_ASSETS_URL to new app .env from assetsUrl.
+  Skips `3pd styles sync` when assetsUrl is set (dev styles loaded remotely).
+
+### ✓ PROMPT.txt — updated (0.starter-astro-forms)
+
+  - 3pd.config.json section: added assetsUrl, themeSystem, all 4 values documented
+  - New "HUDX_3PD_ASSETS — THEME BRIDGE MODULE" section
+  - HOW 3pd astro-forms app works: step 7 (PUBLIC_ASSETS_URL), step 10 (skip sync)
+  - HOW 3pd astro-forms page --install works: @3pd-demo check + themeSystem CDN injection
+  - DRUPAL DEV ASSETS: split into Option A (assetsUrl) and Option B (drupal-dev-styles.css)
+  - ENV VARS REFERENCE: PUBLIC_ASSETS_URL added
+  - PAGE MODE CHECKLIST: updated items for themeSystem CDN + @3pd-demo guard
+
+### WHERE WE LEFT OFF (end of 2026-04-01 continued #4)
+
+  Theme bridge infrastructure complete in SANDBOX-glazed (not yet committed).
+  AlexRenew branch not yet created.
+
+  Next steps:
+    1. Commit SANDBOX-glazed theme bridge changes ← IN PROGRESS
+    2. Push to origin/main
+    3. Create feature/3pd-ide-poc branch in alex-renew-d8
+    4. Copy 3pd-ide (astro-forms only) into AlexRenew repo
+    5. Copy hudx_3pd_assets to AlexRenew web/modules/custom/
+    6. Create 3pd.config.json for AlexRenew (themeSystem: "custom", assetsUrl: TBD, Pantheon URL)
+    7. Start Lando for AlexRenew, install hudx_3pd_assets, test full workflow
+
+  Pending (carried forward):
+    - Jira MCP setup (roadmap #4 — review priority at next session start)
+    - Add Prettier to testing suite (roadmap #6)
+    - AlexRenew branch setup (roadmap #5 AlexRenew POC — next step)

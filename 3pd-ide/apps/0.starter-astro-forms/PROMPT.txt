@@ -136,16 +136,55 @@ Generated PAGE module structure (create-page.js → web/modules/custom/{machineN
 
 Project-level config read by the CLI when creating new apps:
   {
-    "pantheonUrl": "https://dev-3-pd-ide.pantheonsite.io",
-    "defaultContentType": "basic_page_layout_builder"
+    "pantheonUrl":        "https://dev-3-pd-ide.pantheonsite.io",
+    "defaultContentType": "basic_page_layout_builder",
+    "assetsUrl":          "https://example.com/3pd-assets",
+    "themeSystem":        "bootstrap"
   }
 
 Both `3pd astro-forms app` and `3pd astro app` read this automatically:
   1. Sets PUBLIC_DRUPAL_BASE_URL to pantheonUrl (no manual .env edit)
   2. Replaces YOUR_CONTENT_TYPE in index.astro with defaultContentType
+  3. Sets PUBLIC_ASSETS_URL in .env from assetsUrl (skips styles sync when set)
+  4. Uses themeSystem to inject correct CDN into dist/page.html at build time
+
+themeSystem values:
+  "bootstrap"  → Bootstrap 5.3 + Icons CDN (default, used for HUDx/DXPR sites)
+  "uswds"      → USWDS 3.8 CDN (uswds.min.css + uswds.min.js)
+  "custom"     → assetsUrl/styles.css + assetsUrl/scripts.js (requires assetsUrl)
 
 New apps are fully functional out of the box. Update 3pd.config.json when
-the Pantheon URL or default content type changes.
+the Pantheon URL, default content type, or design system changes.
+
+
+## HUDX_3PD_ASSETS — THEME BRIDGE MODULE
+
+Located at: web/modules/custom/hudx_3pd_assets/
+
+A generic Drupal module that exposes the active theme's compiled CSS/JS at
+public URLs. Install once per Drupal project. Point 3pd.config.json assetsUrl
+at this site's base URL + /3pd-assets.
+
+Public routes:
+  GET /3pd-assets/styles.css   → concatenated CSS from active theme's libraries
+  GET /3pd-assets/scripts.js   → concatenated JS from active theme's libraries
+  GET /3pd-assets/config.json  → { themeSystem, themeName, version }
+
+All routes: _access: TRUE, Access-Control-Allow-Origin: * (CORS-safe for dev).
+
+How it is used:
+  DEV:     Layout.astro loads styles from assetsUrl instead of drupal-dev-styles.css
+           when PUBLIC_ASSETS_URL is set in .env. No `3pd styles sync` needed.
+  PROD:    create-page.js injects assetsUrl/styles.css + scripts.js into page.html
+           instead of Bootstrap CDN when themeSystem = "custom".
+
+config.json endpoint:
+  Consumed by CLI `3pd astro-forms app <name>` to auto-detect themeSystem.
+  detectThemeSystem() checks theme name and base_theme for bootstrap/uswds signals,
+  falls back to "custom".
+
+Copy this module into each new client project's web/modules/custom/ directory.
+The module itself is project-agnostic — it reads whatever theme is active.
 
 
 ## CLI INTEGRATION
@@ -169,8 +208,12 @@ Framework prefix (shared/frameworks.js):
 3. Copies starter-template/ skipping node_modules
 4. Creates .env from .env.example, sets PUBLIC_DRUPAL_BASE_URL from pantheonUrl
 5. Replaces YOUR_CONTENT_TYPE in index.astro with defaultContentType
-6. Patches package.json "name" field
-7. Runs npm install
+6. Sets APP_SLUG + PUBLIC_APP_SLUG in .env
+7. Writes PUBLIC_ASSETS_URL from assetsUrl (if set in 3pd.config.json)
+8. Patches package.json "name" field
+9. Runs npm install
+10. If assetsUrl is set: skips `3pd styles sync` (dev styles loaded from assetsUrl)
+    If no assetsUrl: runs `3pd styles sync` to generate drupal-dev-styles.css
 
 NOTE: better-sqlite3 compiles a native binary. Requires Python + Xcode CLI tools.
 If npm install fails with a gyp error, check Node version compatibility.
@@ -180,13 +223,24 @@ If npm install fails with a gyp error, check Node version compatibility.
 
 Same Astro app code as block mode. Only the generator output differs.
 
+Checks for @3pd-demo marker in index.astro before building:
+  - 3PD mode (no --install): warns but continues
+  - --install mode: hard-stops — prevents Bootstrap demo deploying to non-Bootstrap sites
+
 1. Reads SQLite from server/db/app.sqlite (same as block mode)
 2. Builds Astro app (npm run build)
 3. Generates dist/page.html:
    - Reads dist/index.html from Astro build
    - Rewrites /_astro/ asset paths → /modules/custom/{machineName}/dist/assets/
-   - Injects Bootstrap 5.3.x CSS + Bootstrap Icons CDN <link> into <head>
-   - Injects Bootstrap JS CDN <script> before </body>
+   - Reads 3pd.config.json → determines themeSystem (bootstrap/uswds/custom)
+   - Injects theme CDN into <head> (at <head> open to prevent FOUC):
+       bootstrap → Bootstrap 5.3 CSS + Icons CDN
+       uswds     → USWDS 3.8 CSS CDN
+       custom    → assetsUrl/styles.css (from assetsUrl in 3pd.config.json)
+   - Injects theme JS before </body>:
+       bootstrap → Bootstrap bundle JS CDN
+       uswds     → USWDS JS CDN
+       custom    → assetsUrl/scripts.js
    - Reason: the Drupal theme CSS is never loaded when bypassing the theming layer
 4. Generates module in app dir: {machineName}/
    - data/seed.json, .install, SubmissionsController.php, routing.yml (same as block)
@@ -290,30 +344,33 @@ This single CSS rule controls all edit buttons site-wide — no JS auth checks n
 Edit buttons open Drupal admin URLs in an iframe modal (see AlexRenew demo for reference).
 
 
-## DRUPAL DEV ASSETS (Bootstrap + DXPR theme in local dev)
+## DRUPAL DEV ASSETS (local dev theme styles)
 
-During local dev the app loads Bootstrap and DXPR theme CSS/JS from two generated files:
+Two mutually exclusive approaches — set in .env, auto-configured by CLI on app creation:
+
+### Option A: PUBLIC_ASSETS_URL (preferred for non-HUDx / custom-theme projects)
+  Set PUBLIC_ASSETS_URL in .env to the client's hudx_3pd_assets module URL.
+  Layout.astro loads styles from assetsUrl/styles.css (and scripts from assetsUrl/scripts.js)
+  instead of local drupal-dev-styles.css. No `3pd styles sync` needed.
+  The CLI sets this automatically from assetsUrl in 3pd.config.json.
+
+### Option B: drupal-dev-styles.css (HUDx/Bootstrap/DXPR projects)
   public/drupal-dev-styles.css   ← Bootstrap + DXPR theme CSS concatenated
   public/drupal-dev-scripts.js   ← Bootstrap bundle JS
 
-These files are GITIGNORED and dev-only. They are conditionally included in Layout.astro
-using `import.meta.env.DEV` which Astro statically replaces with `false` during
-`astro build` — so these references are compiled away and never appear in the Drupal module.
+  These files are GITIGNORED and dev-only. Generated automatically when a new app is
+  created via `3pd astro-forms app <name>`. If the Drupal theme changes:
+    3pd styles refresh   ← regenerates both files (run from inside app directory)
+    npm run dev          ← restart to pick up changes
+  Or regenerate for ALL apps at once (from the 3pd-ide root):
+    3pd styles sync
 
-The files are generated automatically when a new app is created via `3pd astro-forms app <name>`.
-If the Drupal theme changes, run from inside the app directory:
-  3pd styles refresh   ← regenerates public/drupal-dev-styles.css + public/drupal-dev-scripts.js
-  npm run dev          ← restart to pick up changes
+Both approaches:
+  Layout.astro uses `import.meta.env.DEV` (Astro statically replaces with false during build)
+  — so dev-only <link> and <script> tags are compiled away and never appear in the module.
 
-Or to regenerate for ALL apps at once (from the 3pd-ide root):
-  3pd styles sync
-
-Bootstrap Icons are loaded from CDN (jsdelivr.net) — not from the local file,
-because relative font-file paths in the npm package would break in the public/ context.
-
-DXPR theme JS is excluded on purpose: its scripts require Drupal.behaviors and
-drupalSettings globals that don't exist outside of a Drupal page context.
-Only bootstrap.bundle.min.js is included (handles dropdowns, modals, tooltips, etc.).
+Bootstrap Icons are always loaded from CDN (jsdelivr.net) regardless of themeSystem.
+DXPR theme JS is excluded on purpose (requires Drupal.behaviors + drupalSettings globals).
 
 
 ## DEV WORKFLOW
@@ -426,6 +483,9 @@ PUBLIC_API_BASE_URL     Express server URL for dev. Empty in production (same-or
 APP_SLUG                App folder name. Used by Express for route namespacing.
                         Set automatically by `3pd astro-forms app <name>`.
 PUBLIC_APP_SLUG         Same as APP_SLUG — Vite-exposed for Astro fetch URLs.
+PUBLIC_ASSETS_URL       URL of client's hudx_3pd_assets module (e.g. https://site.com/3pd-assets).
+                        When set: Layout.astro loads styles from assetsUrl instead of local files.
+                        Auto-set by CLI from assetsUrl in 3pd.config.json.
 PORT                    Express port. Default: 3001.
 DB_PATH                 SQLite file path. Default: ./server/db/app.sqlite.
 CORS_ORIGIN             Astro dev server URL. Default: http://localhost:4321.
@@ -509,8 +569,12 @@ Test URL on Pantheon: https://dev-3-pd-ide.pantheonsite.io/hudx-test/<appname>
 PAGE MODE ONLY (create-page.js):
   [x] PageController returns raw Symfony Response — NOT a render array with #theme
   [x] dist/page.html generated with /_astro/ paths rewritten to module public path
-  [x] Bootstrap 5 CSS + Icons CDN injected into <head> of page.html
-  [x] Bootstrap JS CDN injected before </body> of page.html
+  [x] @3pd-demo marker checked: warn in 3PD mode, hard-stop in --install mode
+  [x] themeSystem read from 3pd.config.json (bootstrap / uswds / custom)
+  [x] CDN injected at <head> open (not </head>) to prevent FOUC
+      bootstrap: Bootstrap 5 CSS + Icons CDN; uswds: USWDS 3.8 CSS; custom: assetsUrl/styles.css
+  [x] Theme JS injected before </body>
+      bootstrap: Bootstrap bundle JS; uswds: USWDS JS; custom: assetsUrl/scripts.js
   [x] No templates/ directory generated (twig not used in page mode)
   [x] .module is minimal — no hook_theme, no hook_theme_suggestions_page_alter
 

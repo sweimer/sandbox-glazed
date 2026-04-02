@@ -139,6 +139,22 @@ process.stdout.write(JSON.stringify({ rows, cols, tableName: tbl }));
 }
 
 // ---------------------------------------------------------
+// Read 3pd.config.json — project-level config (optional)
+// ---------------------------------------------------------
+function readProjectConfig(startDir) {
+  let current = startDir;
+  while (true) {
+    const cfgPath = path.join(current, '3pd.config.json');
+    if (fs.existsSync(cfgPath)) {
+      try { return JSON.parse(fs.readFileSync(cfgPath, 'utf8')); } catch { return {}; }
+    }
+    const parent = path.dirname(current);
+    if (parent === current) return {};
+    current = parent;
+  }
+}
+
+// ---------------------------------------------------------
 // MAIN EXPORTED FUNCTION
 // ---------------------------------------------------------
 export default async function createPage(appNameFromCli, { internal }) {
@@ -175,6 +191,12 @@ Falling back to 3PD mode.
   const humanName   = toHumanName(appName);
   const displayName = `3PD IDE - ${humanName}`;
 
+  // Read project config for themeSystem + assetsUrl
+  const projectConfig = readProjectConfig(appRoot);
+  const themeSystem   = projectConfig.themeSystem || 'bootstrap';
+  const assetsUrl     = projectConfig.assetsUrl    || '';
+  console.log(`Theme system: ${themeSystem}${assetsUrl ? ` (assetsUrl: ${assetsUrl})` : ''}`);
+
   // Page mode theme/template names
   // Content template: {hyphenName}-page.html.twig  (body HTML from Astro build)
   // Page template:    page--{hyphenName}-page.html.twig  (strips all Drupal regions)
@@ -185,6 +207,26 @@ Falling back to 3PD mode.
   const pageTwigFilename     = `${pageTemplateName}.html.twig`;
   // Drupal theme hook suggestion key (underscores): page__<machineName>_page
   const pageThemeSuggestion  = `page__${machineName}_page`;
+
+  // ---------------------------------------------------------
+  // Demo marker check — index.astro still contains @3pd-demo
+  // 3PD mode: warn. Internal (--install) mode: hard stop.
+  // ---------------------------------------------------------
+  const indexAstroPath = path.join(appRoot, 'src', 'pages', 'index.astro');
+  if (fs.existsSync(indexAstroPath)) {
+    const indexContent = fs.readFileSync(indexAstroPath, 'utf8');
+    if (indexContent.includes('@3pd-demo')) {
+      if (internal) {
+        console.error('\n✘  Cannot install: index.astro still contains the starter demo (@3pd-demo marker found).');
+        console.error('   Replace it with your app content and remove the @3pd-demo comment, then re-run.\n');
+        process.exit(1);
+      } else {
+        console.log('\n⚠️  index.astro still contains the starter demo (@3pd-demo marker found).');
+        console.log('   The generated module will include the Bootstrap demo page.');
+        console.log('   Replace index.astro and remove the @3pd-demo comment before deploying to a client site.\n');
+      }
+    }
+  }
 
   // ---------------------------------------------------------
   // Build Astro app
@@ -284,11 +326,28 @@ Falling back to 3PD mode.
   // Drupal's theming layer). Used for both the main page and sub-pages.
   // ---------------------------------------------------------
   const modulePublicPath = `/modules/custom/${machineName}/dist/assets`;
-  const bootstrapHead = [
-    '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">',
-    '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css">',
-  ].join('\n');
-  const bootstrapFoot = '  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>';
+
+  // Theme CSS/JS injection — determined by themeSystem in 3pd.config.json.
+  //   bootstrap → Bootstrap 5 CDN (default, works with DXPR/Bootstrap Drupal themes)
+  //   uswds     → USWDS CDN (for .gov projects)
+  //   custom    → assetsUrl from 3pd.config.json (client's hudx_3pd_assets module)
+  let themeHeadLinks = '';
+  let themeFootScript = '';
+
+  if (themeSystem === 'uswds') {
+    themeHeadLinks  = '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@uswds/uswds@3.8.0/dist/css/uswds.min.css">';
+    themeFootScript = '  <script src="https://cdn.jsdelivr.net/npm/@uswds/uswds@3.8.0/dist/js/uswds.min.js"></script>';
+  } else if (themeSystem === 'custom' && assetsUrl) {
+    themeHeadLinks  = `  <link rel="stylesheet" href="${assetsUrl}/styles.css">`;
+    themeFootScript = `  <script src="${assetsUrl}/scripts.js"></script>`;
+  } else {
+    // Default: bootstrap
+    themeHeadLinks = [
+      '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">',
+      '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css">',
+    ].join('\n');
+    themeFootScript = '  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>';
+  }
 
   function rewritePageHtml(html) {
     let out = html;
@@ -299,8 +358,8 @@ Falling back to 3PD mode.
       out = out.split(`/_astro/${cssFiles[0]}`).join(`${modulePublicPath}/${stableCssFile}`);
     }
     out = out.replace(/\/_astro\//g, `${modulePublicPath}/`);
-    out = out.replace('<head>', `<head>\n${bootstrapHead}`);
-    out = out.replace('</body>', `${bootstrapFoot}\n</body>`);
+    if (themeHeadLinks)  out = out.replace('<head>', `<head>\n${themeHeadLinks}`);
+    if (themeFootScript) out = out.replace('</body>', `${themeFootScript}\n</body>`);
     return out;
   }
 

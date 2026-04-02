@@ -1,0 +1,23 @@
+hudx_3pd_assets.styles:
+  path: '/3pd-assets/styles.css'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_assets\Controller\AssetsController::styles'
+    _title: '3PD Assets — Styles'
+  requirements:
+    _access: 'TRUE'
+
+hudx_3pd_assets.scripts:
+  path: '/3pd-assets/scripts.js'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_assets\Controller\AssetsController::scripts'
+    _title: '3PD Assets — Scripts'
+  requirements:
+    _access: 'TRUE'
+
+hudx_3pd_assets.config:
+  path: '/3pd-assets/config.json'
+  defaults:
+    _controller: '\Drupal\hudx_3pd_assets\Controller\AssetsController::config'
+    _title: '3PD Assets — Config'
+  requirements:
+    _access: 'TRUE'
