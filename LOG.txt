@@ -2139,19 +2139,125 @@ Pick up next session:
       starter-scripts/cli/index.js                      — registered 3pd astro-forms page
     Key differences from block mode:
       - No Plugin/Block/ class
-      - Two twig files: {hyphenName}-page.html.twig (Astro body HTML) +
-                        page--{hyphenName}-page.html.twig (strips all Drupal regions)
-      - hook_theme_suggestions_page_alter() applies page template on the route
-      - PageController instead of HudxTestController
+      - PageController returns a raw Symfony Response (not a render array)
+        → serves dist/page.html directly, bypassing Drupal's theming layer entirely
+        → no page--*.html.twig needed (Drupal only finds those in themes, not modules)
+      - dist/page.html generated at build time: asset paths rewritten to module's
+        public path (/modules/custom/{machineName}/dist/assets/) + Bootstrap 5.3.x
+        and Bootstrap Icons CDN links injected (theme CSS unavailable when bypassed)
       - Real page route (/<appName>) in routing.yml — not a test route
+      - .module is minimal (no hook_theme, no hook_theme_suggestions_page_alter)
+    api-reference.astro bug fixed (same session): raw {} in <pre> blocks parsed
+      as JSX by Astro — all instances escaped with &#123;/&#125; HTML entities.
+      Fix applied to both starter-template and existing app copies.
+    Tested: http://sandbox-glazed.lndo.site/astro-forms---temp-astro-form-page
+      → bare page, no Drupal chrome, full Bootstrap styles load via CDN
     Usage: 3pd astro-forms page [--install]
 
-  #4 — Testing review: .gov guidance and standards
+  #4 — ⭐ NEXT SESSION: review full list, confirm priority — Jira MCP + AI-enriched team workflow
+    Jira details: icf.atlassian.net / project AWR / board 4690
+    Jira login: 29457@icf.com
+    API token generated 2026-04-01 — stored locally, NOT in repo. Add to .env.local on setup.
+    Vision (2026-04-01): Scale the tech lead + Claude working model to the whole team.
+    Currently, architecture decisions and roadmap context live in LOG.txt and are fully
+    accessible to Claude in this terminal. The goal is to make that same informed context
+    available to every developer on the team via their own Claude agent.
+
+    Two-part approach:
+
+    A. Atlassian MCP server (zero custom code)
+       Add the official Jira MCP server to Claude Code config. Gives all Claude agents
+       on the team direct Jira access — create, read, update, transition tickets via
+       natural language. Foundation for everything else.
+
+    B. AI-enriched ticket format
+       When tech lead + Claude design a feature, the Jira ticket includes:
+         - Problem statement (not just a task title)
+         - Why the current approach doesn't work
+         - Solution and architecture rationale
+         - Files to create/modify with structure notes
+         - Acceptance criteria
+         - ## Claude Agent Prompt section — a briefing any dev pastes to their Claude
+           agent to start with the same context the tech lead has
+       The ticket becomes a briefing document for both humans AND AI agents.
+
+    C. Shared CLAUDE.md in repo root
+       Gives every dev's Claude agent instant project context on startup (distilled from
+       PROMPT.txt + durable LOG decisions). Currently each dev's session starts cold.
+
+    D. Optional: `3pd jira create` command
+       One-way, on-demand. At end of a design session: "create a Jira ticket for what
+       we discussed" — Claude writes the full AI-enriched ticket and pushes via MCP.
+       Not a sync system. LOG stays authoritative; Jira is the team coordination layer.
+
+    Team workflow result:
+      Dev opens IDE → Claude reads CLAUDE.md + Jira via MCP
+      → "What should I work on?" gets an informed, prioritized answer
+      → Dev picks ticket → Claude reads ticket including Claude Agent Prompt section
+      → Implementation session starts with full architectural context already loaded
+
+    Start with: MCP server setup (~10 min) + draft CLAUDE.md from PROMPT.txt + LOG.
+    Then validate with one real ticket before building `3pd jira create`.
+
+  #5 — Theme bridge module + 3PD portability (AlexRenew POC)
+    POC target: AlexRenew as first external client using astro-forms starter kit.
+    Discussed 2026-04-02. Plan documented below.
+
+    PROBLEM: The starter kit is coupled to the HUDx/DXPR Bootstrap theme in two ways:
+      1. `drupal-dev-styles.css` requires local Drupal access to generate
+      2. `create-page.js` hardcodes Bootstrap CDN for page mode
+      These break portability to any non-Bootstrap Drupal project.
+
+    SOLUTION: Three-part approach
+
+    A. `hudx_3pd_assets` Drupal module (installed on each client's Drupal)
+       Exposes the client's compiled theme assets at public URLs:
+         GET /3pd-assets/styles.css  → compiled theme CSS
+         GET /3pd-assets/scripts.js  → theme JS bundle
+         GET /3pd-assets/config.json → { themeSystem, version }
+       Internal HUDx dev installs this module on the client site once.
+       No 3PD needs to touch Drupal.
+
+    B. `assetsUrl` in `3pd.config.json`
+       Points to the client's asset module endpoint.
+       CLI reads it on `3pd astro-forms app <name>`:
+         - Fetches /3pd-assets/config.json → auto-detects themeSystem
+         - Sets PUBLIC_ASSETS_URL in app .env
+         - Layout.astro loads dev styles from this URL (not generated local file)
+       create-page.js reads themeSystem to inject correct CDN in page.html.
+
+    C. `@3pd-demo` marker in starter index.astro
+       Default homepage ships with Bootstrap demo (great first impression, shows patterns).
+       A `{/* @3pd-demo */}` comment marks it as demo-only.
+       Generator behavior:
+         - `3pd astro-forms module/page` (3PD mode): warns if marker present
+         - `3pd astro-forms module/page --install`: hard stops if marker present
+       Dev removes the comment when they replace the demo with their real app.
+       This prevents Bootstrap demo content from accidentally deploying to a USWDS/custom site.
+
+    ALEXRENEW POC WORKFLOW (see detailed plan below):
+      1. HUDx installs hudx_3pd_assets on AlexRenew's Drupal
+      2. 3pd-ide (astro-forms only) added to AlexRenew's repo or delivered as standalone
+      3. 3pd.config.json configured with AlexRenew's assetsUrl + Pantheon URL
+      4. Dev scaffolds app: demo homepage loads, AlexRenew CSS loads from assetsUrl
+      5. Dev replaces demo with real app using AlexRenew theme classes
+      6. Removes @3pd-demo marker, runs --install
+
+    LOE estimate:
+      hudx_3pd_assets module: 0.5 day
+      assetsUrl in CLI + Layout.astro: 0.5 day
+      create-page.js themeSystem injection: 0.5 day
+      @3pd-demo marker + generator guard: 0.5 day
+      AlexRenew repo setup + config: 0.5 day
+      Total: ~2.5 days
+
+  #6 — Testing review: .gov guidance and standards
+    Add Prettier to the testing suite (noted end of session 2026-04-01).
     Review current testing setup (lint, scan, a11y, validate) against .gov requirements.
     Discuss what's missing, what standards apply (Section 508, FISMA, USWDS a11y, etc.),
     and what we should add or tighten before any production deployment.
 
-  #5 — AI director for smart embed starter kit
+  #7 — AI director for smart embed starter kit
     Discuss the value of adding an AI director (like 3pd-ai-director) to the smart embed
     starter kit. What would it generate? What problem does it solve at that layer?
 
@@ -2159,6 +2265,7 @@ Pick up next session:
 
   - Single Directory Components (SDC) — discuss architecture fit with current starter patterns
   - Bootstrap → USWDS migration — discuss approach, LOE, and phasing before starting work
+  - 3PD standalone repo delivery — how to package 3pd-ide for external clients (copy vs submodule vs npm)
 
 ### DEFERRED — production prep (not needed for POC)
 

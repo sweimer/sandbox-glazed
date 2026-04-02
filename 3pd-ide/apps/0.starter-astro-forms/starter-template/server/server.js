@@ -15,11 +15,14 @@
  * Routes:
  *   GET  /api/${APP_SLUG}/submissions     → list all submissions (newest first)
  *   POST /api/${APP_SLUG}/submissions     → create a new submission
+ *   GET  /api/${APP_SLUG}/menu/:menuName  → return menu items from server/menu.json
  */
 
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { getDb } from './db/database.js';
 
 const app     = express();
@@ -75,10 +78,27 @@ app.post(`/api/${APP_SLUG}/submissions`, (req, res) => {
 });
 
 // -----------------------------------------------------------------------
+// GET /api/${APP_SLUG}/menu/:menuName — return menu items from server/menu.json
+// Mirrors MenuController.php in the generated Drupal module.
+// Edit server/menu.json to match your Drupal main menu structure for local dev.
+// -----------------------------------------------------------------------
+app.get(`/api/${APP_SLUG}/menu/:menuName`, (req, res) => {
+  try {
+    const menuFile = resolve(process.cwd(), 'server', 'menu.json');
+    const menus    = JSON.parse(readFileSync(menuFile, 'utf8'));
+    const items    = menus[req.params.menuName] || [];
+    res.json(items);
+  } catch {
+    res.json([]);
+  }
+});
+
+// -----------------------------------------------------------------------
 // Start
 // -----------------------------------------------------------------------
 app.listen(PORT, HOST, () => {
   console.log(`API server running at http://${HOST}:${PORT}`);
   console.log(`  GET  http://${HOST}:${PORT}/api/${APP_SLUG}/submissions`);
   console.log(`  POST http://${HOST}:${PORT}/api/${APP_SLUG}/submissions`);
+  console.log(`  GET  http://${HOST}:${PORT}/api/${APP_SLUG}/menu/:menuName`);
 });

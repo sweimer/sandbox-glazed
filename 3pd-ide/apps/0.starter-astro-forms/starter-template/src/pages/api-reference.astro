@@ -61,7 +61,7 @@ import Layout from '../layouts/Layout.astro';
       </div>
       <p class="small text-muted mb-3">
         These values are set in your <code>.env</code> file and injected at build time by Astro/Vite.
-        Use <code>import.meta.env.PUBLIC_*</code> to access them in scripts.
+        Use <code>import.meta.env.PUBLIC_&#42;</code> to access them in scripts.
       </p>
       <div class="table-responsive">
         <table class="table table-sm table-bordered align-middle small">
@@ -97,13 +97,13 @@ import Layout from '../layouts/Layout.astro';
           <tbody>
             <tr>
               <td><span class="badge bg-success">GET</span></td>
-              <td><code id="get-path">/api/{APP_SLUG}/submissions</code></td>
+              <td><code id="get-path">/api/&#123;APP_SLUG&#125;/submissions</code></td>
               <td>Return all submissions, newest first</td>
               <td><code>[ &#123; id, message, created_at &#125;, … ]</code></td>
             </tr>
             <tr>
               <td><span class="badge bg-primary">POST</span></td>
-              <td><code id="post-path">/api/{APP_SLUG}/submissions</code></td>
+              <td><code id="post-path">/api/&#123;APP_SLUG&#125;/submissions</code></td>
               <td>Save a new submission</td>
               <td><code>&#123; id, message, created_at &#125;</code> · 201</td>
             </tr>
@@ -116,9 +116,9 @@ import Layout from '../layouts/Layout.astro';
         <pre class="bg-dark text-light rounded p-3 small mb-0" style="overflow-x:auto;font-size:0.8rem;line-height:1.6"><code>const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || '';
 const APP_SLUG = import.meta.env.PUBLIC_APP_SLUG     || '';
 
-const res  = await fetch(`${API_BASE}/api/${APP_SLUG}/submissions`);
+const res  = await fetch(`$&#123;API_BASE&#125;/api/$&#123;APP_SLUG&#125;/submissions`);
 const data = await res.json();
-// data → [ { id: 1, message: "Hello", created_at: "2026-04-01 12:00:00" }, … ]</code></pre>
+// data → [ &#123; id: 1, message: "Hello", created_at: "2026-04-01 12:00:00" &#125;, … ]</code></pre>
         <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn" style="font-size:0.7rem" data-target="get-code">Copy</button>
       </div>
 
@@ -135,13 +135,13 @@ const data = await res.json();
 
       <h3 class="h6 fw-semibold mb-2">POST — Save data</h3>
       <div class="position-relative mb-3">
-        <pre class="bg-dark text-light rounded p-3 small mb-0" style="overflow-x:auto;font-size:0.8rem;line-height:1.6"><code>const res = await fetch(`${API_BASE}/api/${APP_SLUG}/submissions`, {
+        <pre class="bg-dark text-light rounded p-3 small mb-0" style="overflow-x:auto;font-size:0.8rem;line-height:1.6"><code>const res = await fetch(`$&#123;API_BASE&#125;/api/$&#123;APP_SLUG&#125;/submissions`, &#123;
   method:  'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body:    JSON.stringify({ message: 'Hello world' }),
-});
+  headers: &#123; 'Content-Type': 'application/json' &#125;,
+  body:    JSON.stringify(&#123; message: 'Hello world' &#125;),
+&#125;);
 const saved = await res.json();
-// saved → { id: 4, message: "Hello world", created_at: "2026-04-01 12:01:00" }</code></pre>
+// saved → &#123; id: 4, message: "Hello world", created_at: "2026-04-01 12:01:00" &#125;</code></pre>
         <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn" style="font-size:0.7rem" data-target="post-code">Copy</button>
       </div>
 

@@ -1,0 +1,7 @@
+{
+  "main": [
+    { "title": "Home",    "url": "/",        "weight": 0, "children": [] },
+    { "title": "About",   "url": "/about",   "weight": 1, "children": [] },
+    { "title": "Contact", "url": "/contact", "weight": 2, "children": [] }
+  ]
+}

@@ -203,15 +203,17 @@ Falling back to 3PD mode.
   const stableJsFile  = `${machineName}.js`;
   const stableCssFile = `${machineName}.css`;
 
-  // Extract body HTML — Astro SSG renders the full page structure at build time.
-  // Script and link tags are stripped — libraries.yml handles asset loading.
+  // Read the full Astro build output — PageController serves it as a raw Response,
+  // bypassing Drupal's theming layer entirely so no header/footer/nav appears.
   let inlineJs  = '';
   let inlineCss = '';
   let bodyHtml  = '';
+  let pageHtml  = '';
 
   const distHtmlPath = path.join(distDir, 'index.html');
   if (fs.existsSync(distHtmlPath)) {
     const html = fs.readFileSync(distHtmlPath, 'utf8');
+    pageHtml = html;
 
     const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/);
     if (bodyMatch) {
@@ -267,11 +269,60 @@ Falling back to 3PD mode.
   const moduleAssetsDir = path.join(moduleDir, 'dist', 'assets');
   fs.mkdirSync(moduleAssetsDir, { recursive: true });
 
-  if (jsFiles.length > 0 && fs.existsSync(astroAssets)) {
+  if (fs.existsSync(astroAssets) && (jsFiles.length > 0 || cssFiles.length > 0)) {
+    // Copy all external assets (JS and/or CSS) from _astro/ to the module.
+    // Previously gated on jsFiles only — missed the CSS-only case (no external JS bundle).
     copyRecursive(astroAssets, moduleAssetsDir);
   } else {
     if (inlineJs)  fs.writeFileSync(path.join(moduleAssetsDir, stableJsFile), inlineJs);
     if (inlineCss) fs.writeFileSync(path.join(moduleAssetsDir, stableCssFile), inlineCss);
+  }
+
+  // ---------------------------------------------------------
+  // HTML rewriting helper — rewrites /_astro/ paths to the module's
+  // public path and injects Bootstrap CDN (unavailable when bypassing
+  // Drupal's theming layer). Used for both the main page and sub-pages.
+  // ---------------------------------------------------------
+  const modulePublicPath = `/modules/custom/${machineName}/dist/assets`;
+  const bootstrapHead = [
+    '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">',
+    '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css">',
+  ].join('\n');
+  const bootstrapFoot = '  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>';
+
+  function rewritePageHtml(html) {
+    let out = html;
+    if (jsFiles.length > 0) {
+      out = out.split(`/_astro/${jsFiles[0]}`).join(`${modulePublicPath}/${stableJsFile}`);
+    }
+    if (cssFiles.length > 0) {
+      out = out.split(`/_astro/${cssFiles[0]}`).join(`${modulePublicPath}/${stableCssFile}`);
+    }
+    out = out.replace(/\/_astro\//g, `${modulePublicPath}/`);
+    out = out.replace('<head>', `<head>\n${bootstrapHead}`);
+    out = out.replace('</body>', `${bootstrapFoot}\n</body>`);
+    return out;
+  }
+
+  // Write dist/page.html — main page (index.html)
+  if (pageHtml) {
+    fs.writeFileSync(path.join(moduleDir, 'dist', 'page.html'), rewritePageHtml(pageHtml));
+  }
+
+  // ---------------------------------------------------------
+  // Process sub-pages: any dist/{slug}/index.html becomes
+  // dist/{slug}.html in the module and gets its own route + method.
+  // ---------------------------------------------------------
+  const additionalPages = [];
+  const SKIP_DIRS = new Set(['api-reference', 'styleguide', '_astro', 'assets']);
+  for (const entry of fs.readdirSync(distDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name.startsWith('_') || SKIP_DIRS.has(entry.name)) continue;
+    const subHtmlPath = path.join(distDir, entry.name, 'index.html');
+    if (!fs.existsSync(subHtmlPath)) continue;
+    const subHtml = fs.readFileSync(subHtmlPath, 'utf8');
+    fs.writeFileSync(path.join(moduleDir, 'dist', `${entry.name}.html`), rewritePageHtml(subHtml));
+    additionalPages.push(entry.name);
+    console.log(`  ✔  Sub-page bundled: /${appName}/${entry.name}`);
   }
 
   // ---------------------------------------------------------
@@ -304,33 +355,15 @@ configure: ${machineName}.page
   const modulePhp = `<?php
 
 /**
- * Implements hook_theme().
+ * @file
+ * Module hooks for ${machineName}.
  *
- * Registers the content template used by PageController.
- */
-function ${machineName}_theme($existing, $type, $theme, $path) {
-  return [
-    '${themeHookKey}' => [
-      'variables' => [],
-      'template' => '${contentTemplateName}',
-      'path' => \\Drupal::service('extension.list.module')->getPath('${machineName}') . '/templates',
-    ],
-  ];
-}
-
-/**
- * Implements hook_theme_suggestions_HOOK_alter() for page.
+ * The Astro app is served as a raw HTML response by PageController,
+ * bypassing Drupal's theming layer so no site chrome appears.
+ * Schema and seed data installation are handled in ${machineName}.install.
  *
- * Adds the page--${hyphenName}-page.html.twig suggestion when the visitor
- * is on this module's route. That template strips all Drupal regions so
- * the Astro app owns the entire viewport.
+ * Generated by 3PD module generator — do not edit manually.
  */
-function ${machineName}_theme_suggestions_page_alter(array &$suggestions, array $variables) {
-  $route_name = \\Drupal::routeMatch()->getRouteName();
-  if ($route_name === '${machineName}.page') {
-    $suggestions[] = '${pageThemeSuggestion}';
-  }
-}
 `;
 
   fs.writeFileSync(path.join(moduleDir, `${machineName}.module`), modulePhp);
@@ -455,34 +488,7 @@ ${cssSection}
     librariesYml
   );
 
-  // ---------------------------------------------------------
-  // Twig templates
-  // ---------------------------------------------------------
-  const templatesDir = path.join(moduleDir, 'templates');
-  fs.mkdirSync(templatesDir);
-
-  // 1. Content template — body HTML from the Astro build
-  const contentTwig = bodyHtml
-    ? `${bodyHtml}\n`
-    : `<div id="${hyphenName}-root"></div>\n`;
-  fs.writeFileSync(path.join(templatesDir, contentTwigFilename), contentTwig);
-
-  // 2. Page-level template — strips all Drupal regions so the app owns the viewport
-  const pageTwig = `{#
-/**
- * @file
- * Full-page template for ${machineName}.
- *
- * Applied automatically via hook_theme_suggestions_page_alter() when
- * the visitor navigates to /${appName}. Strips all Drupal regions so
- * the Astro app owns the entire page viewport.
- *
- * Generated by 3PD module generator — do not edit manually.
- */
-#}
-{{ page.content }}
-`;
-  fs.writeFileSync(path.join(templatesDir, pageTwigFilename), pageTwig);
+  // No twig templates needed — PageController serves dist/page.html as a raw Response.
 
   // ---------------------------------------------------------
   // Page controller
@@ -496,29 +502,37 @@ ${cssSection}
 namespace Drupal\\${machineName}\\Controller;
 
 use Drupal\\Core\\Controller\\ControllerBase;
+use Symfony\\Component\\HttpFoundation\\Response;
 
 /**
- * Renders the ${displayName} Astro app at /${appName}.
+ * Serves the ${displayName} Astro app at /${appName}.
  *
- * The page-level twig template (page--${hyphenName}-page.html.twig) is
- * applied via hook_theme_suggestions_page_alter() to strip all Drupal
- * regions so the app owns the full viewport.
+ * Returns a raw Symfony Response with the pre-built Astro HTML (dist/page.html),
+ * bypassing Drupal's theming layer entirely so no site header/footer/nav appears.
  *
  * Generated by 3PD module generator — do not edit manually.
  */
 class PageController extends ControllerBase {
 
-  public function page() {
-    return [
-      '#theme' => '${themeHookKey}',
-      '#attached' => [
-        'library' => [
-          '${machineName}/${machineName}',
-        ],
-      ],
-    ];
+  public function page(): Response {
+    $module_path = \\Drupal::service('extension.list.module')->getPath('${machineName}');
+    $html_file   = \\Drupal::root() . '/' . $module_path . '/dist/page.html';
+    $html        = file_exists($html_file) ? file_get_contents($html_file) : '<p>App not built.</p>';
+    if (\\Drupal::currentUser()->isAuthenticated()) {
+      $html = str_replace('<body', '<body data-drupal-auth="1"', $html);
+    }
+    return new Response($html, 200, ['Content-Type' => 'text/html; charset=utf-8']);
   }
-
+${additionalPages.map((slug) => `
+  public function subpage_${slug.replace(/[^a-z0-9]/gi, '_')}(): Response {
+    $module_path = \\Drupal::service('extension.list.module')->getPath('${machineName}');
+    $html_file   = \\Drupal::root() . '/' . $module_path . '/dist/${slug}.html';
+    $html        = file_exists($html_file) ? file_get_contents($html_file) : '<p>Page not built.</p>';
+    if (\\Drupal::currentUser()->isAuthenticated()) {
+      $html = str_replace('<body', '<body data-drupal-auth="1"', $html);
+    }
+    return new Response($html, 200, ['Content-Type' => 'text/html; charset=utf-8']);
+  }`).join('\n')}
 }
 `;
 
@@ -583,6 +597,78 @@ class SubmissionsController extends ControllerBase {
   fs.writeFileSync(path.join(controllerDir, 'SubmissionsController.php'), submissionsControllerPhp);
 
   // ---------------------------------------------------------
+  // Menu API controller
+  // Reads a named Drupal menu and returns JSON items.
+  // ---------------------------------------------------------
+  const menuControllerPhp = `<?php
+
+namespace Drupal\\${machineName}\\Controller;
+
+use Drupal\\Core\\Controller\\ControllerBase;
+use Drupal\\Core\\Menu\\MenuTreeParameters;
+use Symfony\\Component\\HttpFoundation\\JsonResponse;
+use Symfony\\Component\\HttpFoundation\\Request;
+
+/**
+ * Returns Drupal menu items as JSON.
+ *
+ * GET /api/${appName}/menu/{menu_name}
+ *
+ * Generated by 3PD module generator — do not edit manually.
+ */
+class MenuController extends ControllerBase {
+
+  public function items(Request $request, string $menu_name): JsonResponse {
+    $menu_tree  = \\Drupal::service('menu.link_tree');
+    $parameters = new MenuTreeParameters();
+    $parameters->setMinDepth(1)->setMaxDepth(2)->onlyEnabledLinks();
+    $tree = $menu_tree->load($menu_name, $parameters);
+
+    $manipulators = [
+      ['callable' => 'menu.default_tree_manipulators:checkAccess'],
+      ['callable' => 'menu.default_tree_manipulators:generateIndexAndSort'],
+    ];
+    $tree = $menu_tree->transform($tree, $manipulators);
+
+    $items = [];
+    foreach ($tree as $element) {
+      $link     = $element->link;
+      $url_obj  = $link->getUrlObject();
+      $children = [];
+
+      if (!empty($element->subtree)) {
+        $child_manipulators = $manipulators;
+        $subtree = $menu_tree->transform($element->subtree, $child_manipulators);
+        foreach ($subtree as $child_element) {
+          $child_link    = $child_element->link;
+          $child_url_obj = $child_link->getUrlObject();
+          $children[]    = [
+            'title'  => $child_link->getTitle(),
+            'url'    => $child_url_obj->setAbsolute(FALSE)->toString(),
+            'weight' => $child_link->getWeight(),
+          ];
+        }
+      }
+
+      $items[] = [
+        'title'    => $link->getTitle(),
+        'url'      => $url_obj->setAbsolute(FALSE)->toString(),
+        'weight'   => $link->getWeight(),
+        'children' => $children,
+      ];
+    }
+
+    $response = new JsonResponse($items);
+    $response->headers->set('Cache-Control', 'no-store');
+    return $response;
+  }
+
+}
+`;
+
+  fs.writeFileSync(path.join(controllerDir, 'MenuController.php'), menuControllerPhp);
+
+  // ---------------------------------------------------------
   // Write .routing.yml — page route + submissions API
   // ---------------------------------------------------------
   const routingYml = `
@@ -594,7 +680,10 @@ ${machineName}.page:
   requirements:
     _permission: 'access content'
 
-${machineName}.api_submissions_list:
+${additionalPages.map((slug) => {
+    const safeSlug = slug.replace(/[^a-z0-9]/gi, '_');
+    return `${machineName}.subpage_${safeSlug}:\n  path: '/${appName}/${slug}'\n  defaults:\n    _controller: '\\Drupal\\${machineName}\\Controller\\PageController::subpage_${safeSlug}'\n    _title: '${humanName} \u2014 ${slug}'\n  requirements:\n    _permission: 'access content'`;
+  }).join('\n\n')}${additionalPages.length ? '\n\n' : ''}${machineName}.api_submissions_list:
   path: '/api/${appName}/${seedData.table}'
   defaults:
     _controller: '\\Drupal\\${machineName}\\Controller\\SubmissionsController::list'
@@ -609,6 +698,15 @@ ${machineName}.api_submissions_create:
     _controller: '\\Drupal\\${machineName}\\Controller\\SubmissionsController::submit'
     _title: 'Create Submission'
   methods: [POST]
+  requirements:
+    _permission: 'access content'
+
+${machineName}.api_menu:
+  path: '/api/${appName}/menu/{menu_name}'
+  defaults:
+    _controller: '\\Drupal\\${machineName}\\Controller\\MenuController::items'
+    _title: 'Menu'
+  methods: [GET]
   requirements:
     _permission: 'access content'
 `.trim() + '\n';

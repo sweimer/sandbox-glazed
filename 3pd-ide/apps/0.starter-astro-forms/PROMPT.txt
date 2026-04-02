@@ -82,7 +82,8 @@ See LOG.txt "Session 2026-03-29" for full decision context.
 
 3pd-ide/apps/0.starter-astro-forms/
 ├── PROMPT.txt                  ← this file
-├── create-module.js            ← Drupal module generator
+├── create-module.js            ← Drupal block module generator
+├── create-page.js              ← Drupal full-page module generator
 └── starter-template/
     ├── .env.example            ← PUBLIC_DRUPAL_BASE_URL, PUBLIC_API_BASE_URL, PORT, DB_PATH
     ├── .env.production         ← blank PUBLIC_* vars for same-origin production build
@@ -97,17 +98,37 @@ See LOG.txt "Session 2026-03-29" for full decision context.
     │       └── index.astro    ← Drupal content list + form + submissions list
     └── server/
         ├── server.js           ← Express API (127.0.0.1, CORS for dev)
+        ├── menu.json           ← local dev menu data (mirrors Drupal main menu structure)
         └── db/
             ├── database.js     ← better-sqlite3 singleton, WAL mode, auto-schema
             └── schema.sql      ← submissions table definition
 
-Generated module structure (in web/modules/custom/{machineName}/):
+Generated BLOCK module structure (create-module.js → web/modules/custom/{machineName}/):
     ├── data/seed.json              ← SQLite rows baked in at --install time
     ├── {machineName}.install       ← hook_schema + hook_install + _import_seed
     ├── {machineName}.routing.yml   ← test page + GET/POST /api/submissions routes
     ├── src/Controller/
     │   ├── SubmissionsController.php  ← GET list() + POST submit()
     │   └── HudxTestController.php     ← /hudx-test/<appname> test page
+    └── ... (standard module files)
+
+Generated PAGE module structure (create-page.js → web/modules/custom/{machineName}/):
+    ├── data/seed.json              ← SQLite rows baked in at --install time
+    ├── src/Controller/
+    │   ├── PageController.php      ← serves dist/page.html + sub-page HTML as raw Response,
+    │   │                              injects data-drupal-auth="1" for authenticated users
+    │   ├── SubmissionsController.php  ← GET list() + POST submit()
+    │   └── MenuController.php      ← GET /api/{appName}/menu/{menu_name} → JSON menu items
+    ├── dist/
+    │   ├── assets/                 ← renamed stable JS/CSS from Astro build
+    │   └── page.html               ← full Astro HTML, asset paths rewritten to module public path,
+    │                                  Bootstrap 5 + Icons CDN injected in <head>/<body>
+    ├── {machineName}.install       ← hook_schema + hook_install + _import_seed
+    ├── {machineName}.routing.yml   ← /<appName> page + GET/POST /api/submissions routes
+    ├── {machineName}.module        ← minimal (no hook_theme — page served as raw Response)
+    ├── src/Controller/
+    │   ├── PageController.php      ← returns new Response(file_get_contents(dist/page.html))
+    │   └── SubmissionsController.php  ← GET list() + POST submit()
     └── ... (standard module files)
 
 
@@ -131,8 +152,10 @@ the Pantheon URL or default content type changes.
 
 Commands:
   3pd astro-forms app <name>          → commands/astro-forms-app.js
-  3pd astro-forms module              → commands/astro-forms-module.js
-  3pd astro-forms module --install    → internal mode (copies to /web + enables)
+  3pd astro-forms module              → commands/astro-forms-module.js  (block mode)
+  3pd astro-forms module --install    → internal mode: copies to /web + enables
+  3pd astro-forms page                → commands/astro-forms-page.js   (full-page mode)
+  3pd astro-forms page --install      → internal mode: copies to /web + enables
 
 Framework prefix (shared/frameworks.js):
   FRAMEWORK_PREFIXES.astroForms = 'astro-forms---'
@@ -151,6 +174,37 @@ Framework prefix (shared/frameworks.js):
 
 NOTE: better-sqlite3 compiles a native binary. Requires Python + Xcode CLI tools.
 If npm install fails with a gyp error, check Node version compatibility.
+
+
+## HOW `3pd astro-forms page --install` WORKS (FULL-PAGE MODE)
+
+Same Astro app code as block mode. Only the generator output differs.
+
+1. Reads SQLite from server/db/app.sqlite (same as block mode)
+2. Builds Astro app (npm run build)
+3. Generates dist/page.html:
+   - Reads dist/index.html from Astro build
+   - Rewrites /_astro/ asset paths → /modules/custom/{machineName}/dist/assets/
+   - Injects Bootstrap 5.3.x CSS + Bootstrap Icons CDN <link> into <head>
+   - Injects Bootstrap JS CDN <script> before </body>
+   - Reason: the Drupal theme CSS is never loaded when bypassing the theming layer
+4. Generates module in app dir: {machineName}/
+   - data/seed.json, .install, SubmissionsController.php, routing.yml (same as block)
+   - dist/assets/ — renamed stable JS/CSS from Astro build
+   - dist/page.html — rewritten full HTML (see above)
+   - PageController.php — returns new Response(file_get_contents('dist/page.html'))
+   - .module — minimal (no hook_theme, no hook_theme_suggestions_page_alter)
+   - NO templates/ directory
+5. Copies module to /web/modules/custom/{machineName}/
+6. drush pm:uninstall → drush en → lando crx → router rebuild
+7. Reports page URL: /<appName>
+
+WHY RAW RESPONSE (not hook_theme_suggestions_page_alter):
+  Drupal only searches for page--*.html.twig templates in the ACTIVE THEME's
+  templates/ folder — never in modules. A module can add a page suggestion but
+  cannot provide the template file. The raw Symfony Response approach bypasses
+  this entirely: PageController reads dist/page.html and returns it directly,
+  skipping Drupal's theming layer, BigPipe, and the admin toolbar.
 
 
 ## HOW `3pd astro-forms module --install` WORKS
@@ -187,6 +241,53 @@ Multiple astro-forms modules can coexist.
 The table name is also detected dynamically from sqlite_master (not hardcoded).
 readSqlite() returns { rows, cols, tableName } — used throughout create-module.js.
 Routes in routing.yml: /api/${appName}/${tableName}
+
+
+## MULTI-PAGE SUPPORT (page mode only)
+
+`create-page.js` automatically discovers sub-pages from the Astro build output.
+Any `dist/{slug}/index.html` (excluding `api-reference`, `styleguide`, `_astro`, `assets`)
+becomes a Drupal route at `/{appName}/{slug}` with its own PageController method.
+
+Steps to add a sub-page:
+  1. Create `src/pages/{slug}.astro` in the app
+  2. Run `3pd astro-forms page [--install]` — no other config needed
+  3. The generator creates `dist/{slug}.html`, a `subpage_{slug}()` method in PageController,
+     and a `{machineName}.subpage_{slug}` route in routing.yml automatically
+
+No limit on number of sub-pages. `api-reference` and `styleguide` are always excluded.
+
+
+## DYNAMIC NAV (page mode — MenuController)
+
+`create-page.js` always generates `MenuController.php`. It reads a named Drupal menu
+via the `menu.link_tree` service (depth 2, enabled links only) and returns JSON:
+
+  GET /api/{appName}/menu/{menu_name}
+  → [{ title, url, weight, children: [{ title, url, weight }] }]
+
+Local dev equivalent is in `server/server.js`:
+  GET /api/${APP_SLUG}/menu/:menuName → reads `server/menu.json`
+
+`server/menu.json` ships with a minimal `main` menu. Update it to mirror your
+Drupal menu structure for accurate local dev. Its structure is:
+  { "main": [{ "title": "", "url": "", "weight": 0, "children": [] }] }
+
+Nav JS should: fetch on page load, fall back to static HTML if the request fails.
+Use `Cache-Control: no-store` (already set in MenuController) to keep nav fresh.
+
+
+## AUTH-GATED EDIT BUTTONS (page mode)
+
+`PageController.php` injects `data-drupal-auth="1"` on `<body>` for authenticated users.
+`Layout.astro` simulates this in local dev via `{isDev && <script>}`.
+
+Pattern for auth-gated edit buttons in app CSS:
+  .edit-btn { display: none; }
+  body[data-drupal-auth] .edit-btn { display: inline-flex; }
+
+This single CSS rule controls all edit buttons site-wide — no JS auth checks needed.
+Edit buttons open Drupal admin URLs in an iframe modal (see AlexRenew demo for reference).
 
 
 ## DRUPAL DEV ASSETS (Bootstrap + DXPR theme in local dev)
@@ -370,6 +471,15 @@ Test URL on Pantheon: https://dev-3-pd-ide.pantheonsite.io/hudx-test/<appname>
 7. astro.config.mjs @hudx / @hudxjs aliases use monorepo-relative paths.
    Will break in standalone repo. Fix when implementing standalone repos.
 
+8. api-reference.astro: raw {} in <pre> code blocks are parsed as JSX expressions
+   by Astro, even inside <pre>. All literal { } in code examples must be escaped
+   as &#123; / &#125;. The esbuild error message points to the wrong line (source
+   map inaccuracy) — search the whole file for unescaped { } in HTML context.
+
+9. page--*.html.twig in modules is silently ignored by Drupal. Drupal only finds
+   page-level twig overrides in the active theme's templates/ folder. Use a raw
+   Symfony Response from the controller instead (see create-page.js).
+
 
 ## MANDATORY CHECKLIST FOR ALL MODULE GENERATORS
 
@@ -395,6 +505,14 @@ Test URL on Pantheon: https://dev-3-pd-ide.pantheonsite.io/hudx-test/<appname>
   [x] POST /api/{APP_SLUG}/submissions route in routing.yml uses submit() not create()
   [x] --install does pm:uninstall before pm:enable (ensures table recreated)
   [x] Custom create-module.js in app dir takes precedence over starter kit version
+
+PAGE MODE ONLY (create-page.js):
+  [x] PageController returns raw Symfony Response — NOT a render array with #theme
+  [x] dist/page.html generated with /_astro/ paths rewritten to module public path
+  [x] Bootstrap 5 CSS + Icons CDN injected into <head> of page.html
+  [x] Bootstrap JS CDN injected before </body> of page.html
+  [x] No templates/ directory generated (twig not used in page mode)
+  [x] .module is minimal — no hook_theme, no hook_theme_suggestions_page_alter
 
 
 ## HOW TO BUILD A NEW FORMS STARTER FOR A DIFFERENT FRAMEWORK

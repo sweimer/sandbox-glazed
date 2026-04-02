@@ -34,6 +34,7 @@ const isDev = import.meta.env.DEV;
     )}
     <slot />
     {isDev && <script is:inline src="/drupal-dev-scripts.js"></script>}
+    {isDev && <script is:inline>document.body.setAttribute('data-drupal-auth','1');</script>}
   </body>
 </html>
 
