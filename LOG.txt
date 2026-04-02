@@ -2432,3 +2432,81 @@ Pick up next session:
     - Jira MCP setup (roadmap #4 — review priority at next session start)
     - Add Prettier to testing suite (roadmap #6)
     - AlexRenew branch setup (roadmap #5 AlexRenew POC — next step)
+
+
+## SESSION: 2026-04-02 — AlexRenew Lando setup
+
+### Context
+Starting the AlexRenew POC. Need Lando running locally before we can install
+hudx_3pd_assets and test the theme bridge workflow end-to-end.
+
+### ✓ feature/3pd-ide-poc branch committed (alex-renew-d8)
+
+  All theme bridge files committed to the branch:
+    3pd-ide/apps/0.starter-astro-forms/ + CLI
+    web/modules/custom/hudx_3pd_assets/
+    3pd.config.json (themeSystem: "custom", assetsUrl: https://alex-dpl.lndo.site/3pd-assets)
+
+  Two cleanup items noted for later:
+    - hudx-global/ should be removed from 3pd-ide/starter-scripts/ in client deliveries
+    - @hudx / @hudxjs aliases should be removed from starter-template/astro.config.mjs
+
+### ✗ AlexRenew Lando — NOT YET WORKING (pick up here)
+
+  First `lando start` failed with two post-start hook errors:
+    1. Composer install crashed: FilesystemRepository.php couldn't find InstalledVersions.php
+       (autoloader generation incomplete — composer/composer is a project dependency,
+       caused a path resolution conflict with the globally installed composer binary)
+    2. Theme build failed: `npm: not found` — Lando runs `cd web/themes/alex_renew && npm ci`
+       as a post-start hook but npm isn't available in the appserver container.
+       NOT blocking for our POC purposes — CSS is served from pre-built files.
+
+  Fixes applied so far:
+    ✓ lando composer dump-autoload — regenerated autoloader (9699 classes)
+    ✓ lando db-import db/drupal8.sql.gz — DB imported (more recent than alex-dpl_live_*.sql)
+
+  Current blocker:
+    pathauto service error on boot:
+      "The service 'pathauto.alias_storage_helper' has a dependency on a non-existent
+       service 'path_alias.repository'"
+    Root cause: DB is from Drupal 8, codebase is Drupal 10.5.8.
+    pathauto references a service (path_alias.repository) renamed/removed in D9/D10.
+    Drupal cannot compile the service container — site returns 404 on lndo.site URLs.
+
+  Also: `Cannot read properties of undefined (reading 'split')` — Lando CLI JS error
+  thrown after db-import. Cosmetic, doesn't affect the actual import (Import complete! shown).
+
+### WHERE WE LEFT OFF (end of 2026-04-02 session)
+
+  Pick up here next session:
+
+  Step 1 — Run DB updates to fix the D8→D10 service compatibility:
+    lando drush updb -y --uri=https://alex-dpl.lndo.site
+    If that fails due to service container error, try first:
+      lando drush php:eval "\Drupal::service('kernel')->rebuildContainer();" --uri=https://alex-dpl.lndo.site
+
+  Step 2 — Clear caches:
+    lando drush cr --uri=https://alex-dpl.lndo.site
+
+  Step 3 — Verify site loads:
+    Open https://alex-dpl.lndo.site in browser
+
+  Step 4 — Once site loads, install hudx_3pd_assets:
+    lando drush en hudx_3pd_assets -y
+    lando crx (if crx command exists in this repo's .lando.yml — check first)
+
+  Step 5 — Test theme bridge:
+    Visit https://alex-dpl.lndo.site/3pd-assets/config.json
+    Should return { themeSystem: "custom", themeName: "alex_renew", version: ... }
+
+  Step 6 — Scaffold test app:
+    cd 3pd-ide/starter-scripts/cli && npm link (link CLI to alex-renew-d8's 3pd-ide)
+    cd 3pd-ide/apps
+    3pd astro-forms app alex-test
+    PUBLIC_ASSETS_URL should be pre-set in app .env to https://alex-dpl.lndo.site/3pd-assets
+    npm run dev → verify AlexRenew CSS loads in Layout.astro
+
+  ALSO NOTE — the npm build-theme hook will keep failing on every lando restart:
+    `cd web/themes/alex_renew && npm ci` runs as a post-start event.
+    To suppress: check .lando.yml or .lando.base.yml for the build-theme event and
+    either remove it or add a guard. Not blocking for POC but annoying.
