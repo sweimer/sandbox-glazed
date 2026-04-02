@@ -1,0 +1,6 @@
+name: 3PD IDE - Astro Forms   Temp Astro Form Page
+type: module
+description: '3PD IDE Astro full-page application module for 3PD IDE - Astro Forms   Temp Astro Form Page.'
+core_version_requirement: ^10 || ^11
+package: 3PD IDE Apps
+configure: hudx_astro_forms___temp_astro_form_page.page

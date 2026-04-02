@@ -1,0 +1,367 @@
+---
+/**
+ * api-reference.astro — DEV ONLY
+ *
+ * Live API reference for this starter kit. Two sections:
+ *   1. App API  — your own Express/PHP endpoints (submissions CRUD)
+ *   2. Drupal JSON:API — read CMS content from Drupal at runtime
+ *
+ * Both live demos fire real requests. Accessible only via the DEV nav.
+ */
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="API Reference — DEV">
+
+  <div class="container my-4">
+
+    <header class="mb-5">
+      <span class="badge bg-warning text-dark mb-2">DEV REFERENCE</span>
+      <h1 class="h3 mb-1">API Reference</h1>
+      <p class="text-muted mb-3">
+        Two API families are available in this starter kit. The live demos below
+        fire real requests — responses shown are actual data.
+      </p>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card border-primary h-100">
+            <div class="card-body">
+              <h2 class="h6 fw-semibold text-primary mb-1">
+                <i class="bi bi-server me-2" aria-hidden="true"></i>App API
+              </h2>
+              <p class="small text-muted mb-0">
+                Your app's own endpoints. Handled by <strong>Express</strong> locally,
+                by a generated <strong>PHP controller</strong> when deployed to Drupal.
+                Same URL pattern in both environments.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card border-info h-100">
+            <div class="card-body">
+              <h2 class="h6 fw-semibold text-info mb-1">
+                <i class="bi bi-cloud me-2" aria-hidden="true"></i>Drupal JSON:API
+              </h2>
+              <p class="small text-muted mb-0">
+                Read CMS-managed content from Drupal at runtime. No redeployment
+                needed when content changes. Requires <code>PUBLIC_DRUPAL_BASE_URL</code> in <code>.env</code>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ENV VARS -->
+    <section class="mb-5 pt-2">
+      <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-4">
+        <h2 class="h5 fw-semibold mb-0 text-primary">Environment Variables</h2>
+        <span class="badge bg-secondary">Setup</span>
+      </div>
+      <p class="small text-muted mb-3">
+        These values are set in your <code>.env</code> file and injected at build time by Astro/Vite.
+        Use <code>import.meta.env.PUBLIC_&#42;</code> to access them in scripts.
+      </p>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle small">
+          <thead class="table-light">
+            <tr><th>Variable</th><th>Current value</th><th>Purpose</th></tr>
+          </thead>
+          <tbody id="env-table-body">
+            <!-- populated by script -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- APP API -->
+    <section class="mb-5 pt-2">
+      <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-4">
+        <h2 class="h5 fw-semibold mb-0 text-primary">App API</h2>
+        <span class="badge bg-primary">Express → PHP</span>
+      </div>
+
+      <p class="small text-muted mb-4">
+        Your app ships with GET and POST endpoints for the <code>submissions</code> table.
+        Served by <strong>Express</strong> locally, by a generated <strong>PHP controller</strong>
+        inside Drupal — the fetch URL is identical in both environments.
+      </p>
+
+      <h3 class="h6 fw-semibold mb-2">Endpoints</h3>
+      <div class="table-responsive mb-4">
+        <table class="table table-sm table-bordered align-middle small">
+          <thead class="table-dark">
+            <tr><th>Method</th><th>Path</th><th>Description</th><th>Response</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge bg-success">GET</span></td>
+              <td><code id="get-path">/api/&#123;APP_SLUG&#125;/submissions</code></td>
+              <td>Return all submissions, newest first</td>
+              <td><code>[ &#123; id, message, created_at &#125;, … ]</code></td>
+            </tr>
+            <tr>
+              <td><span class="badge bg-primary">POST</span></td>
+              <td><code id="post-path">/api/&#123;APP_SLUG&#125;/submissions</code></td>
+              <td>Save a new submission</td>
+              <td><code>&#123; id, message, created_at &#125;</code> · 201</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="h6 fw-semibold mb-2">GET — Retrieve data</h3>
+      <div class="position-relative mb-3">
+        <pre class="bg-dark text-light rounded p-3 small mb-0" style="overflow-x:auto;font-size:0.8rem;line-height:1.6"><code>const API_BASE = import.meta.env.PUBLIC_API_BASE_URL || '';
+const APP_SLUG = import.meta.env.PUBLIC_APP_SLUG     || '';
+
+const res  = await fetch(`$&#123;API_BASE&#125;/api/$&#123;APP_SLUG&#125;/submissions`);
+const data = await res.json();
+// data → [ &#123; id: 1, message: "Hello", created_at: "2026-04-01 12:00:00" &#125;, … ]</code></pre>
+        <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn" style="font-size:0.7rem" data-target="get-code">Copy</button>
+      </div>
+
+      <div class="p-3 bg-light rounded border mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="small fw-semibold">
+            <span class="badge bg-success me-2">GET</span>
+            <code id="get-demo-url">/api/.../submissions</code>
+          </span>
+          <button class="btn btn-success btn-sm" id="try-get">Try it →</button>
+        </div>
+        <div id="get-response"></div>
+      </div>
+
+      <h3 class="h6 fw-semibold mb-2">POST — Save data</h3>
+      <div class="position-relative mb-3">
+        <pre class="bg-dark text-light rounded p-3 small mb-0" style="overflow-x:auto;font-size:0.8rem;line-height:1.6"><code>const res = await fetch(`$&#123;API_BASE&#125;/api/$&#123;APP_SLUG&#125;/submissions`, &#123;
+  method:  'POST',
+  headers: &#123; 'Content-Type': 'application/json' &#125;,
+  body:    JSON.stringify(&#123; message: 'Hello world' &#125;),
+&#125;);
+const saved = await res.json();
+// saved → &#123; id: 4, message: "Hello world", created_at: "2026-04-01 12:01:00" &#125;</code></pre>
+        <button class="btn btn-sm btn-outline-light position-absolute top-0 end-0 m-2 copy-btn" style="font-size:0.7rem" data-target="post-code">Copy</button>
+      </div>
+
+      <div class="p-3 bg-light rounded border">
+        <form id="post-form" class="d-flex align-items-center gap-2 mb-2" aria-label="POST demo">
+          <span class="badge bg-primary flex-shrink-0">POST</span>
+          <label for="post-msg" class="visually-hidden">Message</label>
+          <input id="post-msg" type="text" class="form-control form-control-sm" value="Test entry from API Reference" required />
+          <button type="submit" class="btn btn-primary btn-sm flex-shrink-0">Try it →</button>
+        </form>
+        <p class="small text-muted mb-0">
+          <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+          This writes a real entry to your SQLite database. Check the Home page to see it appear.
+        </p>
+        <div id="post-response"></div>
+      </div>
+
+      <hr class="my-4" />
+
+      <h3 class="h6 fw-semibold mb-2">How it works in Drupal</h3>
+      <div class="alert alert-secondary small" role="note">
+        <p class="mb-2">
+          When you run <code>3pd astro module</code>, the CLI generates a PHP controller
+          (<code>SubmissionsController.php</code>) that mirrors these exact routes. The fetch URL
+          stays identical — <code>/api/{'{APP_SLUG}'}/submissions</code> — because Drupal's routing
+          maps the same path to the PHP handler.
+        </p>
+        <p class="mb-0">
+          Data stored locally in <code>server/db/app.sqlite</code> is bundled into
+          <code>data/seed.json</code> and imported into Drupal's MySQL database on module install.
+        </p>
+      </div>
+    </section>
+
+    <!-- DRUPAL JSON:API -->
+    <section class="mb-5 pt-2">
+      <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-4">
+        <h2 class="h5 fw-semibold mb-0 text-primary">Drupal JSON:API</h2>
+        <span class="badge bg-info">CMS Content</span>
+      </div>
+
+      <p class="small text-muted mb-4">
+        Drupal exposes all content via JSON:API at <code>/jsonapi/</code>. Use this to pull
+        CMS-managed content at runtime — no redeployment needed when editors update content.
+      </p>
+
+      <div id="drupal-warning" class="alert alert-warning small mb-4 d-none" role="alert">
+        <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
+        <code>PUBLIC_DRUPAL_BASE_URL</code> is not set. Add it to <code>.env</code> to enable
+        the live demo.
+      </div>
+
+      <h3 class="h6 fw-semibold mb-2">Common endpoints</h3>
+      <div class="table-responsive mb-4">
+        <table class="table table-sm table-bordered align-middle small">
+          <thead class="table-dark">
+            <tr><th>Content type</th><th>JSON:API path</th><th>Common fields</th></tr>
+          </thead>
+          <tbody>
+            {[
+              ['Basic page',  'node/page',           'title, body, created'],
+              ['Article',     'node/article',        'title, body, field_image, created'],
+              ['Tags',        'taxonomy_term/tags',  'name, description'],
+              ['Media image', 'media/image',         'name, field_media_image'],
+            ].map(([type, path, fields]) => (
+              <tr>
+                <td>{type}</td>
+                <td><code>/jsonapi/{path}</code></td>
+                <td><code class="text-muted">{fields}</code></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="h6 fw-semibold mb-2">GET — Fetch CMS content</h3>
+      <div class="position-relative mb-3">
+        <pre class="bg-dark text-light rounded p-3 small mb-0" style="overflow-x:auto;font-size:0.8rem;line-height:1.6"><code>const DRUPAL_BASE = import.meta.env.PUBLIC_DRUPAL_BASE_URL
+  ? (import.meta.env.DEV ? '/drupal-proxy' : import.meta.env.PUBLIC_DRUPAL_BASE_URL)
+  : '';
+
+const res   = await fetch(`$&#123;DRUPAL_BASE&#125;/jsonapi/node/page?page[limit]=3`);
+const json  = await res.json();
+const pages = json.data;
+// pages[0].attributes.title → "Page title"</code></pre>
+      </div>
+
+      <div class="p-3 bg-light rounded border mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-success">GET</span>
+            <select class="form-select form-select-sm" style="width:auto" id="drupal-type" aria-label="Select content type">
+              <option value="node/page">node/page</option>
+              <option value="node/article">node/article</option>
+              <option value="taxonomy_term/tags">taxonomy_term/tags</option>
+            </select>
+          </div>
+          <button class="btn btn-info btn-sm text-white" id="try-drupal">Try it →</button>
+        </div>
+        <p class="small text-muted mb-0" id="drupal-demo-url"></p>
+        <div id="drupal-response"></div>
+      </div>
+
+      <h3 class="h6 fw-semibold mb-2">Useful query parameters</h3>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle small">
+          <thead class="table-light">
+            <tr><th>Parameter</th><th>Example</th><th>Effect</th></tr>
+          </thead>
+          <tbody>
+            {[
+              ['page[limit]',        'page[limit]=5',               'Return 5 items'],
+              ['page[offset]',       'page[offset]=10',             'Skip first 10 (pagination)'],
+              ['fields[node--page]', 'fields[node--page]=title,body','Return only these fields'],
+              ['filter[status]',     'filter[status]=1',            'Only published content'],
+              ['sort',               'sort=-created',               'Newest first (- = descending)'],
+              ['include',            'include=field_image',         'Eager-load a relationship'],
+            ].map(([param, example, effect]) => (
+              <tr>
+                <td><code>{param}</code></td>
+                <td><code class="text-muted small">{example}</code></td>
+                <td>{effect}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-secondary small mt-3" role="note">
+        <i class="bi bi-info-circle me-2" aria-hidden="true"></i>
+        <strong>No square brackets in URLs through HAProxy.</strong> If your app is deployed
+        behind HAProxy (Pantheon), use encoded forms: <code>page%5Blimit%5D=5</code> instead
+        of <code>page[limit]=5</code>. The Express dev server handles both.
+      </div>
+    </section>
+
+  </div>
+
+</Layout>
+
+<script>
+  const API_BASE    = import.meta.env.PUBLIC_API_BASE_URL    || '';
+  const APP_SLUG    = import.meta.env.PUBLIC_APP_SLUG        || '';
+  const DRUPAL_BASE = import.meta.env.PUBLIC_DRUPAL_BASE_URL
+    ? (import.meta.env.DEV ? '/drupal-proxy' : import.meta.env.PUBLIC_DRUPAL_BASE_URL)
+    : '';
+
+  // Populate env vars table
+  document.getElementById('env-table-body').innerHTML = [
+    ['PUBLIC_API_BASE_URL',    API_BASE    || '(not set)',                    'Base URL for your app\'s Express/PHP API'],
+    ['PUBLIC_APP_SLUG',        APP_SLUG    || '(not set)',                    'Namespaces API routes so multiple apps coexist in Drupal'],
+    ['PUBLIC_DRUPAL_BASE_URL', DRUPAL_BASE || '(not set — add to .env)',     'Drupal instance URL for JSON:API content fetching'],
+  ].map(([name, val, desc]) => `
+    <tr>
+      <td><code>${name}</code></td>
+      <td><code class="${val.startsWith('(') ? 'text-danger' : 'text-success'}">${val}</code></td>
+      <td>${desc}</td>
+    </tr>`).join('');
+
+  // Update path display with real APP_SLUG
+  document.querySelectorAll('#get-path, #post-path').forEach(el => {
+    el.textContent = `/api/${APP_SLUG || '{APP_SLUG}'}/submissions`;
+  });
+  document.getElementById('get-demo-url').textContent =
+    `${API_BASE}/api/${APP_SLUG || '{APP_SLUG}'}/submissions`;
+
+  // Show Drupal warning if no base URL
+  if (!DRUPAL_BASE) document.getElementById('drupal-warning').classList.remove('d-none');
+
+  // Response panel helper
+  function showResponse(containerId, { loading, error, data }) {
+    const el = document.getElementById(containerId);
+    if (loading) { el.innerHTML = '<p class="text-muted small mt-2">Loading…</p>'; return; }
+    if (error)   { el.innerHTML = `<div class="alert alert-danger small mt-2 py-2" role="alert">${error}</div>`; return; }
+    if (data)    { el.innerHTML = `<pre class="bg-dark text-success rounded p-3 small mt-2" style="overflow-x:auto;max-height:280px;font-size:0.78rem">${JSON.stringify(data, null, 2)}</pre>`; }
+  }
+
+  // GET demo
+  document.getElementById('try-get').addEventListener('click', async () => {
+    showResponse('get-response', { loading: true });
+    try {
+      const res = await fetch(`${API_BASE}/api/${APP_SLUG}/submissions`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      showResponse('get-response', { data: await res.json() });
+    } catch (err) {
+      showResponse('get-response', { error: `Request failed: ${err.message}` });
+    }
+  });
+
+  // POST demo
+  document.getElementById('post-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showResponse('post-response', { loading: true });
+    try {
+      const message = document.getElementById('post-msg').value;
+      const res = await fetch(`${API_BASE}/api/${APP_SLUG}/submissions`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ message }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      showResponse('post-response', { data: await res.json() });
+    } catch (err) {
+      showResponse('post-response', { error: `Request failed: ${err.message}` });
+    }
+  });
+
+  // Drupal demo
+  document.getElementById('try-drupal').addEventListener('click', async () => {
+    if (!DRUPAL_BASE) return;
+    const type = document.getElementById('drupal-type').value;
+    document.getElementById('drupal-demo-url').textContent =
+      `${DRUPAL_BASE}/jsonapi/${type}?page[limit]=3`;
+    showResponse('drupal-response', { loading: true });
+    try {
+      const res = await fetch(`${DRUPAL_BASE}/jsonapi/${type}?page[limit]=3`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      showResponse('drupal-response', { data: await res.json() });
+    } catch (err) {
+      showResponse('drupal-response', { error: `Request failed: ${err.message}` });
+    }
+  });
+</script>

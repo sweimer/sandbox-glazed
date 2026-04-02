@@ -1,0 +1,42 @@
+hudx_astro_forms___temp_astro_form_page.page:
+  path: '/astro-forms---temp-astro-form-page'
+  defaults:
+    _controller: '\Drupal\hudx_astro_forms___temp_astro_form_page\Controller\PageController::page'
+    _title: 'Astro Forms   Temp Astro Form Page'
+  requirements:
+    _permission: 'access content'
+
+hudx_astro_forms___temp_astro_form_page.subpage_page2:
+  path: '/astro-forms---temp-astro-form-page/page2'
+  defaults:
+    _controller: '\Drupal\hudx_astro_forms___temp_astro_form_page\Controller\PageController::subpage_page2'
+    _title: 'Astro Forms   Temp Astro Form Page — page2'
+  requirements:
+    _permission: 'access content'
+
+hudx_astro_forms___temp_astro_form_page.api_submissions_list:
+  path: '/api/astro-forms---temp-astro-form-page/submissions'
+  defaults:
+    _controller: '\Drupal\hudx_astro_forms___temp_astro_form_page\Controller\SubmissionsController::list'
+    _title: 'Submissions'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
+
+hudx_astro_forms___temp_astro_form_page.api_submissions_create:
+  path: '/api/astro-forms---temp-astro-form-page/submissions'
+  defaults:
+    _controller: '\Drupal\hudx_astro_forms___temp_astro_form_page\Controller\SubmissionsController::submit'
+    _title: 'Create Submission'
+  methods: [POST]
+  requirements:
+    _permission: 'access content'
+
+hudx_astro_forms___temp_astro_form_page.api_menu:
+  path: '/api/astro-forms---temp-astro-form-page/menu/{menu_name}'
+  defaults:
+    _controller: '\Drupal\hudx_astro_forms___temp_astro_form_page\Controller\MenuController::items'
+    _title: 'Menu'
+  methods: [GET]
+  requirements:
+    _permission: 'access content'
