@@ -27,12 +27,17 @@ function buildStarterBlocks(route, appName, repoUrl, starterPrompt) {
   const scaffold = SCAFFOLD_CMD[route]  ? SCAFFOLD_CMD[route](appName)  : '';
   const appDir   = APP_FOLDER[route]    ? APP_FOLDER[route](appName)    : '';
 
-  return [
-    { label: 'Clone the starter kit',          cmd: `git clone ${repoUrl}` },
-    { label: 'Scaffold your app',               cmd: `cd ${folder} && ${scaffold}` },
-    { label: 'Launch your AI assistant',        cmd: `cd ${appDir} && 3pd run ai` },
-    { label: 'When the AI greets you, paste this', cmd: starterPrompt || '', isPrompt: true },
+  const blocks = [
+    { label: 'Clone the starter kit',       cmd: `git clone ${repoUrl}` },
+    { label: 'Scaffold your app',            cmd: `cd ${folder} && ${scaffold}` },
+    { label: 'Launch your AI assistant',     cmd: `cd ${appDir} && 3pd run ai` },
   ];
+
+  if (starterPrompt) {
+    blocks.push({ label: 'When the AI greets you, paste this', cmd: starterPrompt, isPrompt: true });
+  }
+
+  return blocks;
 }
 
 const ROUTE_DESTINATIONS = {
