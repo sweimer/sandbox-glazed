@@ -7,7 +7,14 @@ Created: 2026-04-01
 
 ## Current Status
 
-The app is a **HUDx 3PD Depot** — a landing page hub for the HUDX web development ecosystem. The main UI (Home.jsx) is largely complete: a hero banner, a "Talk to the 3PD Director" CTA, and six feature cards covering the different developer build paths (Content Editors, Page Builders, IDE Starters, Stand-alone Embeds, Design System, Module Manager).
+The app is a **HUDx 3PD Depot** — a landing page hub for the HUDX web development ecosystem. The main UI (Home.jsx) is complete and deployed as a Drupal module.
+
+**Layout (as of 2026-04-07):**
+- Hero banner with the 3PD Director CTA as the **primary action inside the hero** ("Ready to build? Start with the 3PD Director →")
+- "Browse by Path" section header (renamed from "Choose Your Build Path") — signals this is reference material for returning users
+- Six feature cards in three groups: For Static Features (Content Editors, Page Builders), For Dynamic Features (IDE Starters, Smart Embeds), Tools & Management (Design System, Module Manager)
+
+The Director is now the primary entry point. The card grid is a secondary reference for returning 3PDs who already know their path.
 
 **Accessibility pass complete** (`Home.jsx`, `App.jsx`): all decorative icons have `aria-hidden="true"`, all `target="_blank"` links have `rel="noopener noreferrer"` + `aria-label`, the "View Starter Kits" toggle has `aria-expanded`, `href="#" target="_blank"` dead links had `target="_blank"` removed, TestPanel input now has a `<label>`, and the status message uses `aria-live="polite"`. Four moderate issues remain open (see Backlog).
 
@@ -49,12 +56,10 @@ Backend uses **PostgreSQL** via the `pg` package (connection pool in `server/db/
 
 - `StyleGuide.jsx` imports `@hudx/hudx.css` — this package may not exist in npm; verify or stub
 - Hero image is hotlinked from an external domain (oakwoodhomesco.com) — should be replaced with a local or CDN asset
-- `Home.jsx` — Angular Starter Kit link is `href="#"` (dead end, intentionally left as-is for now)
-- `Home.jsx` — VanillaJS Starter Kit link is `href="#"` (dead end, intentionally left as-is for now)
-- `Home.jsx` — "3PD AI App Helper (COMING SOON)" button links to `/node/add/basic_page_layout_builder` (placeholder — wrong target)
-- `/styleguide`, `/api`, `/test` routes exist in App.jsx but have no nav links from the UI — unreachable unless URL is typed directly
+- `Home.jsx` — Angular Starter Kit link is `href="#"` (dead end, intentionally left as-is until Angular starter ships)
+- `/styleguide`, `/api`, `/test` routes exist in App.jsx but have no nav links from the UI — unreachable unless URL is typed directly; consider removing post-demo
+- After demos: evaluate removing showcase card grid entirely — target audience is 3PDs, not clients; Director is sufficient entry point
 - **A11y moderate (open)**: `<br/>` inside headings — replace with CSS line breaks
-- **A11y moderate (open)**: "COMING SOON" button should be `disabled`/`aria-disabled` or semantically indicate unavailability
 - **A11y moderate (open)**: Two adjacent `btn-primary` links in Module Manager card — replace `<br/>` spacer with margin utility
 - **A11y moderate (open)**: `text-muted` color contrast — verify small text passes WCAG AA against actual backgrounds
 
@@ -85,3 +90,12 @@ Card border color styling pass on `Home.jsx`: cards 1–2 → rust (`#b7410e`), 
 
 ### 2026-04-07 — Session 7
 Demo prep: extracted cards 1–2 border color into a top-of-file constant `CARD_12_BORDER_COLOR` (line 3 of `Home.jsx`) to enable a single-line AI demo change. Cards 1–2 are currently set to rust (`#b7410e`). For the demo, ask AI to switch to red (`#ff0000`) — one edit, instant hot-reload. Left with `src/pages/Home.jsx` modified — uncommitted.
+
+### 2026-04-07 — Session 8
+Director-first restructure + cleanup:
+- Director CTA moved into the hero as the primary action ("Ready to build? Start with the 3PD Director →") — replaces orphaned yellow button below the hero
+- "Choose Your Build Path" renamed to "Browse by Path" — positions cards as secondary reference for returning users
+- Removed "3PD AI App Helper (COMING SOON)" button and `<br/>` from the 3PD IDE Starters card
+- Removed VanillaJS Starter Kit placeholder link from the Starter Kits list
+- Module rebuilt and reinstalled via `3pd react module --install`
+- Committed to main.
