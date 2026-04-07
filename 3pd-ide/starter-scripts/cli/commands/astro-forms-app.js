@@ -37,11 +37,6 @@ function copyRecursive(src, dest) {
 export default async function astroFormsApp(name, { ideRoot }) {
   log.header('Create New Astro Forms App');
 
-  if (!ideRoot) {
-    log.error('Missing ideRoot. CLI did not pass correct options.');
-    process.exit(1);
-  }
-
   const rawName = Array.isArray(name) ? name.join(' ') : name;
   const slug = rawName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
 
@@ -50,9 +45,24 @@ export default async function astroFormsApp(name, { ideRoot }) {
     process.exit(1);
   }
 
-  const folderName  = FRAMEWORK_PREFIXES.astroForms + slug;
-  const templateDir = path.join(ideRoot, 'apps', '0.starter-astro-forms', 'starter-template');
-  const appDir      = path.join(ideRoot, 'apps', folderName);
+  const folderName = FRAMEWORK_PREFIXES.astroForms + slug;
+
+  // Standalone mode: running from inside a cloned starter kit repo
+  // (detected by presence of starter-template/ in cwd).
+  const cwd = process.cwd();
+  const standaloneTemplate = path.join(cwd, 'starter-template');
+  const isStandalone = fs.existsSync(standaloneTemplate);
+
+  const templateDir = isStandalone
+    ? standaloneTemplate
+    : path.join(ideRoot, 'apps', '0.starter-astro-forms', 'starter-template');
+  const appDir = isStandalone
+    ? path.join(cwd, 'apps', folderName)
+    : path.join(ideRoot, 'apps', folderName);
+
+  if (isStandalone) {
+    log.info('Standalone mode — creating app inside cloned starter kit repo.');
+  }
 
   if (!fs.existsSync(templateDir)) {
     log.error('Astro Forms starter template not found.');
@@ -154,6 +164,9 @@ export default async function astroFormsApp(name, { ideRoot }) {
     log.info(`Using remote theme assets from: ${assetsUrl}`);
     log.dim('Skipping local drupal-dev-styles.css generation — PUBLIC_ASSETS_URL is set.');
     log.dim('Layout.astro will load styles from assetsUrl in dev mode.');
+  } else if (isStandalone) {
+    log.dim('Standalone mode — skipping local drupal-dev-styles.css generation.');
+    log.dim('Set PUBLIC_ASSETS_URL in .env to load theme styles from a remote URL.');
   } else {
     await stylesSync({ ideRoot });
   }
@@ -162,7 +175,7 @@ export default async function astroFormsApp(name, { ideRoot }) {
   log.success(`Astro Forms app "${folderName}" created successfully.`);
   log.nl();
   log.dim('Next steps:');
-  log.dim(`  cd apps/${folderName}`);
+  log.dim(`  cd ${isStandalone ? `apps/${folderName}` : `3pd-ide/apps/${folderName}`}`);
   log.dim('  Edit src/pages/index.astro — replace YOUR_CONTENT_TYPE with your Drupal content type');
   log.dim('  npm run dev          # starts Astro + Express together on localhost:4321');
   log.dim('  3pd astro-forms module   # when ready to generate the Drupal block module');
