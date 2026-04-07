@@ -1,9 +1,0 @@
-hudx_react___3pd_ai_helper:
-  version: 1774823828555
-  js:
-    dist/assets/hudx_react___3pd_ai_helper.js:
-      header: true
-      attributes:
-        type: module
-  dependencies:
-    - core/drupal
