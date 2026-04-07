@@ -104,7 +104,7 @@ RULES:
         ],
         'json' => [
           'model'      => 'claude-haiku-4-5-20251001',
-          'max_tokens' => 1024,
+          'max_tokens' => 2048,
           'system'     => $systemPrompt,
           'messages'   => $apiMessages,
         ],
@@ -121,7 +121,14 @@ RULES:
       return new JsonResponse(['error' => 'Claude API error: ' . $e->getMessage()], 500);
     }
 
-    // Parse [SUBMIT:route=...,name=...,email=...,summary=...] tag
+    // Strip [STARTER_PROMPT]...[/STARTER_PROMPT] block first (may be multi-line)
+    $starterPrompt = NULL;
+    if (preg_match('/\[STARTER_PROMPT\]([\s\S]*?)\[\/STARTER_PROMPT\]/', $text, $spMatches)) {
+      $starterPrompt = trim($spMatches[1]);
+      $text = trim(str_replace($spMatches[0], '', $text));
+    }
+
+    // Parse [SUBMIT:route=...,name=...,email=...,app_name=...,summary=...] tag
     $submit = NULL;
     if (preg_match('/\[SUBMIT:([^\]]+)\]/', $text, $matches)) {
       $text = trim(str_replace($matches[0], '', $text));
@@ -138,10 +145,12 @@ RULES:
       preg_match('/summary=(.+)$/', $raw, $summaryMatch);
 
       $submit = [
-        'route'   => $getField('route'),
-        'name'    => $getField('name'),
-        'email'   => $getField('email'),
-        'summary' => isset($summaryMatch[1]) ? trim($summaryMatch[1]) : '',
+        'route'        => $getField('route'),
+        'name'         => $getField('name'),
+        'email'        => $getField('email'),
+        'appName'      => $getField('app_name'),
+        'summary'      => isset($summaryMatch[1]) ? trim($summaryMatch[1]) : '',
+        'starterPrompt' => $starterPrompt,
       ];
     }
 

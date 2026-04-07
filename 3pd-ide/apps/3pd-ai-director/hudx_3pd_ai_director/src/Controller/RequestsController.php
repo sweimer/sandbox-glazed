@@ -31,12 +31,13 @@ class RequestsController extends ControllerBase {
     $db = \Drupal::database();
     $db->insert('hudx_3pd_ai_director_requests')
       ->fields([
-        'name'         => $data['name']         ?? '',
-        'email'        => $data['email']        ?? '',
-        'summary'      => $data['summary']      ?? '',
-        'route'        => $data['route']        ?? '',
-        'conversation' => $data['conversation'] ?? '',
-        'created_at'   => date('Y-m-d H:i:s'),
+        'name'          => $data['name']          ?? '',
+        'email'         => $data['email']         ?? '',
+        'summary'       => $data['summary']       ?? '',
+        'route'         => $data['route']         ?? '',
+        'conversation'  => $data['conversation']  ?? '',
+        'starter_prompt' => $data['starterPrompt'] ?? '',
+        'created_at'    => date('Y-m-d H:i:s'),
       ])
       ->execute();
 
