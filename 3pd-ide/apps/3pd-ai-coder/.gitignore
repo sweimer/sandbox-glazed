@@ -4,3 +4,6 @@ dist/
 server/db/*.sqlite
 server/db/*.sqlite-shm
 server/db/*.sqlite-wal
+
+# AI assistant session context (auto-generated, never commit)
+CLAUDE.md

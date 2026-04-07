@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 
+// Demo: change this to '#ff0000' to show AI-assisted color changes
+const CARD_12_BORDER_COLOR = '#b7410e';
+
 export default function ThreePDLandingPage() {
   const [showProCodeRepos, setShowProCodeRepos] = useState(false);
 
@@ -35,28 +38,27 @@ export default function ThreePDLandingPage() {
           <p className="lead mt-2">
             Your one‑stop shop for building HUDX web development solutions — from content editing to full application development.
           </p>
+
+          <div className="mt-4">
+            <a
+              href="/hudx-test/3pd-ai-director"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Ready to build? Start with the 3PD Director (opens in new tab)"
+              className="btn btn-warning btn-lg fw-bold shadow"
+            >
+              <i className="bi bi-stars me-2" aria-hidden="true"></i>
+              Ready to build? Start with the 3PD Director →
+            </a>
+          </div>
         </div>
       </header>
 
-      {/* NOT SURE WHERE TO START? */}
-      <div className="text-center my-4 dxpr-animate dxpr-fade-in">
-        <a
-          href="/hudx-test/3pd-ai-director"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Not sure where to start? Talk to the 3PD Director (opens in new tab)"
-          className="btn btn-warning btn-lg fw-bold shadow-sm"
-        >
-          <i className="bi bi-universal-access me-2" aria-hidden="true"></i>
-          Not sure where to start? Talk to the 3PD Director →
-        </a>
-      </div>
-
-      {/* BLUEPRINT DIVIDER */}
+      {/* BROWSE DIVIDER */}
       <div className="text-center my-4 dxpr-animate dxpr-fade-in">
         <div className="text-primary fw-bold">
-          <i className="bi bi-gear me-2" aria-hidden="true"></i>
-          Choose Your Build Path
+          <i className="bi bi-grid me-2" aria-hidden="true"></i>
+          Browse by Path
         </div>
       </div>
 
@@ -66,7 +68,7 @@ export default function ThreePDLandingPage() {
 
         {/* 3PD CONTENT EDITORS */}
         <div className="col-6">
-          <div className="card h-100 shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-1" style={{ borderColor: '#b7410e', borderWidth: '2px' }}>
+          <div className="card h-100 shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-1" style={{ borderColor: CARD_12_BORDER_COLOR, borderWidth: '2px' }}>
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
                 <i className="bi bi-pencil text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
@@ -89,7 +91,7 @@ export default function ThreePDLandingPage() {
 
         {/* 3PD PAGE BUILDERS */}
         <div className="col-6">
-          <div className="card h-100 shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-2" style={{ borderColor: '#b7410e', borderWidth: '2px' }}>
+          <div className="card h-100 shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-2" style={{ borderColor: CARD_12_BORDER_COLOR, borderWidth: '2px' }}>
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
                 <i className="bi bi-brush text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
@@ -132,10 +134,6 @@ export default function ThreePDLandingPage() {
               <ul className="list-unstyled small mb-3">
                 <li><a href="https://dev-3-pd-ide.pantheonsite.io/node/11" target="_blank" rel="noopener noreferrer" aria-label="STraCAT (opens in new tab)" className="link-primary">STraCAT</a></li>
               </ul>
-              <a href="/node/add/basic_page_layout_builder" target="_blank" className="btn btn-primary">
-                3PD AI App Helper (COMING SOON)
-              </a>
-              <br/>
               <button
                 type="button"
                 className="btn btn-secondary mt-auto"
@@ -152,8 +150,6 @@ export default function ThreePDLandingPage() {
                   <li><a href="https://github.com/sweimer/3PD---Astro-Static-Starter-Kit" target="_blank" rel="noopener noreferrer" aria-label="Astro-Static Starter Kit (opens in new tab)" className="link-success">Astro-Static Starter Kit</a></li>
                   <li><a href="https://github.com/sweimer/3PD---Astro-Forms-Starter-Kit" target="_blank" rel="noopener noreferrer" aria-label="Astro-Form Starter Kit (opens in new tab)" className="link-success">Astro-Form Starter Kit</a></li>
                   <li><a href="https://github.com/sweimer/3PD---React-Starter-Kit" target="_blank" rel="noopener noreferrer" aria-label="React Starter Kit (opens in new tab)" className="link-success">React Starter Kit</a></li>
-                  {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                  <li><a href="#" className="link-success">VanillaJS Starter Kit</a></li>
                 </ul>
               )}
             </div>

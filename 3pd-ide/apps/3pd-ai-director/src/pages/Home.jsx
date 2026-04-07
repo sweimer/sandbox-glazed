@@ -1,31 +1,67 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 const API_BASE    = import.meta.env.VITE_API_BASE_URL    || '';
 const APP_SLUG    = import.meta.env.VITE_APP_SLUG        || '';
 const DRUPAL_BASE = import.meta.env.VITE_DRUPAL_BASE_URL || '';
 
+const REPO_FOLDER = {
+  'pro-react':        '3PD---React-Starter-Kit',
+  'pro-astro':        '3PD---Astro-Forms-Starter-Kit',
+  'pro-astro-static': '3PD---Astro-Static-Starter-Kit',
+};
+
+const SCAFFOLD_CMD = {
+  'pro-react':        (n) => `3pd react app ${n}`,
+  'pro-astro':        (n) => `3pd astro-forms app ${n}`,
+  'pro-astro-static': (n) => `3pd astro app ${n}`,
+};
+
+const APP_FOLDER = {
+  'pro-react':        (n) => `apps/react---${n}`,
+  'pro-astro':        (n) => `apps/astro-forms---${n}`,
+  'pro-astro-static': (n) => `apps/astro---${n}`,
+};
+
+function buildStarterBlocks(route, appName, repoUrl, starterPrompt) {
+  const folder   = REPO_FOLDER[route]   || '';
+  const scaffold = SCAFFOLD_CMD[route]  ? SCAFFOLD_CMD[route](appName)  : '';
+  const appDir   = APP_FOLDER[route]    ? APP_FOLDER[route](appName)    : '';
+
+  return [
+    { label: 'Clone the starter kit',          cmd: `git clone ${repoUrl}` },
+    { label: 'Scaffold your app',               cmd: `cd ${folder} && ${scaffold}` },
+    { label: 'Launch your AI assistant',        cmd: `cd ${appDir} && 3pd run ai` },
+    { label: 'When the AI greets you, paste this', cmd: starterPrompt || '', isPrompt: true },
+  ];
+}
+
 const ROUTE_DESTINATIONS = {
-  'no-code':       { label: 'Open Layout Builder',       url: `${DRUPAL_BASE}/node/add/basic_page_layout_builder` },
-  'low-code':      { label: 'Open AI Markup Builder',    url: `${DRUPAL_BASE}/hudx-test/3pd-ai-coder` },
-  'pro-react':     { label: 'View React Starter Kit',    url: 'https://github.com/sweimer/3PD---React-Starter-Kit' },
-  'pro-astro':     { label: 'View Astro Starter Kit',    url: 'https://github.com/sweimer/3PD---Astro-Forms-Starter-Kit' },
-  'embed-request': { label: 'Submit an Embed Request',   url: `${DRUPAL_BASE}/hudx-test/react---3pd-embed-request` },
+  'no-code':          { label: 'Open Layout Builder',              url: `${DRUPAL_BASE}/node/add/basic_page_layout_builder` },
+  'low-code':         { label: 'Open AI Markup Builder',           url: `${DRUPAL_BASE}/hudx-test/3pd-ai-coder` },
+  'pro-react':        { label: 'View React Starter Kit',           url: 'https://github.com/sweimer/3PD---React-Starter-Kit' },
+  'pro-angular':      { label: 'Angular Starter Kit (Coming Soon)', url: null },
+  'pro-astro-static': { label: 'View Astro Static Starter Kit',    url: 'https://github.com/sweimer/3PD---Astro-Static-Starter-Kit' },
+  'pro-astro':        { label: 'View Astro Forms Starter Kit',     url: 'https://github.com/sweimer/3PD---Astro-Forms-Starter-Kit' },
+  'embed-request':    { label: 'Submit an Embed Request',          url: `${DRUPAL_BASE}/hudx-test/react---3pd-embed-request` },
 };
 
 const ROUTE_LABELS = {
-  'no-code':       'No-Code Builder',
-  'low-code':      'AI Markup Builder',
-  'pro-react':     'React Developer',
-  'pro-astro':     'Astro Developer',
-  'embed-request': 'Embed / Link Request',
+  'no-code':          'No-Code Builder',
+  'low-code':         'AI Markup Builder',
+  'pro-react':        'React Starter Kit',
+  'pro-angular':      'Angular Starter Kit (Coming Soon)',
+  'pro-astro-static': 'Astro Static Starter Kit',
+  'pro-astro':        'Astro Forms Starter Kit',
+  'embed-request':    'Embed / Link Request',
 };
 
 export default function Director() {
   const [messages, setMessages]   = useState([]);
   const [input, setInput]         = useState('');
   const [loading, setLoading]     = useState(false);
-  const [result, setResult]       = useState(null);   // {route, name, email, summary}
+  const [result, setResult]       = useState(null);   // {route, name, email, appName, summary, starterPrompt}
   const [error, setError]         = useState('');
+  const [copiedIdx, setCopiedIdx] = useState(null);
   const threadRef                 = useRef(null);
   const inputRef                  = useRef(null);
 
@@ -92,11 +128,19 @@ export default function Director() {
     }
   }
 
+  const handleCopy = useCallback((text, idx) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    });
+  }, []);
+
   function handleReset() {
     setMessages([]);
     setInput('');
     setResult(null);
     setError('');
+    setCopiedIdx(null);
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
@@ -180,14 +224,51 @@ export default function Director() {
           <p style={s.resultHeading}>You're all set, {result.name}!</p>
           <p style={s.resultSummary}>{result.summary}</p>
           <p style={s.resultRoute}>Recommended path: <strong>{ROUTE_LABELS[result.route] || result.route}</strong></p>
-          <a
-            href={destination.url}
-            target="_blank"
-            rel="noreferrer"
-            style={s.ctaBtn}
-          >
-            {destination.label} →
-          </a>
+          {destination.url ? (
+            <a
+              href={destination.url}
+              target="_blank"
+              rel="noreferrer"
+              style={s.ctaBtn}
+            >
+              {destination.label} →
+            </a>
+          ) : (
+            <span style={{ ...s.ctaBtn, background: '#9ca3af', cursor: 'default' }}>
+              {destination.label}
+            </span>
+          )}
+
+          {/* ONBOARDING — only for starter kit routes */}
+          {['pro-react', 'pro-angular', 'pro-astro-static', 'pro-astro'].includes(result.route) && result.route !== 'pro-angular' && destination.url && (
+            <>
+              <hr style={s.divider} />
+              <p style={s.sectionHeading}>Your setup steps</p>
+              {buildStarterBlocks(result.route, result.appName || 'your-app-name', destination.url, result.starterPrompt)
+                .map((block, i) => (
+                  <div key={i} style={s.stepBlock}>
+                    <div style={s.stepBlockHeader}>
+                      <span style={s.stepNum}>{i + 1}</span>
+                      <span style={s.stepBlockLabel}>{block.label}</span>
+                      {block.cmd && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(block.cmd, i)}
+                          style={{ ...s.copyBtn, ...(copiedIdx === i ? s.copyBtnDone : {}) }}
+                        >
+                          {copiedIdx === i ? 'Copied!' : 'Copy'}
+                        </button>
+                      )}
+                    </div>
+                    {block.cmd && (
+                      <pre style={block.isPrompt ? s.promptText : s.cmdText}>{block.cmd}</pre>
+                    )}
+                  </div>
+                ))
+              }
+            </>
+          )}
+
           <p style={s.resultMeta}>Your request has been logged.</p>
           <button type="button" onClick={handleReset} style={s.resetBtn}>
             Start a new session
@@ -362,6 +443,87 @@ const styles = {
     cursor: 'pointer',
     padding: 0,
     textDecoration: 'underline',
+  },
+  divider: {
+    margin: '1.25rem 0',
+    border: 'none',
+    borderTop: '1px solid #bbf7d0',
+  },
+  sectionHeading: {
+    fontSize: '0.8rem',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    color: '#15803d',
+    margin: '0 0 0.75rem',
+  },
+  stepBlock: {
+    marginBottom: '0.75rem',
+    background: '#fff',
+    border: '1px solid #d1fae5',
+    borderRadius: '8px',
+    overflow: 'hidden',
+  },
+  stepBlockHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.55rem 0.75rem',
+    background: '#f0fdf4',
+    borderBottom: '1px solid #d1fae5',
+  },
+  stepNum: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '1.35rem',
+    height: '1.35rem',
+    borderRadius: '50%',
+    background: '#16a34a',
+    color: '#fff',
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    flexShrink: 0,
+  },
+  stepBlockLabel: {
+    flex: 1,
+    fontSize: '0.82rem',
+    fontWeight: 600,
+    color: '#166534',
+  },
+  cmdText: {
+    margin: 0,
+    padding: '0.65rem 0.85rem',
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontSize: '0.82rem',
+    color: '#1a1a1a',
+    whiteSpace: 'pre-wrap',
+    lineHeight: 1.5,
+  },
+  promptText: {
+    margin: 0,
+    padding: '0.75rem 0.85rem',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontSize: '0.85rem',
+    color: '#1a1a1a',
+    whiteSpace: 'pre-wrap',
+    lineHeight: 1.6,
+  },
+  copyBtn: {
+    marginLeft: 'auto',
+    padding: '0.25rem 0.65rem',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    background: '#16a34a',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+  },
+  copyBtnDone: {
+    background: '#15803d',
   },
 };
 

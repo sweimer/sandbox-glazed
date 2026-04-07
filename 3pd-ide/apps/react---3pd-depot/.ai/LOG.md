@@ -79,3 +79,9 @@ Static a11y audit of `Home.jsx` and `App.jsx`. Found and fixed 9 issues across C
 
 ### 2026-04-01 — Session 5
 Minor copy update to the 3PD Design System card in `Home.jsx`: added a sentence noting the design system is shared across all 3PD starter kits and shipped to 3PDs automatically. Left with 7 modified files (`eslint.config.js`, `package.json`, `package-lock.json`, `src/App.jsx`, `src/pages/Home.jsx`, `.ai/LOG.md`, `CLAUDE.md`) — uncommitted.
+
+### 2026-04-02 — Session 6
+Card border color styling pass on `Home.jsx`: cards 1–2 → rust (`#b7410e`), cards 3–4 → forest green (`#228B22`), cards 5–6 → golden yellow (`#FFD700`). All 6 cards set to `borderWidth: '2px'`. Bootstrap utility border classes (`border-primary`, `border-info`, etc.) replaced with inline `style` props. Attempted `3pd react module --install` — blocked because the global `3pd` CLI is linked from `alex-renew-d8/3pd-ide` (missing `0.starter-react` starter kit). Resolution: re-link `3pd` from `SANDBOX-glazed/3pd-ide/starter-scripts/cli` via `npm install && npm link`. Left with `src/pages/Home.jsx` modified — uncommitted.
+
+### 2026-04-07 — Session 7
+Demo prep: extracted cards 1–2 border color into a top-of-file constant `CARD_12_BORDER_COLOR` (line 3 of `Home.jsx`) to enable a single-line AI demo change. Cards 1–2 are currently set to rust (`#b7410e`). For the demo, ask AI to switch to red (`#ff0000`) — one edit, instant hot-reload. Left with `src/pages/Home.jsx` modified — uncommitted.
