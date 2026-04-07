@@ -1,8 +1,0 @@
-node_modules/
-dist/
-.env
-server/db/*.sqlite
-server/db/*.sqlite-shm
-server/db/*.sqlite-wal
-public/drupal-dev-styles.css
-public/drupal-dev-scripts.js
