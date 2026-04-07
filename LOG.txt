@@ -2510,3 +2510,114 @@ hudx_3pd_assets and test the theme bridge workflow end-to-end.
     `cd web/themes/alex_renew && npm ci` runs as a post-start event.
     To suppress: check .lando.yml or .lando.base.yml for the build-theme event and
     either remove it or add a guard. Not blocking for POC but annoying.
+
+
+## SESSION: 2026-04-07 — Lando startup deadlock (documented for future reference)
+
+### Problem: site unresponsive after lando poweroff + lando start
+
+Root causes (two separate issues):
+
+1. lando stop (not poweroff) leaves the shared Traefik proxy running with stale routing.
+   Symptom: HTTP ECONNRESET or TIMEOUT on .lndo.site URLs after switching projects.
+   Fix: ALWAYS use `lando poweroff` (not `lando stop`) when done with a Drupal project.
+   `lando stop` only stops app containers. `lando poweroff` tears down the proxy too.
+
+2. Apache bootstrap deadlock on cold start (empty cache + slow Drupal bootstrap).
+   Symptom: site unresponsive (HTTP 000 / timeout) even though Apache workers are running.
+   Root cause: `lando crx`'s drush warm-up step (`drush status`) hangs because multiple
+   Drupal modules (ai, update, announcements_feed, dxpr_builder, etc.) make external HTTP
+   calls during bootstrap. With $settings['http_client_config']['timeout'] = 30, each
+   call can block up to 30s. Multiplied across 8+ modules = drush never finishes.
+   If crx is run multiple times (or my repeated ssh attempts), stacked drush processes
+   each try to compile the service container simultaneously → deadlock spiral.
+
+### Manual recovery procedure (if crx hangs)
+
+Step 1 — Kill ALL stacked drush processes:
+  lando ssh -s appserver -c "pkill -9 -f drush"
+  Verify: lando ssh -s appserver -c "ps aux | grep -c drush"  ← should be 1 (just grep)
+
+Step 2 — Truncate caches directly via MySQL (skip drush):
+  lando ssh -s appserver -c "mysql -h database -u drupal -pdrupal --skip-ssl drupal -e \
+    'TRUNCATE TABLE cache_bootstrap; TRUNCATE TABLE cache_config; TRUNCATE TABLE cache_container; \
+     TRUNCATE TABLE cache_data; TRUNCATE TABLE cache_default; TRUNCATE TABLE cache_discovery; \
+     TRUNCATE TABLE semaphore;'"
+  lando ssh -s appserver -c "rm -rf /app/web/sites/default/files/php/"
+
+Step 3 — Temporarily drop Guzzle timeout to 3s in settings.php:
+  Change: $settings['http_client_config']['timeout'] = 30;
+  To:     $settings['http_client_config']['timeout'] = 3;
+  NOTE: 30s is needed for Anthropic API calls (3pd-ai-coder). Restore after warmup.
+
+Step 4 — Run a single clean drush status (Apache must be stopped first):
+  lando ssh -s appserver -c "apache2ctl stop"
+  lando ssh -s appserver -c "cd /app && bash vendor/bin/drush status --root=/app/web \
+    --uri=http://sandbox-glazed.lndo.site"
+  Wait for it to show the status table (Drupal version, DB Connected, etc.)
+  If Apache was already stopped and stacks are clear, this takes ~10-15s with 3s timeout.
+
+Step 5 — Force-restart Apache (kill all workers + respawn):
+  lando ssh -s appserver -c "pkill -9 apache2; sleep 2"
+  Apache master (PID in entrypoint) will respawn workers automatically.
+  If not: lando ssh -s appserver -c "apache2ctl start"
+
+Step 6 — Rebuild router:
+  lando drush php:eval "Drupal::service('router.builder')->rebuild(); echo 'done';"
+
+Step 7 — Restore Guzzle timeout in settings.php:
+  Change: $settings['http_client_config']['timeout'] = 3;
+  Back to: $settings['http_client_config']['timeout'] = 30;
+
+Step 8 — Verify:
+  curl -sk --max-time 15 https://sandbox-glazed.lndo.site/ -o /dev/null -w "HTTP %{http_code}\n"
+  Should return HTTP 200 in 2-3s.
+
+### Diagnosis commands (to understand the state before fixing)
+
+  # Check if Apache is listening (look for :0050 LISTEN = port 80):
+  lando ssh -s appserver -c "grep ':0050' /proc/net/tcp"
+
+  # Count stacked drush processes:
+  lando ssh -s appserver -c "ps aux | grep -c drush"
+
+  # Test if Traefik can reach Apache (bypasses host DNS):
+  docker exec landoproxyhyperion5000gandalfedition_proxy_1 \
+    wget -qO- --timeout=5 http://172.19.0.3/ | head -3
+
+  # Test if the site responds at all (bypasses DNS resolution):
+  curl -sk --max-time 5 https://127.0.0.1/ -H "Host: sandbox-glazed.lndo.site" \
+    -o /dev/null -w "HTTP %{http_code}\n"
+
+### TODO: fix crx to be robust against drush warmup hangs
+
+The crx command's drush status step should have a timeout so it never hangs indefinitely.
+Change in .lando.yml crx cmd step 3:
+  Current: cd /app && bash vendor/bin/drush status ...
+  Better:  cd /app && timeout 20 bash vendor/bin/drush status ... 2>/dev/null || echo "warmup timed out, continuing"
+This way crx always completes and Apache always restarts, even if drush hangs.
+The first browser request will finish warming the cache (may be slow but won't deadlock).
+Requires lando rebuild -y to take effect.
+
+### Session/project workflow to prevent this
+
+Two separate stacks — keep them mentally separate:
+
+  Drupal/Lando stack (Docker containers):
+    End session:  lando poweroff   ← NOT lando stop
+    Start session: lando start, then lando crx
+    poweroff tears down Traefik proxy + all containers.
+    stop only pauses containers — proxy stays, routes go stale.
+
+  Starter kit apps (React/Astro — Node processes on host Mac):
+    End session:  3pd stop   (or Ctrl+C in the terminal running npm run dev)
+    Start session: npm run dev (or 3pd run ai)
+    These are host processes, completely independent of Lando/Docker.
+    Port conflicts (4000-5175 range) come from forgetting to stop these,
+    not from Lando.
+
+  The two stacks don't conflict with each other. Drupal uses port 80/443 (via
+  Traefik proxy). Starter kits use ports 4000-5175. They can all run simultaneously.
+  The only conflict is between two Drupal/Lando projects sharing the same proxy —
+  that's solved by lando poweroff between switches.
+

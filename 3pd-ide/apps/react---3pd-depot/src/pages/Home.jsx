@@ -60,16 +60,17 @@ export default function ThreePDLandingPage() {
         </div>
       </div>
 
-      {/* CARD GRID */}
-      <div className="row g-4">
+      {/* CARD GROUP 1 */}
+      <h2 className="h5 fw-semibold text-muted mb-3">For Static Features and Apps Built in Drupal</h2>
+      <div className="row g-4 mb-5">
 
         {/* 3PD CONTENT EDITORS */}
-        <div className="col-md-6 col-lg-4">
-          <div className="card h-100 border-primary shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-1">
+        <div className="col-6">
+          <div className="card h-100 shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-1" style={{ borderColor: '#b7410e', borderWidth: '2px' }}>
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
                 <i className="bi bi-pencil text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
-                <h2 className="h3 mb-0">3PD Content Editors <br/>(No Code)</h2>
+                <h3 className="h3 mb-0">3PD Content Editors <br/>(No Code)</h3>
               </div>
               <p className="card-text text-muted mb-2">
                 Build and assemble pages directly inside Drupal using Layout Builder and HUDX SDC components.
@@ -87,12 +88,12 @@ export default function ThreePDLandingPage() {
         </div>
 
         {/* 3PD PAGE BUILDERS */}
-        <div className="col-md-6 col-lg-4">
-          <div className="card h-100 border-info shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-2">
+        <div className="col-6">
+          <div className="card h-100 shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-2" style={{ borderColor: '#b7410e', borderWidth: '2px' }}>
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
                 <i className="bi bi-brush text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
-                <h2 className="h3 mb-0">3PD Page Builders <br/>(Low Code)</h2>
+                <h3 className="h3 mb-0">3PD Page Builders <br/>(Low Code)</h3>
               </div>
               <p className="card-text text-muted mb-4">
                 Drag‑and‑drop React builder with AI assistance for creating more advanced HUDX features.
@@ -110,13 +111,19 @@ export default function ThreePDLandingPage() {
           </div>
         </div>
 
+      </div>
+
+      {/* CARD GROUP 2 */}
+      <h2 className="h5 fw-semibold text-muted mb-3">For Dynamic Features and Apps Built with Code</h2>
+      <div className="row g-4 mb-5">
+
         {/* 3PD IDE STARTERS */}
-        <div className="col-md-6 col-lg-4">
-          <div className="card h-100 border-success shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-3">
+        <div className="col-6">
+          <div className="card h-100 shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-3" style={{ borderColor: '#228B22', borderWidth: '2px' }}>
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
                 <i className="bi bi-tools text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
-                <h2 className="h3 mb-0">3PD IDE Starters <br/>(Pro Code)</h2>
+                <h3 className="h3 mb-0">3PD IDE Starters <br/>(Pro Code)</h3>
               </div>
               <p className="card-text text-muted mb-3">
                 Clone a 3PD IDE starter kit and build full‑featured HUDX applications using your preferred framework.
@@ -154,12 +161,12 @@ export default function ThreePDLandingPage() {
         </div>
 
         {/* 3PD STAND-ALONE EMBEDS + PROPERTIES */}
-        <div className="col-md-6 col-lg-4">
-          <div className="card h-100 border-warning shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-4">
+        <div className="col-6">
+          <div className="card h-100 shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-4" style={{ borderColor: '#228B22', borderWidth: '2px' }}>
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
                 <i className="bi bi-wrench-adjustable text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
-                <h2 className="h3 mb-0">3PD Stand‑Alone/ <br/>Smart Embeds</h2>
+                <h3 className="h3 mb-0">3PD Stand‑Alone/ <br/>Smart Embeds</h3>
               </div>
               <p className="card-text text-muted mb-4">
                 Submit external tools (Tableau, Salesforce, legacy apps) for Smart Embed integration, or standalone sites for linking consideration within HUDX.
@@ -176,13 +183,19 @@ export default function ThreePDLandingPage() {
           </div>
         </div>
 
+      </div>
+
+      {/* CARD GROUP 3 */}
+      <h2 className="h5 fw-semibold text-muted mb-3">Tools &amp; Management</h2>
+      <div className="row g-4">
+
         {/* 3PD DESIGN SYSTEM */}
-        <div className="col-md-6 col-lg-4">
-          <div className="card h-100 border-info shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-5">
+        <div className="col-6">
+          <div className="card h-100 shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-5" style={{ borderColor: '#FFD700', borderWidth: '2px' }}>
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
                 <i className="bi bi-palette text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
-                <h2 className="h3 mb-0">3PD Design System</h2>
+                <h3 className="h3 mb-0">3PD Design System</h3>
               </div>
               <p className="card-text text-muted mb-4">
                 Components, tokens, and patterns for building HUDX-consistent interfaces. Reference before building any 3PD application. This design system is shared across all 3PD starter kits and shipped to 3PDs automatically.
@@ -195,12 +208,12 @@ export default function ThreePDLandingPage() {
         </div>
 
         {/* 3PD MODULE MANAGER */}
-        <div className="col-md-6 col-lg-4">
-          <div className="card h-100 border-dark shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-6">
+        <div className="col-6">
+          <div className="card h-100 shadow-sm dxpr-animate dxpr-fade-in dxpr-delay-6" style={{ borderColor: '#FFD700', borderWidth: '2px' }}>
             <div className="card-body d-flex flex-column">
               <div className="d-flex align-items-center mb-3">
                 <i className="bi bi-house-heart text-primary me-3" style={{ fontSize: "2rem" }} aria-hidden="true"></i>
-                <h2 className="h3 mb-0">3PD Module Manager</h2>
+                <h3 className="h3 mb-0">3PD Module Manager</h3>
               </div>
               <p className="card-text text-muted mb-4">
                 Review and manage content submitted by third-party developers across all active 3PD modules.
