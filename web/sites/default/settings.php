@@ -863,12 +863,24 @@ $settings['config_sync_directory'] = 'sites/default/files/config_3_8ANiOh2Hfzojo
 
 $settings['extension_discovery_scan_tests'] = TRUE;
 
-// Short HTTP client timeout — prevents modules (announcements_feed, ai, etc.)
-// from blocking bootstrap indefinitely on slow/unavailable external endpoints.
+// Default HTTP client timeout — needed for Anthropic API calls via GenerateController.
+// Overridden to 5s inside the Lando block below for faster local cold starts.
 $settings['http_client_config']['timeout'] = 30;
 
-// Lando local database (only applied when running inside Lando).
+// Lando local overrides (only applied when running inside Lando).
 if (isset($_ENV['LANDO_APP_NAME'])) {
+  // Reduce Guzzle timeouts locally — prevents update/announcements_feed/ai modules
+  // from blocking Apache workers during bootstrap on cold starts.
+  // connect_timeout covers DNS + TCP connect phase (Docker DNS can hang here).
+  // timeout covers the full request/response cycle.
+  // Pantheon uses 30s (needed for Anthropic API calls via GenerateController).
+  $settings['http_client_config']['timeout'] = 5;
+  $settings['http_client_config']['connect_timeout'] = 3;
+
+  // Disable Drupal core update checks locally — they make outbound HTTP calls
+  // on every bootstrap after cache clear and are not useful in local dev.
+  $config['update.settings']['check.disabled'] = TRUE;
+
   $databases['default']['default'] = [
     'database' => 'drupal',
     'username' => 'drupal',

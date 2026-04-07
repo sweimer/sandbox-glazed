@@ -56,7 +56,7 @@ class AssetsController extends ControllerBase {
    * The CLI reads this on `3pd astro-forms app <name>` to auto-detect
    * themeSystem and avoid requiring manual 3pd.config.json setup.
    */
-  public function config(): JsonResponse {
+  public function themeConfig(): JsonResponse {
     $theme_name = \Drupal::service('theme.manager')->getActiveTheme()->getName();
     $theme_info = \Drupal::service('extension.list.theme')->get($theme_name);
 

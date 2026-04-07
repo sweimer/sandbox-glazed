@@ -16,6 +16,7 @@ services:
     xdebug: false
     build_as_root:
       - bash -c "mkdir -p /etc/mysql/conf.d && printf '[client]\nskip-ssl\n' > /etc/mysql/conf.d/nossL.cnf"
+      - bash -c "printf '\n# Blackhole external module HTTP calls (update, announcements_feed, gemini, dxpr, ai)\n# These hang Docker DNS during Drupal bootstrap. Blackholing makes them fail instantly.\n0.0.0.0 updates.drupal.org\n0.0.0.0 www.drupal.org\n0.0.0.0 ftp.drupal.org\n0.0.0.0 api.openai.com\n0.0.0.0 generativelanguage.googleapis.com\n0.0.0.0 dxpr.com\n0.0.0.0 www.dxpr.com\n0.0.0.0 api.dxpr.com\n' >> /etc/hosts"
 
   database:
     type: mariadb:10.6
@@ -37,4 +38,4 @@ tooling:
     cmd:
       - bash -c "rm -rf /app/web/sites/default/files/php/ 2>/dev/null || true"
       - mysql -h database -u drupal -pdrupal --skip-ssl drupal -e "TRUNCATE TABLE cache_bootstrap; TRUNCATE TABLE cache_config; TRUNCATE TABLE cache_container; TRUNCATE TABLE cache_data; TRUNCATE TABLE cache_default; TRUNCATE TABLE cache_discovery; TRUNCATE TABLE cache_dynamic_page_cache; TRUNCATE TABLE cache_entity; TRUNCATE TABLE cache_menu; TRUNCATE TABLE cache_page; TRUNCATE TABLE cache_render; TRUNCATE TABLE cache_toolbar; TRUNCATE TABLE semaphore; TRUNCATE TABLE router;"
-      - bash -c "apache2ctl stop 2>/dev/null; sleep 1; cd /app && timeout 25 bash vendor/bin/drush status --root=/app/web --uri=http://sandbox-glazed.lndo.site 2>/dev/null || echo 'Drush warmup timed out — continuing'; timeout 25 bash vendor/bin/drush php:eval \"\\Drupal::service('router.builder')->rebuild(); echo 'Router rebuilt';\" --root=/app/web --uri=http://sandbox-glazed.lndo.site 2>/dev/null || echo 'Router rebuild timed out — browser first load will rebuild'; apache2ctl start 2>/dev/null; echo 'Cache reset complete — site ready'"
+      - bash -c "apache2ctl stop 2>/dev/null; sleep 1; cd /app && timeout 120 bash vendor/bin/drush status --root=/app/web --uri=http://sandbox-glazed.lndo.site 2>/dev/null || echo 'Drush warmup timed out — continuing'; timeout 60 bash vendor/bin/drush php:eval \"\\Drupal::service('router.builder')->rebuild(); echo 'Router rebuilt';\" --root=/app/web --uri=http://sandbox-glazed.lndo.site 2>/dev/null || echo 'Router rebuild timed out — browser first load will rebuild'; apache2ctl start 2>/dev/null; echo 'Cache reset complete — site ready'"

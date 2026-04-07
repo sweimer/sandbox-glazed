@@ -17,7 +17,7 @@ hudx_3pd_assets.scripts:
 hudx_3pd_assets.config:
   path: '/3pd-assets/config.json'
   defaults:
-    _controller: '\Drupal\hudx_3pd_assets\Controller\AssetsController::config'
+    _controller: '\Drupal\hudx_3pd_assets\Controller\AssetsController::themeConfig'
     _title: '3PD Assets — Config'
   requirements:
     _access: 'TRUE'
