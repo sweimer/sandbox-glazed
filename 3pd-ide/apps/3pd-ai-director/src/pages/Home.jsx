@@ -110,11 +110,12 @@ export default function Director() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name:         submit.name,
-            email:        submit.email,
-            summary:      submit.summary,
-            route:        submit.route,
-            conversation: JSON.stringify([...updated, { role: 'assistant', content: assistantText }]),
+            name:          submit.name,
+            email:         submit.email,
+            summary:       submit.summary,
+            route:         submit.route,
+            conversation:  JSON.stringify([...updated, { role: 'assistant', content: assistantText }]),
+            starterPrompt: submit.starterPrompt || '',
           }),
         });
         setResult(submit);

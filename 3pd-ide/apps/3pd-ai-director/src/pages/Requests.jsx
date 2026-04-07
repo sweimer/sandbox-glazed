@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 const APP_SLUG = import.meta.env.VITE_APP_SLUG     || '';
@@ -14,6 +14,43 @@ const ROUTE_LABELS = {
 };
 
 const STATUS_OPTIONS = ['Needs Review', 'Needs Review 2', 'Needs Review 3', 'Declined', 'Approved'];
+
+function PromptCell({ text }) {
+  const [copied, setCopied] = useState(false);
+  if (!text) return <span style={{ color: '#9ca3af' }}>—</span>;
+  const preview = text.length > 80 ? text.slice(0, 80) + '…' : text;
+  function handleCopy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
+      <span style={{ fontSize: '0.8rem', color: '#374151', lineHeight: 1.4 }} title={text}>
+        {preview}
+      </span>
+      <button
+        type="button"
+        onClick={handleCopy}
+        style={{
+          flexShrink: 0,
+          padding: '0.15rem 0.5rem',
+          fontSize: '0.7rem',
+          fontWeight: 600,
+          background: copied ? '#15803d' : '#16a34a',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {copied ? 'Copied!' : 'Copy'}
+      </button>
+    </div>
+  );
+}
 
 function formatDate(str) {
   if (!str) return '—';
@@ -74,7 +111,7 @@ export default function Requests() {
           <table style={s.table}>
             <thead>
               <tr>
-                {['#', 'Name', 'Email', 'What they want', 'What we recommended', 'Date', 'Status'].map(h => (
+                {['#', 'Name', 'Email', 'What they want', 'What we recommended', 'Prompt', 'Date', 'Status'].map(h => (
                   <th key={h} style={s.th}>{h}</th>
                 ))}
               </tr>
@@ -95,6 +132,7 @@ export default function Requests() {
                       {ROUTE_LABELS[row.route] || row.route || '—'}
                     </span>
                   </td>
+                  <td style={{ ...s.td, ...s.tdPrompt }}><PromptCell text={row.starter_prompt} /></td>
                   <td style={{ ...s.td, ...s.tdDate }}>{formatDate(row.created_at)}</td>
                   <td style={s.td}>
                     <select
@@ -220,6 +258,9 @@ const styles = {
   tdDate: {
     whiteSpace: 'nowrap',
     color: '#6b7280',
+  },
+  tdPrompt: {
+    maxWidth: '220px',
   },
   trEven: { background: '#fff' },
   trOdd:  { background: '#fafafa' },

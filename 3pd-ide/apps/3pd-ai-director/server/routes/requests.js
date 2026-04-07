@@ -28,16 +28,17 @@ router.patch('/requests/:id', (req, res) => {
 
 // POST /requests — save a completed intake request
 router.post('/requests', (req, res) => {
-  const { name, email, summary, route, conversation } = req.body ?? {};
+  const { name, email, summary, route, conversation, starterPrompt } = req.body ?? {};
 
   const info = db.prepare(
-    'INSERT INTO requests (name, email, summary, route, conversation) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO requests (name, email, summary, route, conversation, starter_prompt) VALUES (?, ?, ?, ?, ?, ?)'
   ).run(
-    name         || '',
-    email        || '',
-    summary      || '',
-    route        || '',
-    conversation || '',
+    name          || '',
+    email         || '',
+    summary       || '',
+    route         || '',
+    conversation  || '',
+    starterPrompt || '',
   );
 
   const row = db.prepare('SELECT * FROM requests WHERE id = ?').get(info.lastInsertRowid);

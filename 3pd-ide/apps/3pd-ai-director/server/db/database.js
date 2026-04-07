@@ -16,5 +16,6 @@ db.exec(fs.readFileSync(SCHEMA, 'utf8'));
 
 // Migrations — safe to run on existing DBs
 try { db.exec("ALTER TABLE requests ADD COLUMN status TEXT DEFAULT 'Needs Review'"); } catch {}
+try { db.exec("ALTER TABLE requests ADD COLUMN starter_prompt TEXT"); } catch {}
 
 export default db;

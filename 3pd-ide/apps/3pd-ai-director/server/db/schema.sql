@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS requests (
   summary     TEXT,
   route       TEXT,
   conversation TEXT,
-  status      TEXT DEFAULT 'Needs Review',
+  status        TEXT DEFAULT 'Needs Review',
+  starter_prompt TEXT,
   created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
