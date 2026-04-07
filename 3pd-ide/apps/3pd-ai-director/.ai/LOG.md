@@ -29,7 +29,7 @@ The app is substantially complete and deployed as a Drupal module:
 4 numbered copyable blocks: clone repo → scaffold app (with app name baked in) → launch AI assistant → paste kickoff prompt. The kickoff prompt is AI-generated from the intake conversation and includes name, email, goal, features, constraints, and a suggested first task.
 
 **Requests tab:**
-Table of all submitted intake requests (name, email, summary, route, date). Persisted to SQLite.
+Table of all submitted intake requests: #, name, email, what they want (summary), what we recommended (route pill), starter prompt (truncated with Copy button), date, status. Status is editable inline (color-coded select: Needs Review / Needs Review 2 / Needs Review 3 / Declined / Approved), persisted via PATCH endpoint. All data persisted to SQLite.
 
 **Server:** Express + SQLite, Anthropic API (claude-haiku-4-5-20251001), ANTHROPIC_API_KEY via env var.
 
@@ -46,16 +46,20 @@ Table of all submitted intake requests (name, email, summary, route, date). Pers
 7. [x] STARTER_PROMPT block — AI-generated project brief for starter kit handoff
 8. [x] Result card — 4 copyable blocks (clone, scaffold, launch AI, kickoff prompt)
 9. [x] Requests tab with SQLite persistence
-10. [ ] Requests tab — "What we recommended" column (route label, human-readable)
-11. [ ] Requests tab — Status column with editable select (Needs Review, Needs Review 2, Needs Review 3, Declined, Approved) — requires DB column + PATCH endpoint
-12. [ ] Deploy to Pantheon (requires ANTHROPIC_API_KEY in Pantheon Secrets — see PROMPT.txt §13)
-13. [ ] Test with real 3PD users post-demo
+10. [x] Requests tab — "What we recommended" column (route label, color-coded pill)
+11. [x] Requests tab — Status column with editable inline select, PATCH endpoint, DB column
+12. [x] Requests tab — Prompt column with truncated display + Copy button
+13. [x] Director routing — lettered options (A/B/C/D) for all decision-point questions
+14. [x] Default routing — unknown/unsure defaults to pro-astro (Astro Forms), not a clarifying loop
+15. [x] PHP ChatController — max_tokens 2048, STARTER_PROMPT parsing, app_name extraction
+16. [x] create-module.js system prompt synced with chat.js (was significantly out of date)
+17. [ ] Deploy to Pantheon (requires ANTHROPIC_API_KEY in Pantheon Secrets — see PROMPT.txt §13)
+18. [ ] Test with real 3PD users post-demo
 
 ---
 
 ## Open Questions
 
-- Should the status column (roadmap #11) persist per-request in the SQLite DB, or is session-only state acceptable for the admin view?
 - Does the Pantheon Express server need a keep-alive / health check for the Anthropic API connection?
 - Should `pro-angular` show any interim resource (docs, contact form) while the starter kit is coming soon?
 
@@ -74,6 +78,16 @@ Table of all submitted intake requests (name, email, summary, route, date). Pers
 
 ### 2026-04-02 — Session 1 (Initial build)
 App built from scratch. Core intake flow, SUBMIT tag parsing, result card, Requests tab, SQLite persistence. Deployed as Drupal module.
+
+### 2026-04-07 — Session 3 (Requests tab, routing fixes, PHP controller sync)
+- Added Requests tab columns: route pill (What we recommended), starter prompt with Copy button (Prompt), inline status select with PATCH endpoint and DB column
+- Director routing: all decision-point questions now use lettered A/B/C/D options
+- Unknown/unsure framework now defaults to pro-astro instead of open-ended clarifying loop; framework question lists Astro/Vue/Svelte/Vanilla as option A
+- Strengthened system prompt: app_name and STARTER_PROMPT block marked required with explicit RULES entries
+- Fixed PHP ChatController in create-module.js: max_tokens 1024→2048, added STARTER_PROMPT block parsing, app_name extraction from SUBMIT tag
+- Fixed RequestsController::store() to save starter_prompt column
+- Synced create-module.js SYSTEM_PROMPT with chat.js (was still the old simplified 5-route version)
+- All changes deployed via --install, committed, pushed.
 
 ### 2026-04-07 — Session 2 (Director overhaul)
 - Added app name as intake question for starter kit routes
