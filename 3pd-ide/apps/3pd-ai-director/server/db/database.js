@@ -14,4 +14,7 @@ const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.exec(fs.readFileSync(SCHEMA, 'utf8'));
 
+// Migrations — safe to run on existing DBs
+try { db.exec("ALTER TABLE requests ADD COLUMN status TEXT DEFAULT 'Needs Review'"); } catch {}
+
 export default db;

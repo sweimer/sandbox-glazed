@@ -7,7 +7,7 @@ use Drupal\Core\Block\BlockBase;
 /**
  * @Block(
  *   id = "hudx_3pd_ai_director_block",
- *   admin_label = @Translation("3PD IDE - Director")
+ *   admin_label = @Translation("3PD IDE - AI Director")
  * )
  */
 class Hudx3pdAiDirectorBlock extends BlockBase {

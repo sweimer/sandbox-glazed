@@ -207,7 +207,7 @@ export default async function createModule(appNameFromCli, { internal }) {
     is3PD = true;
   }
 
-  const displayName  = '3PD IDE - Director';
+  const displayName  = '3PD IDE - AI Director';
   const themeHookKey = `${machineName}_block`;
   const templateName = `${hyphenName}-block`;
   const twigFilename = `${templateName}.html.twig`;

@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 const APP_SLUG = import.meta.env.VITE_APP_SLUG     || '';
 
 const ROUTE_LABELS = {
-  'no-code':       'No-Code Builder',
-  'low-code':      'AI Markup Builder',
-  'pro-react':     'React Developer',
-  'pro-astro':     'Astro Developer',
-  'embed-request': 'Embed / Link Request',
+  'no-code':          'No-Code Builder',
+  'low-code':         'AI Markup Builder',
+  'pro-react':        'React Starter Kit',
+  'pro-angular':      'Angular Starter Kit',
+  'pro-astro-static': 'Astro Static Starter Kit',
+  'pro-astro':        'Astro Forms Starter Kit',
+  'embed-request':    'Embed / Link Request',
 };
+
+const STATUS_OPTIONS = ['Needs Review', 'Needs Review 2', 'Needs Review 3', 'Declined', 'Approved'];
 
 function formatDate(str) {
   if (!str) return '—';
@@ -32,6 +36,18 @@ export default function Requests() {
       .then(data => setRows(data))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+  }, []);
+
+  const handleStatusChange = useCallback((id, status) => {
+    setRows(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    fetch(`${API_BASE}/api/${APP_SLUG}/requests/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }).catch(() => {
+      // revert on failure
+      setRows(prev => prev.map(r => r.id === id ? { ...r, status: r.status } : r));
+    });
   }, []);
 
   const s = styles;
@@ -58,7 +74,7 @@ export default function Requests() {
           <table style={s.table}>
             <thead>
               <tr>
-                {['#', 'Name', 'Email', 'What they want', 'Routed to', 'Date'].map(h => (
+                {['#', 'Name', 'Email', 'What they want', 'What we recommended', 'Date', 'Status'].map(h => (
                   <th key={h} style={s.th}>{h}</th>
                 ))}
               </tr>
@@ -80,6 +96,17 @@ export default function Requests() {
                     </span>
                   </td>
                   <td style={{ ...s.td, ...s.tdDate }}>{formatDate(row.created_at)}</td>
+                  <td style={s.td}>
+                    <select
+                      value={row.status || 'Needs Review'}
+                      onChange={e => handleStatusChange(row.id, e.target.value)}
+                      style={{ ...s.statusSelect, ...statusSelectColor(row.status) }}
+                    >
+                      {STATUS_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -90,13 +117,26 @@ export default function Requests() {
   );
 }
 
+function statusSelectColor(status) {
+  const map = {
+    'Needs Review':   { borderColor: '#fbbf24', background: '#fffbeb' },
+    'Needs Review 2': { borderColor: '#f97316', background: '#fff7ed' },
+    'Needs Review 3': { borderColor: '#ef4444', background: '#fef2f2' },
+    'Declined':       { borderColor: '#6b7280', background: '#f3f4f6' },
+    'Approved':       { borderColor: '#16a34a', background: '#f0fdf4' },
+  };
+  return map[status] || map['Needs Review'];
+}
+
 function routePillColor(route) {
   const map = {
-    'no-code':       { background: '#fef9c3', color: '#854d0e' },
-    'low-code':      { background: '#dbeafe', color: '#1e40af' },
-    'pro-react':     { background: '#f3e8ff', color: '#6b21a8' },
-    'pro-astro':     { background: '#ffedd5', color: '#9a3412' },
-    'embed-request': { background: '#d1fae5', color: '#065f46' },
+    'no-code':          { background: '#fef9c3', color: '#854d0e' },
+    'low-code':         { background: '#dbeafe', color: '#1e40af' },
+    'pro-react':        { background: '#f3e8ff', color: '#6b21a8' },
+    'pro-angular':      { background: '#fce7f3', color: '#9d174d' },
+    'pro-astro-static': { background: '#e0f2fe', color: '#075985' },
+    'pro-astro':        { background: '#ffedd5', color: '#9a3412' },
+    'embed-request':    { background: '#d1fae5', color: '#065f46' },
   };
   return map[route] || { background: '#f3f4f6', color: '#374151' };
 }
@@ -186,6 +226,16 @@ const styles = {
   link: {
     color: '#2563eb',
     textDecoration: 'none',
+  },
+  statusSelect: {
+    padding: '0.25rem 0.5rem',
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    border: '1px solid',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    appearance: 'auto',
+    width: '100%',
   },
   routePill: {
     display: 'inline-block',
