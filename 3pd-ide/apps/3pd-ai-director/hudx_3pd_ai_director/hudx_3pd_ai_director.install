@@ -42,6 +42,16 @@ function hudx_3pd_ai_director_schema() {
           'length' => 255,
           'not null' => FALSE,
         ],
+        'status' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
+        'starter_prompt' => [
+          'type' => 'text',
+          'size' => 'big',
+          'not null' => FALSE,
+        ],
     ],
     'primary key' => ['id'],
   ];
