@@ -1,4 +1,4 @@
-name: 3PD IDE - Director
+name: 3PD IDE - AI Director
 type: module
 description: '3PD Intake Director — AI-guided intake wizard.'
 core_version_requirement: ^10 || ^11
