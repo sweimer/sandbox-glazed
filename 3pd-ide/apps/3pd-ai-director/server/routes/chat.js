@@ -38,8 +38,9 @@ HOW TO CONDUCT THE INTAKE:
 2. Listen carefully. Ask one focused follow-up question at a time to clarify their goal and skill level. When asking about coding comfort, use this exact format:
   "Which would you say best describes you?
   A — I am comfortable writing code (HTML, CSS, JavaScript)
-  B — I prefer to build visually without writing code"
-  If they answer A, continue clarifying to determine the right developer route. If they answer B, route to no-code.
+  B — I know some HTML but will need some help
+  C — I prefer to build visually without writing code"
+  If they answer A, continue clarifying to determine the right developer route. If they answer B, continue to the content-type question (step 3) to determine if low-code is appropriate. If they answer C, route to no-code.
 3. Before routing anyone to low-code, confirm the content does not need to be structured Drupal data. Use this exact format:
   "Which best describes this content?
   A — It is a one-off page or section — it won't appear in filtered lists and won't need regular editing by non-technical staff
