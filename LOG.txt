@@ -2621,3 +2621,164 @@ Two separate stacks — keep them mentally separate:
   The only conflict is between two Drupal/Lando projects sharing the same proxy —
   that's solved by lando poweroff between switches.
 
+
+
+## SESSION: 2026-04-08 — AlexRenew POC complete (alex-renew-d8 repo)
+
+### Context
+First external client delivery of the 3pd-ide framework. Validated that the
+astro-forms starter + hudx_3pd_assets theme bridge works on a non-HUDx Drupal
+site (Drupal 10.5.8, custom alex_renew theme, no Bootstrap).
+
+Full session log lives in: /Users/29457/Documents/Sites/alex-renew-d8/LOG.txt
+
+### ✓ hudx_3pd_assets — two bugs fixed (now correct in alex-renew-d8)
+
+1. ControllerBase::config() conflict
+   Method named config() in AssetsController conflicts with the inherited
+   ControllerBase::config($name) method. PHP fatal on module enable.
+   Fix: rename to themeConfig() in AssetsController.php AND routing.yml.
+   Apply this fix when copying hudx_3pd_assets to any new project.
+
+2. Library data structure wrong
+   collectThemeCss() and collectThemeJs() iterated over $library['css'] as
+   if it were [ group => [ file => options ] ] — but getLibrariesByExtension()
+   returns a flat array: [ [ 'type' => 'file', 'data' => 'path/to/file.css', ... ] ]
+   Fix: iterate flat array, use $entry['data'] for path, check $entry['type'] === 'file'.
+   Also: $entry['data'] is already relative to Drupal root — use \Drupal::root() . '/' . $entry['data'].
+   Fix applied in alex-renew-d8. Must be backported to SANDBOX-glazed copy when next touched.
+
+### ✓ Astro dev proxy — secure: false required for Lando
+
+The Vite /drupal-proxy in astro.config.mjs was returning HTTP 500 when
+proxying to a Lando site (*.lndo.site uses self-signed SSL certs).
+Fix: add `secure: false` to the proxy config block.
+
+  '/drupal-proxy': {
+    target: drupalProxyTarget,
+    changeOrigin: true,
+    secure: false,   // ← add this for Lando targets
+    rewrite: (path) => path.replace(/^\/drupal-proxy/, ''),
+  },
+
+This fix must be applied to ALL starter templates (0.starter-astro-forms,
+0.starter-react, 0.starter-astro-static) — any dev pointing at a Lando site
+will hit this. Apply next time each starter is touched.
+
+### ✓ Schema fix — remove `name` column from submissions starter template
+
+0.starter-astro-forms starter-template/server/db/schema.sql had:
+  submissions(id, name TEXT NOT NULL, message TEXT NOT NULL, created_at)
+
+But the starter UI only sends `message`. The `name` field causes HTTP 400 on
+every POST from the default homepage and api-reference demo.
+
+Fix: remove `name` from schema.sql and server.js.
+Correct schema: submissions(id, message TEXT NOT NULL, created_at)
+
+Apply to: 0.starter-astro-forms/starter-template/server/db/schema.sql
+          0.starter-astro-forms/starter-template/server/server.js
+(This is the SANDBOX-glazed starter template — fix it here too.)
+
+### ✓ Layout.astro dev nav — remove Bootstrap classes
+
+The dev nav bar in starter-template/src/layouts/Layout.astro used Bootstrap
+classes (.navbar, .navbar-expand, .badge, etc.). On non-Bootstrap sites these
+produce an unstyled / broken nav bar.
+
+Fix: replace with inline styles. The dev nav is dev-only and should never
+depend on the active theme's class system.
+
+Apply to: 0.starter-astro-forms/starter-template/src/layouts/Layout.astro
+Also check: 0.starter-astro-static and 0.starter-react Layout/App components.
+
+### ✓ Repeatable onboarding checklist — documented
+
+Steps to add 3pd-ide to any new Drupal codebase:
+  1. Copy 3pd-ide/ (astro-forms subset) + web/modules/custom/hudx_3pd_assets/
+  2. Create 3pd.config.json (assetsUrl, themeSystem)
+  3. Simplify .lando.base.yml (remove redis/solr/build-theme if not needed)
+  4. lando rebuild + db-import + drush updb + drush cr
+  5. lando drush en jsonapi hudx_3pd_assets -y
+  6. Verify /3pd-assets/config.json returns correct themeSystem
+  7. npm link CLI from 3pd-ide/starter-scripts/cli/
+  8. 3pd astro-forms app <test> → npm run dev → verify all 3 patterns
+
+Biggest variable: getting Lando running (DB compatibility, module remnants).
+Everything after Lando is up takes ~10 minutes.
+
+### AlexRenew theme CSS notes (for future reference)
+
+alex_renew is a custom BEM theme. No Bootstrap. Key classes:
+  .button--primary          — blue (#0087dc), works on a, button, input[type=submit]
+  .form-item                — wrapper: gives label uppercase/bold treatment
+  .form-text / .form-email  — styled text inputs (shadow on hover/focus)
+  .decor--dark-background   — dark section (#2a2b2c), white text, blue links
+  .decor--toggle-background — light gray section (#f2f4f5)
+  .accordion + .accordion__toggle + .accordion__content + .accordion--collapsed
+  .card--link + .node--view-mode-card + .card__content — linked card pattern
+  .alert-color-* — scoped to #message-banner ONLY, not standalone
+  Brand: #0087dc blue, #003150 dark blue, #8e0085 purple accent
+  Font: Libre Franklin (loaded via theme CSS, no class needed)
+
+Standalone repos for AlexRenew delivery:
+  /Users/29457/Documents/Sites/alex-renew-d8/  (feature/3pd-ide-poc branch)
+
+
+
+## SESSION: 2026-04-13 — crx hard-restart fix + session workflow
+
+### Context
+Returning to SANDBOX-glazed after a break. Site was in a deadlocked state:
+Apache stacking 80+ workers, HTTP 000, could not bind port 80. Root cause:
+`apache2ctl stop` is a graceful shutdown — workers stuck in Drupal bootstrap
+never exit, port 80 stays held, each subsequent `apache2ctl start` spawns a
+new master that can't bind. Compounded by drush warmup timing out (20s not
+enough for cold service container compilation), leaving routes empty.
+
+### ✓ crx rewritten — hard kill + curl warmup + router rebuild
+
+Old approach (broken):
+  - `apache2ctl stop` — graceful, workers never die if stuck in bootstrap
+  - `drush status` warmup with timeout 20 — always times out on cold start
+  - `drush php:eval router.builder->rebuild()` — also times out
+
+New approach (.lando.yml crx step 3):
+  - Read Apache PID file + `kill -9` master, then `pkill apache2` for workers
+  - `sleep 2` then `apache2ctl start` fresh
+  - curl loop: hit `http://localhost/` every 5s, up to 90s
+  - Accepts HTTP 200, 301, 302, OR 404 as "Drupal is alive"
+    (404 = routes empty but Drupal bootstrapping = service container compiled)
+  - On success: runs `drush php:eval router.builder->rebuild()` with timeout 30
+  - Prints "Cache reset complete — site ready" when done
+
+Requires `lando rebuild -y` to take effect.
+
+### ✓ Session end/start workflow (to prevent deadlocks when switching projects)
+
+END a Drupal/Lando session:
+  lando poweroff        ← NOT lando stop
+  (poweroff kills Traefik proxy + all containers cleanly)
+  (stop only pauses — proxy stays, routes go stale)
+
+START a Drupal/Lando session:
+  lando start
+  lando crx
+
+SWITCH between Drupal projects:
+  # In current project dir:
+  lando poweroff
+  # In new project dir:
+  lando start
+  lando crx
+
+END a 3pd starter kit app session:
+  3pd stop   (or Ctrl+C in the terminal running npm run dev)
+  (host Node processes on ports 4000-5175 — independent of Lando)
+
+### Manual recovery if crx still hangs (before lando rebuild bakes in new crx)
+
+  lando ssh -s appserver -u root -c "pkill apache2 && sleep 2"
+  lando ssh -s appserver -c "apache2ctl start"
+  # Wait for HTTP 404 (Drupal alive, routes empty), then:
+  lando drush php:eval "Drupal::service('router.builder')->rebuild(); echo 'done';"
